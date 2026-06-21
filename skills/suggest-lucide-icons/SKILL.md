@@ -1,75 +1,59 @@
 ---
 name: suggest-lucide-icons
-description: "Pick Lucide icons for a concept, UI placement, or vault note. Searches lucide.dev for real icon names. Use when the user says 'what icon for X', 'suggest a Lucide icon', 'pick an icon', or needs an icon for note frontmatter, a button, or a section header."
-model: sonnet, inherit
-metadata:
-  author: nweii
-  version: "1.3.0"
+description: Pick real Lucide icons for a concept, UI placement, button, section header, or note frontmatter. Use when the user asks what Lucide icon to use, requests icon candidates, or needs an icon name verified.
 ---
 
 # Suggest Lucide Icons
 
-Suggest the most relevant icons from the [Lucide open source icon pack](https://lucide.dev) to symbolize a concept or fit specific UI placements. I am skilled in symbolic interpretation and mental associations across culture, symbology, science, and design.
+Use this skill to choose existing Lucide icon names, not to invent symbolic
+artwork. Optimize for recognizable meaning in the user's context.
 
-## Input
+## Workflow
 
-Provide one or both:
+1. Identify the concept, action, object, state, and UI placement.
+2. Generate 4-6 plausible Lucide icon names in kebab-case.
+3. Verify candidates against an authoritative source:
+   - `https://lucide.dev/icons/<icon-name>` when browsing is available;
+   - `https://unpkg.com/lucide-static@latest/icons/<icon-name>.svg` when direct
+     asset checks are easier;
+   - an installed `lucide-static` or `lucide-react` package when the repo already
+     vendors Lucide.
+4. Discard names that cannot be verified.
+5. Present up to 3 confirmed candidates and recommend one.
 
-- **Concept**: The idea, action, or meaning to represent
-- **Screenshot**: UI context showing where icons are needed
+If verification is blocked by network or tooling, say that candidates are
+unverified and do not present them as confirmed.
 
-## Naming conventions
+## Naming Rules
 
-Icon names follow strict rules — apply these when generating candidates:
+- Use kebab-case: `arrow-up`, not `Arrow Up`.
+- Use Lucide's American English names: `color`, not `colour`.
+- For grouped variants, use the icon family first: `badge-plus`.
+- For multiple elements, lead with the larger or containing element:
+  `circle-user`, `square-arrow-out-up-right`.
+- For modifiers, put the base object first: `circle-dashed`, not
+  `dashed-circle`.
 
-- **kebab-case**: `arrow-up` not `Arrow Up`
-- **International English**: `color` not `colour`
-- **Group variants**: `<group>-<variant>` — e.g. `badge-plus` is based on `badge`
-- **Multiple elements, different sizes**: list largest first — `circle-person` if circle is bigger
-- **Element with modifier**: `[element]-[modifier]` — `circle-dashed` not `dashed-circle`; combined: `circle-dashed-heart-broken`
+## Selection Rules
 
-## Process
+- Prefer icons whose visual metaphor works without explanation.
+- Match the placement: toolbar actions need simpler shapes than navigation or
+  section icons.
+- Prefer action icons for commands (`save`, `download`, `trash-2`) and object or
+  state icons for labels (`database`, `shield-check`, `file-warning`).
+- Avoid novelty when a conventional icon exists.
+- For multiple requested icons, choose a visually coherent set with similar
+  density and stroke complexity.
 
-1. **Brainstorm associations**
+## Output
 
-   - Key ideas and visual metaphors related to the concept
-   - Context clues from screenshot if provided
-   - Generate 4–6 candidate icon names in kebab-case (e.g. `arrow-right`, `circle-check`)
+```text
+Candidates
+- icon-name: why it fits
+- icon-name: why it fits
+- icon-name: why it fits
 
-2. **Verify candidates**
-
-   - For each candidate, fetch: `https://unpkg.com/lucide-static@latest/icons/[icon-name].svg`
-   - Use WebFetch or follow redirects (`curl -L`) — unpkg issues a 302 before the final response
-   - SVG content in the response means the icon exists; a 404 means it doesn't
-   - Discard any that don't exist; try alternate names if needed to reach 3 confirmed icons
-
-3. **Present 3 confirmed candidates**
-
-   - Icon name
-   - Why it fits (symbolic meaning, visual clarity, context appropriateness)
-
-4. **Recommend best choice**
-   - Single strongest option
-   - Rationale for recommendation
-
-## Guidelines
-
-- Never suggest an icon without confirming it via the unpkg URL
-- Never suggest made-up icon names
-- If fewer than 3 candidates survive verification, brainstorm more before giving up
-- If no good matches exist after thorough searching, say so
-- For screenshots, tailor to specific design context
-- Provide a distinct recommendation for each icon needed
-- Ready for multiple feedback rounds to refine suggestions
-
-## Output Format
-
-**Brainstorm**: [Key associations and metaphors]
-
-**Candidate Icons**:
-
-1. **icon-name** — Explanation of fit
-2. **icon-name** — Explanation of fit
-3. **icon-name** — Explanation of fit
-
-**Recommendation**: **icon-name** — Why this is the strongest choice for [context]
+Recommendation: icon-name
+Reason: ...
+Verification: ...
+```
