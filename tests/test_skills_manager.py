@@ -60,6 +60,124 @@ class SkillRegistryTests(unittest.TestCase):
             self.assertFalse(result.ok)
             self.assertIn("bad-skill: SKILL.md must start with YAML front matter", result.errors)
 
+    def test_first_party_validation_rejects_broken_local_links(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "linked-skill")
+            (skill / "SKILL.md").write_text(
+                "---\n"
+                "name: linked-skill\n"
+                "description: Test skill.\n"
+                "---\n\n"
+                "# linked-skill\n\n"
+                "[Missing](references/missing.md)\n",
+                encoding="utf-8",
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertFalse(result.ok)
+            self.assertIn(
+                "linked-skill: broken local link in SKILL.md: references/missing.md",
+                result.errors,
+            )
+
+    def test_first_party_validation_rejects_unreachable_resource_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "resource-skill")
+            references = skill / "references"
+            references.mkdir()
+            (references / "unused.md").write_text("# Unused\n", encoding="utf-8")
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertFalse(result.ok)
+            self.assertIn(
+                "resource-skill: resource file is not reachable from SKILL.md: references/unused.md",
+                result.errors,
+            )
+
+    def test_reachable_resource_files_are_validated_recursively(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "resource-skill")
+            references = skill / "references"
+            references.mkdir()
+            (skill / "SKILL.md").write_text(
+                "---\n"
+                "name: resource-skill\n"
+                "description: Test skill.\n"
+                "---\n\n"
+                "# resource-skill\n\n"
+                "[Entry](references/entry.md)\n",
+                encoding="utf-8",
+            )
+            (references / "entry.md").write_text(
+                "# Entry\n\n[Details](details.md)\n",
+                encoding="utf-8",
+            )
+            (references / "details.md").write_text("# Details\n", encoding="utf-8")
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+
+    def test_image_links_make_asset_files_reachable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "asset-skill")
+            assets = skill / "assets"
+            assets.mkdir()
+            (assets / "sample.svg").write_text("<svg />\n", encoding="utf-8")
+            (skill / "SKILL.md").write_text(
+                "---\n"
+                "name: asset-skill\n"
+                "description: Test skill.\n"
+                "---\n\n"
+                "# asset-skill\n\n"
+                "![Sample](assets/sample.svg)\n",
+                encoding="utf-8",
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+
+    def test_angle_bracket_links_support_paths_with_spaces(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "space-skill")
+            references = skill / "references"
+            references.mkdir()
+            (references / "two words.md").write_text("# Details\n", encoding="utf-8")
+            (skill / "SKILL.md").write_text(
+                "---\n"
+                "name: space-skill\n"
+                "description: Test skill.\n"
+                "---\n\n"
+                "# space-skill\n\n"
+                "[Details](<references/two words.md>)\n",
+                encoding="utf-8",
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+
+    def test_first_party_resource_validation_ignores_third_party_skills(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "ignored-third-party")
+            references = skill / "references"
+            references.mkdir()
+            (references / "unused.md").write_text("# Unused\n", encoding="utf-8")
+            (repo / ".gitignore").write_text("/skills/ignored-third-party/\n", encoding="utf-8")
+
+            result = SkillRegistry.load(repo).validate_all()
+
+            self.assertTrue(result.ok)
+
     def test_third_party_validation_requires_lockfile_installs_to_exist(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

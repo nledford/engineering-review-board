@@ -79,9 +79,16 @@ Validation checks the repository's actual skill format:
 - `SKILL.md` starts with YAML front matter
 - front matter defines `name` and `description`
 - the front matter `name` matches the directory name
+- first-party local Markdown links resolve to existing files
+- first-party resource files are reachable from `SKILL.md`
 - every lockfile-listed third-party skill is present locally
 
 Helper behavior is covered by `python3 -m unittest discover -s tests -v`.
+
+First-party skills should not keep unlinked changelogs, placeholder scripts,
+generic templates, or copied reference files that no skill instruction can load.
+If a resource is useful, link it from `SKILL.md` and keep it specific to the
+skill's trigger.
 
 ## License
 

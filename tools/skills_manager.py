@@ -4,18 +4,21 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Sequence
+from urllib.parse import unquote, urlsplit
 
 
 GLOBAL_SKILLS_PATH = Path.home() / ".agents" / "skills"
 SKILLS_DIR_NAME = "skills"
 LOCKFILE_NAME = ".skill-lock.json"
 REQUIRED_SKILL_METADATA = ("name", "description")
+LOCAL_LINK_RE = re.compile(r"(?<![A-Za-z0-9_`])!?\[[^\]]+\]\(([^)]+)\)")
 
 
 @dataclass(frozen=True)
@@ -317,7 +320,91 @@ def validate_skill(skill: Skill, *, label: str) -> ValidationResult:
             f"{skill.name}: SKILL.md name is {metadata_name!r}, expected {skill.name!r}"
         )
 
+    if skill.kind == "first-party":
+        resource_result = _validate_skill_resources(skill)
+        errors.extend(resource_result.errors)
+
     return ValidationResult(errors=errors)
+
+
+def _validate_skill_resources(skill: Skill) -> ValidationResult:
+    resource_files = [
+        path
+        for path in skill.path.rglob("*")
+        if path.is_file() and path.name != "SKILL.md" and not _is_hidden_path(path, skill.path)
+    ]
+    errors: list[str] = []
+    reachable = {skill.path / "SKILL.md"}
+    pending = [skill.path / "SKILL.md"]
+
+    while pending:
+        source = pending.pop()
+        if source.suffix.lower() != ".md":
+            continue
+        for raw_link in _read_local_markdown_links(source):
+            target = _resolve_local_link(source, raw_link)
+            if target is None:
+                continue
+            if not target.exists():
+                relative_source = source.relative_to(skill.path)
+                errors.append(f"{skill.name}: broken local link in {relative_source}: {raw_link}")
+                continue
+            if target.is_dir():
+                continue
+            if target not in reachable:
+                reachable.add(target)
+                if _is_relative_to(target, skill.path):
+                    pending.append(target)
+
+    for resource_file in resource_files:
+        if resource_file not in reachable:
+            relative_path = resource_file.relative_to(skill.path)
+            errors.append(
+                f"{skill.name}: resource file is not reachable from SKILL.md: {relative_path}"
+            )
+
+    return ValidationResult(errors=errors)
+
+
+def _read_local_markdown_links(path: Path) -> list[str]:
+    links = []
+    for match in LOCAL_LINK_RE.finditer(path.read_text(encoding="utf-8")):
+        raw_link = match.group(1).strip()
+        if raw_link:
+            links.append(raw_link)
+    return links
+
+
+def _resolve_local_link(source: Path, raw_link: str) -> Path | None:
+    link = _extract_link_target(raw_link)
+    parsed = urlsplit(link)
+    if parsed.scheme or parsed.netloc or link.startswith("#") or link.startswith("/"):
+        return None
+    if not parsed.path:
+        return None
+    return (source.parent / unquote(parsed.path)).resolve(strict=False)
+
+
+def _extract_link_target(raw_link: str) -> str:
+    stripped = raw_link.strip()
+    if stripped.startswith("<"):
+        end_index = stripped.find(">")
+        if end_index != -1:
+            return stripped[1:end_index]
+    return stripped.split()[0].strip("<>")
+
+
+def _is_hidden_path(path: Path, root: Path) -> bool:
+    relative_parts = path.relative_to(root).parts
+    return any(part.startswith(".") for part in relative_parts)
+
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
 
 
 def _read_lockfile(path: Path) -> tuple[dict[str, dict], str | None]:
