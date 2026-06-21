@@ -1,111 +1,125 @@
 ---
 created: 2025-12-16
-modified: 2026-05-28
-reviewed: 2026-05-28
+modified: 2026-06-21
+reviewed: 2026-06-21
 name: cargo-nextest
 description: >
-  Chidori cargo-nextest guidance. Use when selecting or diagnosing Rust test
-  lanes, filtering nextest runs through repo-owned Just recipes, or working with
-  nextest behavior in this workspace.
+  Rust cargo-nextest guidance. Use when selecting, running, filtering,
+  diagnosing, or reporting Rust test runs that use cargo-nextest, nextest
+  profiles, retries, partitions, or configuration. Do not use for doctests;
+  nextest does not run Rustdoc examples.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
-# cargo-nextest in Chidori
+# cargo-nextest
 
-This skill owns nextest-specific execution caveats for Chidori: profiles,
-filters, retries, timeouts, partitioning, output interpretation, run-scoped test
-database IDs, and when raw `cargo nextest` is unsafe. Test placement and test
-category ownership belong in `docs/agents/testing.md`; agent command-lane
-selection belongs in `docs/agents/validation.md`; setup and runbook mechanics
-belong in `docs/operations/local-development.md` and the root `Justfile`.
-
-Chidori uses cargo-nextest through root `just` recipes. Do not create another
-nextest configuration, bypass the repo recipes for database-backed tests, or
-copy generic CI examples into this repository. The single checked-in nextest
-configuration is `.config/nextest.toml`.
+Use this skill to run and interpret Rust tests through
+[`cargo-nextest`](https://nexte.st/) in a way that is targeted, reproducible, and
+aligned with the repository's own test lanes. Nextest is a test runner for Cargo
+tests; it does not replace Rustdoc tests, browser tests, integration environment
+setup, or behavior-level validation.
 
 ## When to Use This Skill
 
 Use this skill when you need to:
 
-- Apply nextest-specific caveats after choosing a lane from `docs/agents/validation.md`.
-- Diagnose nextest filtering, retries, timeouts, partitioning, or profile
-  behavior.
-- Interpret nextest output from a root `just` recipe.
-- Adjust `.config/nextest.toml` intentionally.
+- choose between a direct `cargo nextest run` command and an existing repository
+  recipe or script;
+- diagnose nextest filtering, retries, timeouts, partitions, profiles, or output;
+- update or review `.config/nextest.toml`;
+- report nextest evidence in a task summary;
+- understand why a nextest run differs from `cargo test`.
 
-Use `rust-testing` when authoring tests, `systematic-debugging` when a test is
-failing unexpectedly, and `rustdoc-guidance` for doctests and Rust API examples.
+Use a broader Rust testing skill when authoring tests, `systematic-debugging`
+when a test is failing for an unknown reason, and `rustdoc-guidance` for doctests
+or Rust API examples.
 
-## Nextest-Backed Lanes
+## Repository Inspection
 
-Run commands from the repository root. Use `just --list` and
-`docs/agents/validation.md` for the current lane map; this skill explains
-nextest-specific caveats after a lane has been selected. Raw `cargo nextest` is
-only for focused local iteration when no recipe covers the case, and never for
-database-dependent backend coverage unless the required env and cleanup behavior
-are explicitly configured.
+Before choosing commands, inspect the current repository:
 
-## Backend Database Rules
+- `just --list`, `make help`, package scripts, CI files, or README docs for
+  existing test lanes;
+- `.config/nextest.toml` for profiles, retries, slow-timeout settings, and
+  partition behavior;
+- workspace `Cargo.toml` files for packages, features, and test targets;
+- docs that describe required services, environment variables, fixtures, or
+  database setup.
 
-Backend recipes that invoke nextest own the service setup and cleanup contract:
+Prefer repository recipes when they own setup, cleanup, service startup,
+feature flags, or CI parity. Use direct `cargo nextest` commands for narrow local
+iteration only when no repository command covers the case or when the task is
+specifically about nextest itself.
 
-- Database-backed tests require `TEST_DATABASE_URL`.
-- Backend nextest runs must set a run-scoped
-  `CHIDORI_TEST_DATABASE_RUN_ID` before template-cloned PostgreSQL test
-  databases are created.
-- Parallel or partitioned lanes must use unique run IDs per run/lane.
-- Docker-backed backend recipes clean Chidori-managed test databases before and
-  after runs so stale databases do not accumulate.
+## Command Strategy
 
-Missing env failures in direct commands are setup failures, not necessarily code
-regressions. Prefer fixing the lane invocation instead of weakening tests.
+Run commands from the workspace root unless the repository documents a narrower
+working directory.
 
-## Filtering and Focused Iteration
+Common direct commands:
 
-If a root recipe exposes a package, test, or profile parameter, use the recipe.
-If you must run raw nextest for a narrow local loop:
+```sh
+cargo nextest run
+cargo nextest run -p <package>
+cargo nextest run -E 'package(<package>)'
+cargo nextest run -E 'test(<test-name-substring>)'
+cargo nextest run --profile <profile>
+```
 
-1. State why the root recipe is insufficient.
-2. Confirm the test does not need repo-managed database setup.
-3. Keep the command narrow and temporary.
-4. Re-run the relevant root recipe before claiming repository confidence.
+When direct commands are appropriate:
 
-Useful nextest concepts:
+1. Keep the filter as narrow as the debugging loop allows.
+2. Match the repository's normal feature flags and environment.
+3. Avoid service-backed or database-backed tests unless required setup and
+   cleanup are explicit.
+4. Re-run the repository's broader test lane before claiming broad confidence.
+
+## Service and Environment Caveats
+
+Nextest runs each test in a separate process. That improves isolation, but it can
+also expose missing setup for:
+
+- databases or migrations;
+- service containers or local daemons;
+- test fixtures and temporary directories;
+- unique run IDs, schemas, ports, buckets, queues, or namespaces;
+- environment variables normally supplied by CI or a repository recipe.
+
+Treat missing environment failures in direct nextest commands as setup failures
+until the evidence shows a code regression. Prefer fixing the invocation over
+weakening tests.
+
+## Filtering, Retries, and Flakes
 
 - Expression filters such as `test(...)`, `package(...)`, and `binary(...)` can
   narrow a run.
-- Each test runs in its own process, which improves isolation compared with
-  in-process `cargo test`.
 - Retries can characterize flakiness but must not hide nondeterminism without a
   root-cause fix.
+- Use partitioning only when the repository or CI lane already defines how
+  partitions are split and reported.
+- Compare repeated runs under the same profile before declaring a failure flaky.
 
 ## Doctests
 
-Nextest does not run doctests. In Chidori, use `just test-rustdoc` for Rustdoc
-examples rather than ad hoc `cargo test --doc` in final validation.
+Nextest does not run doctests. Use `cargo test --doc`, `cargo test --doc -p
+<package>`, or the repository's Rustdoc recipe when documentation examples
+matter.
 
 ## Configuration Changes
 
-Only edit `.config/nextest.toml` when the task is explicitly about test-runner
-policy, retries, timeouts, partitioning, or output. Keep policy centralized in
-that file and update `docs/agents/validation.md` if the public lane behavior
-changes.
+Edit `.config/nextest.toml` only when the task concerns test-runner policy such
+as profiles, retries, timeouts, partitions, output, or status levels. Keep
+policy centralized and update repository docs or recipes when user-visible test
+lanes change.
 
 ## Reporting Expectations
 
-When summarizing a nextest-related run, include:
+When summarizing nextest work, include:
 
-- The exact root recipe or intentionally narrow direct command.
-- Whether service-backed env was recipe-owned or caller-owned.
-- The affected package/test/filter/profile.
-- Pass/fail result and the first relevant failure evidence.
-- Any broader lane not run and why.
-
-## References
-
-- Chidori validation lanes: `docs/agents/validation.md`
-- Chidori testing strategy: `docs/agents/testing.md`
-- Nextest configuration: `.config/nextest.toml`
-- Upstream nextest docs: <https://nexte.st/>
+- the exact repository recipe or direct `cargo nextest` command;
+- package, test, filter, profile, and feature scope;
+- whether services or environment were recipe-owned or caller-owned;
+- pass/fail result and the first relevant failure evidence;
+- broader test lanes not run and why;
+- any flake characterization and whether a root cause was found.

@@ -39,15 +39,16 @@ Load this skill when work touches Rust documentation as part of:
 - documenting unsafe code, panics, errors, side effects, lifetimes, ownership,
   performance, concurrency, feature flags, or platform behavior.
 
-Related skills:
+Related guidance:
 
-- Use `rust-best-practices` for broader Rust implementation choices.
-- Use `rust-testing` for broader test strategy; remember nextest does not run
-  doctests.
-- Use `code-review` or `rust-testing-code-review` for requested reviews, but
-  apply this skill's checklist to documentation findings.
-- Use `AGENTS.md` and `docs/agents/` conventions for durable prose docs outside
-  API comments.
+- Use a broader Rust implementation skill or repository guide for implementation
+  choices outside documentation.
+- Use a Rust testing skill or repository test guide for broader test strategy;
+  remember nextest does not run doctests.
+- Use `code-review` or an available Rust testing review skill for requested
+  reviews, but apply this skill's checklist to documentation findings.
+- Use repository-level docs such as README files, `docs/`, or `AGENTS.md` for
+  durable prose docs outside API comments when those conventions exist.
 
 ## When rustdoc is mandatory
 
@@ -176,7 +177,7 @@ Good: explains behavior, errors, and usage.
 /// # Examples
 ///
 /// ```
-/// # use chidori_plugins::{parse_manifest, ManifestError};
+/// # use manifest_parser::{parse_manifest, ManifestError};
 /// let manifest = parse_manifest(r#"name = "resize""#)?;
 /// assert_eq!(manifest.name(), "resize");
 /// # Ok::<(), ManifestError>(())
@@ -241,8 +242,9 @@ When adding or reviewing Rustdoc, ask:
 
 ## Verification
 
-- Prefer repository recipes over direct Cargo commands. In Chidori, run
-  `just test-rustdoc` after adding or changing doctests.
+- Prefer repository recipes over direct Cargo commands when they exist. Run the
+  repository's Rustdoc or documentation-test lane after adding or changing
+  doctests.
 - Use `cargo doc --no-deps -p <crate>` or the repository's doc-build lane when
   checking rendered docs or missing-docs behavior for one crate.
 - Remember `cargo nextest` does not run doctests; pair nextest lanes with the
