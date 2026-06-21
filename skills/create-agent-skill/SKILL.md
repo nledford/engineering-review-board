@@ -18,6 +18,7 @@ This skill helps create concise, maintainable agent skills that future agents ca
 2. Inspect local conventions before writing.
    - Look for existing skills in the requested skill root, commonly `~/.agents/skills` for global agent skills.
    - Match the local file names, frontmatter style, optional metadata, resource folders, and validation tools already in use.
+   - In this repository, consult [`docs/skill-taxonomy.md`](../../docs/skill-taxonomy.md) before adding, deleting, splitting, merging, or renaming first-party skills.
    - Do not invent a different skill format when a local convention exists.
 
 3. Define the skill contract.
@@ -44,7 +45,7 @@ This skill helps create concise, maintainable agent skills that future agents ca
    - Confirm the required files exist and the directory lives in the requested skill root.
    - Confirm frontmatter parses as YAML and includes at least `name` and `description`.
    - Confirm the `description` explains both what the skill does and when it should activate.
-   - Confirm there are no draft placeholders, stale examples, broken relative links, or unnecessary files.
+   - Confirm first-party resource files are linked from `SKILL.md`, local Markdown links resolve, and there are no draft placeholders, stale examples, or unnecessary files.
    - Run any local validator or skill CLI if available. If not, perform a manual structure and content review.
    - Test the skill mentally against at least two realistic user requests: one that should trigger it and one that should not.
 
@@ -137,3 +138,4 @@ Before finishing a new or updated skill, verify:
 - Examples are realistic and transferable.
 - Constraints and non-goals are explicit where they prevent misuse.
 - The skill can be understood by a future agent without reading this creation conversation.
+- Repository taxonomy or inventory docs are updated when the skill set changes.

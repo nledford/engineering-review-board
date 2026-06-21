@@ -21,7 +21,11 @@ agent-skills/
       SKILL.md
   tools/
   tests/
+  docs/
 ```
+
+The first-party taxonomy and skill-level acceptance criteria live in
+[`docs/skill-taxonomy.md`](docs/skill-taxonomy.md).
 
 ## Skill Types
 
