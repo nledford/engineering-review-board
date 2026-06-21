@@ -72,3 +72,11 @@ Validation checks the repository's actual skill format:
 - every lockfile-listed third-party skill is present locally
 
 Helper behavior is covered by `python3 -m unittest discover -s tests -v`.
+
+## License
+
+First-party skills and repository tooling are licensed under the MIT License.
+See `LICENSE`.
+
+Third-party skills installed into this directory are governed by their own
+upstream licenses.
