@@ -1,0 +1,137 @@
+---
+name: rust-testing-quality
+description: Rust testing and quality-gate guidance. Use when writing, updating, running, filtering, or reporting Rust unit, integration, end-to-end, property-style, compile-fail, or Rustdoc tests; when applying TDD or BDD to Rust changes; or when using cargo fmt, cargo check, cargo test, cargo test --doc, cargo clippy, cargo-nextest, and CI-oriented Rust validation.
+---
+
+# Rust Testing And Quality
+
+Use this skill to build fast feedback loops and credible final evidence for
+Rust changes. Prefer repository recipes when they encode toolchain versions,
+services, features, databases, or CI parity.
+
+## Workflow
+
+1. Inspect `Cargo.toml`, workspace layout, `rust-toolchain`, `.config/nextest.toml`,
+   CI files, Justfile/Makefile/scripts, README/AGENTS docs, and existing tests.
+2. Define expected behavior before editing. Use TDD for behavior changes and
+   BDD-style Given/When/Then acceptance criteria for externally visible flows.
+3. Pick the narrowest useful test level, write or update a failing test when
+   practical, then implement the smallest change that passes it.
+4. Iterate with package or test filters. Broaden to workspace and CI-like lanes
+   only after the local loop is stable.
+5. Report exact commands, scope, pass/fail result, and any skipped validation.
+
+## Test Level Selection
+
+- Unit tests: pure functions, domain rules, error mapping, parsers, algorithms,
+  state transitions, and edge cases.
+- Integration tests: public crate APIs, adapters, persistence boundaries,
+  service wiring, feature combinations, and cross-module behavior.
+- End-to-end tests: externally observable workflows where unit or integration
+  tests cannot prove behavior.
+- Property-style tests: invariants over many inputs, parsers/serializers,
+  ordering, idempotence, and round trips.
+- Rustdoc tests: public examples readers will copy. Remember `cargo nextest`
+  does not run doctests.
+- Compile-fail tests or doctests: macro contracts, type-state APIs, trait-bound
+  errors, and misuse that should not compile.
+
+## Command Strategy
+
+Use the repo's documented command first. When direct Cargo commands are
+appropriate, start narrow and then broaden:
+
+```sh
+cargo fmt
+cargo fmt --check
+cargo check -p <package> --all-targets
+cargo test -p <package> <test_name>
+cargo test --doc -p <package>
+cargo nextest run -p <package>
+cargo clippy -p <package> --all-targets -- -D warnings
+```
+
+Final or CI-like checks often need broader scope:
+
+```sh
+cargo check --workspace --all-targets
+cargo test --workspace
+cargo test --doc --workspace
+cargo nextest run --workspace
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+```
+
+Adapt `--all-features` to the repository's feature policy. Some workspaces have
+platform-specific or mutually incompatible features; match CI when final
+confidence matters.
+
+## cargo-nextest
+
+- Use nextest for fast, isolated Rust test execution when the repository uses it
+  or when direct Cargo tests are too slow for iteration.
+- Inspect `.config/nextest.toml` before changing profiles, retries, timeouts, or
+  partitions.
+- Filter intentionally:
+
+```sh
+cargo nextest run -E 'package(<package>)'
+cargo nextest run -E 'test(<test-name-substring>)'
+cargo nextest run --profile <profile>
+```
+
+- Nextest runs each test in a separate process. Treat missing service, database,
+  fixture, environment variable, or port setup as invocation evidence until the
+  failure proves a code regression.
+- Retries can characterize flakiness; they should not hide it without a root
+  cause or explicit repository policy.
+
+## Clippy And Formatting
+
+- `cargo fmt` and `cargo fmt --check` cover formatting only.
+- `cargo clippy` complements `cargo check` and tests; it does not replace them.
+- Do not run `cargo clippy --fix` without checking the working tree and reading
+  the generated diff.
+- Use targeted `#[allow(...)]` or `#[expect(..., reason = "...")]` only when the
+  lint is intentionally inapplicable. Keep suppressions as narrow as possible.
+- Do not enable the entire `clippy::restriction` group globally; choose specific
+  lints that express project policy.
+
+## Rustdoc Tests
+
+- Add doctests for public examples that should stay accurate across refactors.
+- Keep examples deterministic, small, and free of secrets, services, ambient
+  `.env`, real databases, timing assumptions, and large setup.
+- Use `no_run` for examples that should compile but not execute, `compile_fail`
+  for invalid usage, and `ignore` only when no reliable executable form exists.
+- Document `# Errors`, `# Panics`, and `# Safety` where callers need those
+  contracts.
+
+## Review Checklist
+
+- Tests name the behavior, not the implementation detail.
+- Regression tests fail on the old bug and pass for the right reason.
+- BDD scenarios cover observable outcomes; unit tests cover domain edge cases
+  and invariants.
+- Tests are deterministic: no shared global state, order dependence, real clock
+  sleeps, uncontrolled ports, or cross-test database contamination.
+- Feature flags, target-specific code, examples, macros, doctests, and generated
+  code are validated when touched.
+- CI evidence includes formatting, compile, tests, doctests when relevant,
+  linting, and repository-specific checks such as SQLx offline metadata when
+  the change touches queries.
+
+## Anti-Patterns
+
+- Only testing the happy path after changing error handling, ownership, or API
+  contracts.
+- Treating snapshot churn, broad mocks, sleeps, retries, or fixture rewrites as
+  proof of correctness.
+- Running only nextest when doctests or compile-fail examples carry the changed
+  contract.
+- Silencing Clippy or rustc warnings without explaining why the warning is
+  intentionally acceptable.
+
+## Successful Use
+
+The final handoff states what behavior was protected, which command(s) ran, what
+scope they covered, and what residual validation risk remains.

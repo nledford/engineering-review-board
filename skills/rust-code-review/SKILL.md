@@ -1,14 +1,14 @@
 ---
 name: rust-code-review
-description: Review Rust code with Rust-specific rigor. Use with code-review when changes touch Rust ownership, lifetimes, traits, error contracts, async, concurrency, unsafe code, atomics, FFI, public APIs, macros, or performance-sensitive Rust behavior.
+description: Review Rust code with Rust-specific rigor. Use with code-review when changes touch Rust ownership, lifetimes, traits, error contracts, crate boundaries, feature flags, tests, Rustdoc, async, Tokio, Axum, Leptos, SQLx, SQL, PostgreSQL, SQLite, unsafe code, macros, FFI, public APIs, or performance-sensitive behavior.
 ---
 
 # Rust Code Review
 
 Use this skill as a specialist lens with
-[`code-review`](../code-review/SKILL.md), not as a replacement for it. Keep the
-review grounded in the actual diff and repository behavior. Load only the
-reference files needed for the touched surface.
+[`code-review`](../code-review/SKILL.md), not as a replacement for it. Keep
+findings tied to concrete behavior, contracts, safety, performance, or
+maintainability risk.
 
 Before reporting findings, apply
 [`review-verification-protocol`](../review-verification-protocol/SKILL.md).
@@ -18,9 +18,11 @@ Before reporting findings, apply
 - Reviewing Rust source, tests, examples, benchmarks, macros, build scripts, or
   generated Rust contracts.
 - Changes involve ownership, borrowing, lifetimes, trait bounds, public APIs,
-  error handling, async runtime behavior, concurrency, atomics, unsafe code, FFI,
-  layout, panic behavior, performance, or resource management.
-- A Rust CI failure, Clippy finding, Miri/Loom concern, doctest failure, or
+  crate boundaries, feature flags, error handling, async runtime behavior,
+  concurrency, HTTP/UI behavior, database access, SQL, unsafe code, FFI, macros,
+  panic behavior, performance, or resource management.
+- A Rust CI failure, Clippy finding, nextest failure, doctest failure,
+  compile-time macro failure, SQLx prepare failure, Miri/Loom concern, or
   compile error needs review judgment.
 
 ## Review Workflow
@@ -28,60 +30,88 @@ Before reporting findings, apply
 1. Start with the general `code-review` intent, affected surfaces, and validation
    status.
 2. Identify the Rust-specific risk: type contract, ownership, API shape, error
-   semantics, async/concurrency behavior, unsafe invariant, layout, macro
-   expansion, allocation, or performance.
+   semantics, async/concurrency behavior, web boundary, persistence boundary,
+   unsafe invariant, macro expansion, allocation, or performance.
 3. Read the full enclosing module or API, not just the diff hunk.
 4. Search for callers, trait impls, feature flags, generated mappings, tests,
-   docs, and CI recipes before claiming a contract is broken or unused.
-5. Use the narrowest reference below that matches the risk.
+   SQL migrations, docs, and CI recipes before claiming a contract is broken or
+   unused.
+5. Use the relevant implementation skill for deeper context:
+   [`rust-engineering`](../rust-engineering/SKILL.md),
+   [`rust-testing-quality`](../rust-testing-quality/SKILL.md),
+   [`rust-async-web`](../rust-async-web/SKILL.md), or
+   [`rust-persistence-sql`](../rust-persistence-sql/SKILL.md).
 6. Prefer fixes that make invalid states unrepresentable, preserve public
    contracts deliberately, and keep unsafe obligations small and documented.
-7. Verify with the relevant Rust lane: `cargo test`, `cargo nextest`,
-   `cargo test --doc`, `cargo clippy`, `cargo miri`, `loom`, formatting, or the
-   repository recipe that wraps them.
-
-## Reference Routing
-
-| Review surface | Reference |
-| --- | --- |
-| Ownership, borrowing, lifetimes, clones, iterators | [references/ownership-borrowing.md](references/ownership-borrowing.md) |
-| Lifetime variance and region reasoning | [references/lifetime-variance.md](references/lifetime-variance.md) |
-| Result, Option, panic, and error contracts | [references/error-handling.md](references/error-handling.md) |
-| Async futures, cancellation, runtime boundaries | [references/async-concurrency.md](references/async-concurrency.md) |
-| Send, Sync, locks, atomics, shared state | [references/concurrency-primitives.md](references/concurrency-primitives.md) |
-| Memory ordering and fences | [references/memory-ordering.md](references/memory-ordering.md) |
-| Hand-rolled lock-free primitives | [references/lock-free-patterns.md](references/lock-free-patterns.md) |
-| Concurrency model selection | [references/concurrency-models.md](references/concurrency-models.md) |
-| Type layout, repr, PhantomData, auto traits | [references/types-layout.md](references/types-layout.md) |
-| Trait, API, object-safety, and interface design | [references/interface-design.md](references/interface-design.md) |
-| Drop guards, indices, extension traits, preludes | [references/patterns-in-the-wild.md](references/patterns-in-the-wild.md) |
-| Unsafe code, validity, provenance, panic safety | [references/unsafe-deep.md](references/unsafe-deep.md) |
-| Common Rust mistakes and Clippy-adjacent patterns | [references/common-mistakes.md](references/common-mistakes.md) |
+7. Verify with the relevant Rust lane or report missing evidence explicitly.
 
 ## Rust Review Checklist
 
-- Public API names, trait bounds, lifetimes, visibility, and error contracts are
-  intentional and documented where caller obligations are non-obvious.
-- Ownership and borrowing avoid unnecessary clones, hidden aliasing, stale
-  references, and lifetime over-generalization.
-- `Result`, `Option`, panic, and cancellation behavior match the public contract.
-- Async code does not block the runtime, hold incompatible guards across
-  `.await`, leak tasks, or hide cancellation-unsafe work.
-- Concurrent code names the model and synchronization edges it relies on.
-- Unsafe code has a small boundary, clear invariants, safety comments, and tests
-  or tooling proportional to risk.
-- Atomics use the weakest ordering that proves the required happens-before
-  relationship, not decorative `SeqCst`.
-- Tests, doctests, Clippy, Miri, Loom, or other validation cover the risk being
-  reviewed, or the missing evidence is reported as residual risk.
+Correctness and API:
+
+- Public names, visibility, trait bounds, lifetimes, feature flags, and error
+  contracts match the intended caller contract.
+- Ownership avoids unnecessary clones, hidden aliasing, stale references, and
+  lifetime over-generalization.
+- Domain invariants are represented in types, constructors, constraints, or
+  state transitions rather than scattered checks.
+- `Result`, `Option`, panic, and cancellation behavior are documented or obvious
+  from the API.
+
+Async, web, and persistence:
+
+- Async code does not block the runtime, leak tasks, ignore cancellation, hold
+  incompatible guards across `.await`, or use unbounded queues without a reason.
+- Axum handlers, Leptos components/server functions, and persistence adapters
+  are thin enough for domain logic to be tested outside the framework.
+- SQLx queries, migrations, transactions, constraints, and indexes preserve
+  database invariants and use bound parameters.
+- PostgreSQL and SQLite differences are handled when both backends are claimed.
+
+Safety, macros, and performance:
+
+- Unsafe code has a small boundary, explicit safety comments, documented
+  invariants, and risk-appropriate tests or tooling.
+- Atomics and locks prove the needed synchronization without decorative
+  `SeqCst`, accidental deadlocks, or runtime blocking.
+- Macros have clear expansion, hygiene, diagnostics, feature gates, and
+  compile-fail coverage for caller-facing errors.
+- Performance changes are tied to a measured bottleneck or a clearly bounded
+  complexity/allocation issue.
+
+Testing and documentation:
+
+- Tests cover the changed behavior at the lowest useful layer plus framework or
+  database boundaries where those semantics matter.
+- Doctests are run when public examples or Rustdoc contracts changed.
+- Clippy suppressions are narrow and justified.
+- Missing validation is called out as residual risk, not hidden.
+
+Useful verification commands include:
+
+```sh
+cargo fmt --check
+cargo check --workspace --all-targets
+cargo test --workspace
+cargo test --doc --workspace
+cargo nextest run --workspace
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo sqlx prepare --check --workspace
+```
+
+Use repository recipes instead when they encode the correct toolchain, features,
+services, or target matrix.
 
 ## Reporting Rules
 
 - Report Rust findings through the `code-review` finding format and severity
   scale.
-- Cite the concrete type, function, trait impl, module, test, or command.
+- Cite the concrete type, function, trait impl, module, migration, query, test,
+  or command.
 - Do not flag idiomatic alternatives as defects unless the current code creates
   a real behavior, contract, safety, performance, or maintainability risk.
 - Do not require heavyweight Miri/Loom evidence for ordinary safe Rust. Reserve
   those gates for unsafe, atomics, hand-rolled synchronization, or concurrency
   primitives where normal tests cannot prove the invariant.
+- Do not turn a review into a style rewrite. Prefer focused findings with a
+  specific failure mode and a practical fix direction.
