@@ -1,29 +1,33 @@
 ---
 name: rust-persistence-sql
-description: Rust persistence, SQLx, SQL, SQLite, and PostgreSQL guidance. Use when adding, changing, reviewing, or testing SQL, SQLx queries/macros, migrations, transactions, schema design, constraints, indexes, views, query plans, PostgreSQL behavior, SQLite behavior, database-backed Rust code, or persistence boundaries. Use rust-testing-quality for broader test lanes.
+description: Rust persistence and SQLx guidance. Use when adding, changing, reviewing, or testing SQLx queries/macros, Rust database adapters, pools, transactions, offline query metadata, migrations invoked from Rust, SQLite support, database-backed Rust tests, or persistence boundaries. Use postgresql-sql-engineering for database-native PostgreSQL or general SQL design.
 ---
 
-# Rust Persistence And SQL
+# Rust Persistence And SQLx
 
-Use this skill for database-backed Rust work. Keep SQL and persistence adapters
-explicit, keep core domain rules independent of database mechanics where
-practical, and validate both Rust types and database behavior.
+Use this skill for database-backed Rust work. Keep persistence adapters explicit,
+keep core domain rules independent of database mechanics where practical, and
+validate both Rust types and database behavior. For language-independent
+PostgreSQL schema, SQL, query-plan, security, and migration design, use
+[`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL.md).
 
 ## Workflow
 
-1. Inspect the persistence setup: migrations, `DATABASE_URL` conventions,
-   `.sqlx/` offline metadata, SQLx features, pool types, transaction helpers,
-   repository recipes, seed/fixture strategy, and CI database services.
+1. Inspect the persistence setup: `Cargo.toml` SQLx features, migrations,
+   `DATABASE_URL` conventions, `.sqlx/` offline metadata, pool types,
+   transaction helpers, repository recipes, seed/fixture strategy, and CI
+   database services.
 2. Model the boundary. Use DDD language for tables, aggregates, invariants, and
    repository/service responsibilities. Do not let query row shapes become the
    core domain model by accident.
-3. Design schema and SQL first when storage behavior changes: constraints,
-   indexes, transactions, backfill strategy, deploy order, and rollback story.
-4. Implement SQLx access with typed parameters, explicit result mapping,
-   narrow transactions, and safe error conversion.
-5. Test at the right layer: pure domain tests, query/integration tests against
+3. When storage behavior changes, design SQL and migrations with the database
+   skill first, then implement the Rust adapter.
+4. Implement SQLx access with typed parameters, explicit result mapping, narrow
+   transactions, and safe error conversion.
+5. Test at the right layer: pure domain tests, SQLx integration tests against
    the target database, and end-to-end tests only for user-visible workflows.
-6. Update offline query metadata or document why it is not used by the repo.
+6. Update SQLx offline query metadata or document why it is not used by the
+   repo.
 
 ## SQLx Checklist
 
@@ -55,36 +59,16 @@ projects use `cargo sqlx ...`; others install a standalone `sqlx` binary.
 
 ## Schema And Migration Review
 
-- Tables have stable primary keys, meaningful foreign keys, `NOT NULL` where
-  absence is not valid, and `CHECK`/`UNIQUE`/exclusion constraints for database
-  invariants.
-- Migrations are ordered for safe deployment. Expensive backfills, column
-  rewrites, lock-heavy DDL, and incompatible app/schema transitions are called
-  out.
-- Indexes support real query predicates, joins, ordering, and uniqueness. Avoid
-  indexes that duplicate existing access paths or slow writes without a query
-  need.
-- Views and materialized views have a refresh and ownership story. Do not hide
-  security, performance, or staleness assumptions inside a view definition.
-- Seed data and fixtures are deterministic and safe for repeated test runs.
-
-## PostgreSQL Guidance
-
-- Use PostgreSQL constraints to protect invariants that must hold regardless of
-  application path.
-- Choose indexes intentionally: B-tree for general equality/range/order, GIN for
-  containment/search-like structures, GiST/SP-GiST/BRIN only when the data and
-  query pattern justify them, partial indexes for selective predicates, and
-  expression indexes only when query expressions match.
-- Review query plans with `EXPLAIN` and, when safe, `EXPLAIN ANALYZE`. Avoid
-  running mutating or expensive analysis against shared environments.
-- Transactions should name isolation assumptions, lock ordering, retry behavior,
-  and deadlock risk when concurrent writes matter.
-- Use `TIMESTAMPTZ`-style semantics for instants unless the domain truly needs a
-  local date/time without timezone. Be explicit about precision and clock
-  source.
-- `CREATE INDEX CONCURRENTLY` and similar PostgreSQL operations have transaction
-  restrictions; verify the migration tool supports the required mode.
+- Database invariants live in the database skill; the Rust review checks that
+  Rust types, query mappings, migrations, and domain errors line up with them.
+- SQLx migrations are invoked through the repository's chosen workflow. Do not
+  assume `sqlx migrate add/run/revert` is authoritative when the repo has a
+  custom migration generator or schema source of truth.
+- Rust migration code, embedded migrations, and startup migration hooks have a
+  rollback and deployment story. Avoid surprise DDL on application boot unless
+  that is explicit repository policy.
+- Seed data and fixtures are deterministic, isolated, and safe for repeated test
+  runs.
 
 ## SQLite Guidance
 
@@ -109,6 +93,8 @@ projects use `cargo sqlx ...`; others install a standalone `sqlx` binary.
 - User-controlled values are bound parameters, never interpolated SQL.
 - Observability exists for slow queries, migration failures, and pool exhaustion
   when the repository has a logging/tracing pattern.
+- For PostgreSQL-specific index, constraint, RLS, privilege, and query-plan
+  review, load `postgresql-sql-engineering`.
 
 ## Testing And Acceptance Criteria
 

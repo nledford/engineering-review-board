@@ -30,6 +30,8 @@ testable without the framework.
 - Every spawned task has an ownership story: cancellation, shutdown, error
   reporting, tracing context, and whether its `JoinHandle` is awaited,
   supervised, or deliberately detached.
+- Use `JoinSet`, task trackers, semaphores, or bounded queues when spawning many
+  related tasks so concurrency and shutdown stay explicit.
 - Use `tokio::time::timeout` or cancellation tokens at external boundaries
   where unbounded waiting would leak resources or stall requests.
 - Treat `tokio::select!` cancellation as real control flow. Dropped branches

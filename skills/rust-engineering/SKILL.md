@@ -81,12 +81,21 @@ cargo fmt
 - Protect current behavior first with focused tests, characterization tests, or
   BDD-style acceptance criteria.
 - Separate mechanical moves from semantic changes when possible.
+- Decide whether the refactor is defensive or simplifying. Add types and
+  adapters to protect real invariants; delete indirection when it only forwards
+  parameters or preserves obsolete paths.
 - Move code toward domain language: named value types, explicit state
   transitions, and constructors that enforce invariants.
 - Simplify ownership by changing data flow before adding lifetimes, reference
   cycles, or interior mutability.
 - Simplify errors by removing duplicate variants, preserving actionable context,
   and keeping conversion points near adapter boundaries.
+- Replace groups of mutually exclusive `Option<T>` fields with enums when only
+  one mode is valid.
+- Remove dead feature flags completely: call sites, `cfg`s, conditional return
+  types, monitoring scaffolding, docs, tests, and dependency gates.
+- Move tests with code during module splits, and keep intermediate states
+  compiling.
 - For performance refactors, measure or reproduce the bottleneck before changing
   algorithms, allocation patterns, locking, or async task structure.
 

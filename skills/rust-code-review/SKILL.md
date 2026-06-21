@@ -1,6 +1,6 @@
 ---
 name: rust-code-review
-description: Review Rust code with Rust-specific rigor. Use with code-review when changes touch Rust ownership, lifetimes, traits, error contracts, crate boundaries, feature flags, tests, Rustdoc, async, Tokio, Axum, Leptos, SQLx, SQL, PostgreSQL, SQLite, unsafe code, macros, FFI, public APIs, or performance-sensitive behavior.
+description: Review Rust code with Rust-specific rigor. Use with code-review when changes touch Rust ownership, lifetimes, traits, error contracts, crate boundaries, feature flags, tests, Rustdoc, async, Tokio, Axum, Leptos, SQLx, SQLite, unsafe code, macros, FFI, public APIs, or performance-sensitive behavior. Use postgresql-sql-engineering too for PostgreSQL schema, SQL, migrations, privileges, or query plans.
 ---
 
 # Rust Code Review
@@ -41,6 +41,9 @@ Before reporting findings, apply
    [`rust-testing-quality`](../rust-testing-quality/SKILL.md),
    [`rust-async-web`](../rust-async-web/SKILL.md), or
    [`rust-persistence-sql`](../rust-persistence-sql/SKILL.md).
+   Add [`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL.md)
+   when PostgreSQL schema, SQL, migrations, privileges, RLS, or query plans are
+   part of the review.
 6. Prefer fixes that make invalid states unrepresentable, preserve public
    contracts deliberately, and keep unsafe obligations small and documented.
 7. Verify with the relevant Rust lane or report missing evidence explicitly.
@@ -66,7 +69,9 @@ Async, web, and persistence:
   are thin enough for domain logic to be tested outside the framework.
 - SQLx queries, migrations, transactions, constraints, and indexes preserve
   database invariants and use bound parameters.
-- PostgreSQL and SQLite differences are handled when both backends are claimed.
+- PostgreSQL-native schema, index, privilege, RLS, transaction, and plan
+  concerns are reviewed with the database skill; SQLite differences are handled
+  when both backends are claimed.
 
 Safety, macros, and performance:
 
