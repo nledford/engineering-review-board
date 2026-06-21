@@ -1,6 +1,6 @@
 ---
 name: rust-code-review
-description: Review Rust code with Rust-specific rigor. Use with code-review when changes touch Rust ownership, lifetimes, traits, error contracts, crate boundaries, feature flags, tests, Rustdoc, async, Tokio, Axum, Leptos, SQLx, SQLite, unsafe code, macros, FFI, public APIs, or performance-sensitive behavior. Use postgresql-sql-engineering too for PostgreSQL schema, SQL, migrations, privileges, or query plans.
+description: Review Rust code with Rust-specific rigor. Use with code-review when changes touch Rust ownership, lifetimes, traits, error contracts, crate boundaries, feature flags, tests, Rustdoc, async, Tokio, Axum, Leptos, SQLx, SeaQuery, SQLite, unsafe code, macros, FFI, public APIs, or performance-sensitive behavior. Use postgresql-sql-engineering or sqlite-sql-engineering too for database-native schema, SQL, migrations, privileges, or query plans.
 ---
 
 # Rust Code Review
@@ -42,8 +42,9 @@ Before reporting findings, apply
    [`rust-async-web`](../rust-async-web/SKILL.md), or
    [`rust-persistence-sql`](../rust-persistence-sql/SKILL.md).
    Add [`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL.md)
-   when PostgreSQL schema, SQL, migrations, privileges, RLS, or query plans are
-   part of the review.
+   or [`sqlite-sql-engineering`](../sqlite-sql-engineering/SKILL.md) when
+   database-native schema, SQL, migrations, privileges, RLS, PRAGMAs, locking,
+   or query plans are part of the review.
 6. Prefer fixes that make invalid states unrepresentable, preserve public
    contracts deliberately, and keep unsafe obligations small and documented.
 7. Verify with the relevant Rust lane or report missing evidence explicitly.
@@ -67,11 +68,12 @@ Async, web, and persistence:
   incompatible guards across `.await`, or use unbounded queues without a reason.
 - Axum handlers, Leptos components/server functions, and persistence adapters
   are thin enough for domain logic to be tested outside the framework.
-- SQLx queries, migrations, transactions, constraints, and indexes preserve
-  database invariants and use bound parameters.
-- PostgreSQL-native schema, index, privilege, RLS, transaction, and plan
-  concerns are reviewed with the database skill; SQLite differences are handled
-  when both backends are claimed.
+- SQLx queries, SeaQuery builders, migrations, transactions, constraints, and
+  indexes preserve database invariants and use bound parameters.
+- SeaQuery is justified by genuine dynamic query composition and does not hide
+  simple static SQL that `sqlx` macros could check.
+- PostgreSQL-native and SQLite-native schema, index, privilege, RLS, PRAGMA,
+  transaction, and plan concerns are reviewed with the database skills.
 
 Safety, macros, and performance:
 

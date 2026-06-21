@@ -47,7 +47,7 @@ impact is uncertain.
 
 3. **Choose lenses.**
    - Use this general review lens first.
-   - Add narrow specialist skills for Rust, PostgreSQL/SQL, Python, Bun,
+   - Add narrow specialist skills for Rust, PostgreSQL/SQLite/SQL, Python, Bun,
      browser tests, security evidence, Justfiles, or other surfaces only when
      they apply.
 

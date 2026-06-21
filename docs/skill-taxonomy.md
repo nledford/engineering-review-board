@@ -31,9 +31,9 @@ unloaded templates.
 | Skill authoring and governance | `create-agent-skill`, `code-review`, `review-verification-protocol`, `security-review-evidence` | Creating, validating, reviewing, and sanitizing durable agent guidance. |
 | Design methods | `brainstorming`, `behavior-driven-development`, `domain-driven-design`, `test-driven-development`, `gherkin` | Use the direct method skill that matches the work; do not load a meta-selection skill. |
 | Debugging and prevention | `systematic-debugging`, `root-cause-analysis` | Active symptom diagnosis first; postmortem and recurrence prevention after the direct cause is understood. |
-| Data engineering | `postgresql-sql-engineering` | Language-independent PostgreSQL and SQL schema, migration, query, performance, transaction, security, and review guidance. |
+| Data engineering | `postgresql-sql-engineering`, `sqlite-sql-engineering` | Language-independent PostgreSQL, SQLite, and SQL schema, migration, query, transaction, performance, security, and review guidance. |
 | Python engineering | `python-engineering` | Python implementation, review, testing, packaging, dependency management, quality gates, and `uv` workflows. |
-| Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests and quality gates, async/web/full-stack work, SQLx persistence, and review. |
+| Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests and quality gates, async/web/full-stack work, SQLx/SeaQuery persistence, and review. |
 | JavaScript and TypeScript tooling | `bun-javascript-workflows` | Bun-backed JS/TS runtime, package, script, test, workspace, and workflow guidance without assuming a frontend framework. |
 | Project workflow tools | `git-commit`, `justfiles`, `playwright-e2e`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for common repository workflows and external documentation/icon checks. |
 | Third-party runtime installs | `agent-browser`, `anti-ai-slop-writing`, `find-skills`, `playwright-cli` | Installed locally for runtime use but ignored or lockfile-owned; do not edit as first-party skills. |
@@ -42,7 +42,8 @@ unloaded templates.
 
 | Skill | Use For | Do Not Use For |
 | --- | --- | --- |
-| `postgresql-sql-engineering` | PostgreSQL/SQL schema design, migrations, constraints, indexes, views, transactions, query writing, query plans, RLS, privileges, performance, and database review in any language stack. | Rust SQLx typing, Python adapter code, SQLite-only behavior, or ORM API usage with no database-native change. |
+| `postgresql-sql-engineering` | PostgreSQL/SQL schema design, migrations, constraints, indexes, views, transactions, query writing, query plans, RLS, privileges, performance, and database review in any language stack. | Rust SQLx/SeaQuery typing, Python adapter code, SQLite-only behavior, or ORM API usage with no database-native change. |
+| `sqlite-sql-engineering` | SQLite schema design, migrations, constraints, indexes, transactions, PRAGMAs, locking, local/embedded database behavior, temporary database tests, and SQLite query review in any language stack. | PostgreSQL-native features, Rust SQLx/SeaQuery adapter choices, or using SQLite as proof of another database's behavior. |
 | `python-engineering` | Python source, tests, packaging, `pyproject.toml`, `uv.lock`, `uv`, Ruff/type/test gates, refactoring, and Python code review. | Non-Python package managers, database-native schema design, or browser E2E test design. |
 | `bun-javascript-workflows` | Bun runtime/package/script/test/workspace workflows, `package.json`, `bun.lock`, JS/TS quality gates, and one-off CLIs. | Checked-in Playwright test design, framework-specific frontend architecture, or Rust/Python/database work. |
 
@@ -50,11 +51,11 @@ unloaded templates.
 
 | Skill | Use For | Do Not Use For |
 | --- | --- | --- |
-| `rust-engineering` | Core Rust implementation, crate/workspace setup, feature flags, ownership/lifetimes, traits/generics, error design, refactoring, design patterns, and macros. | Test-runner strategy, SQLx/database specifics, or framework-specific async/web design except as boundary context. |
+| `rust-engineering` | Core Rust implementation, crate/workspace setup, feature flags, ownership/lifetimes, traits/generics, error design, refactoring, design patterns, and macros. | Test-runner strategy, SQLx/SeaQuery/database specifics, or framework-specific async/web design except as boundary context. |
 | `rust-testing-quality` | Rust unit/integration/e2e/property/doctest/compile-fail tests, TDD/BDD loops, `cargo fmt`, `cargo check`, `cargo test`, `cargo test --doc`, `cargo clippy`, and `cargo nextest`. | General debugging without a known failing symptom, or SQLx/database-specific validation beyond naming the needed gate. |
 | `rust-async-web` | Tokio, async tasks, cancellation, timeouts, channels, backpressure, shared state, Axum, Leptos, Axum-Leptos, SSR, hydration, and WASM target concerns. | SQL schema/query design or generic Rust refactors with no async/web surface. |
-| `rust-persistence-sql` | SQLx queries/macros, Rust database adapters, pools, transactions, SQLx offline metadata, SQLite support, and Rust persistence boundaries. | Database-native PostgreSQL schema/query/index/security review; use `postgresql-sql-engineering`. |
-| `rust-code-review` | Requested reviews of Rust changes and Rust-specific risk triage across the other Rust skills. | Implementation work where the user has not asked for a review, or PostgreSQL-only review without Rust code. |
+| `rust-persistence-sql` | SQLx queries/macros, SeaQuery builders, Rust database adapters, pools, transactions, SQLx offline metadata, SQLite support, dynamic SQL construction, and Rust persistence boundaries. | Database-native PostgreSQL or SQLite schema/query/index/security review; use `postgresql-sql-engineering` or `sqlite-sql-engineering`. |
+| `rust-code-review` | Requested reviews of Rust changes and Rust-specific risk triage across the other Rust skills. | Implementation work where the user has not asked for a review, or database-only review without Rust code. |
 
 ## Method Selection
 
@@ -80,7 +81,7 @@ Prefer one focused practice over several shallow ones.
 | `brainstorming` | Keep | Useful for ambiguous engineering choices; non-goals are explicit. |
 | `cargo-clippy` | Merge into `rust-testing-quality` | Clippy is one Rust quality gate, not a standalone durable workflow. |
 | `cargo-nextest` | Merge into `rust-testing-quality` | Nextest belongs with Rust testing strategy, filtering, and reporting. |
-| `code-review` | Update | General review owns finding format and severity; specialist skills add Rust, PostgreSQL/SQL, Python, Bun, browser, security, and workflow lenses. |
+| `code-review` | Update | General review owns finding format and severity; specialist skills add Rust, PostgreSQL/SQLite/SQL, Python, Bun, browser, security, and workflow lenses. |
 | `context7-docs` | Keep | Covers current third-party docs lookup without replacing repo inspection. |
 | `create-agent-skill` | Keep | Canonical authoring workflow for new or updated skills. |
 | `domain-driven-design` | Keep | Clear domain modeling boundary and anti-ceremony guidance. |
@@ -95,10 +96,11 @@ Prefer one focused practice over several shallow ones.
 | `rust-async-web` | Add | Covers Tokio, Axum, Leptos, Axum-Leptos, SSR/hydration, WASM, and full-stack boundaries. |
 | `rust-code-review` | Rewrite | Review now routes to concise Rust workflow skills instead of a large reference library. |
 | `rust-engineering` | Add | Covers core Rust implementation, setup, refactoring, design patterns, and macros. |
-| `rust-persistence-sql` | Narrow | Covers SQLx, SQLite, Rust database adapters, and persistence boundaries; delegates generic PostgreSQL and SQL design to `postgresql-sql-engineering`. |
+| `rust-persistence-sql` | Update | Covers SQLx, SeaQuery, SQLite adapter work, dynamic SQL construction, Rust database adapters, and persistence boundaries; delegates database-native PostgreSQL and SQLite design to data skills. |
 | `rust-testing-quality` | Add | Consolidates Rust testing, Rustdoc tests, Clippy, nextest, and CI evidence. |
 | `rustdoc-guidance` | Merge into `rust-testing-quality` | Rustdoc examples and doctests are part of test and API quality workflow. |
 | `security-review-evidence` | Keep | Sanitized evidence checklist for security-sensitive changes. |
+| `sqlite-sql-engineering` | Add | Fills the project-neutral SQLite gap: schema, constraints, PRAGMAs, transactions, locking, temp database tests, and SQLite-vs-PostgreSQL correctness boundaries. |
 | `suggest-lucide-icons` | Keep | Focused icon-selection workflow. |
 | `systematic-debugging` | Keep | Strong active-failure workflow; clear handoff to RCA. |
 | `test-driven-development` | Keep | Concise and directly actionable for behavior/test changes. |
@@ -141,10 +143,18 @@ Scenario: Async full-stack Rust uses framework-specific boundaries
 
 ```gherkin
 Scenario: SQL-backed Rust uses persistence guidance
-  Given a change touches SQLx queries, Rust database adapters, SQLite behavior, SQLx metadata, or Rust transaction code
+  Given a change touches SQLx queries, SeaQuery builders, Rust database adapters, SQLx metadata, SQLite adapter behavior, dynamic SQL construction, or Rust transaction code
   When the agent implements or reviews the work
   Then it loads rust-persistence-sql
   And validates Rust query types, adapter behavior, and database effects
+```
+
+```gherkin
+Scenario: Dynamic Rust SQL uses SeaQuery only when justified
+  Given a Rust change needs optional filters, sorts, joins, projections, predicates, or multiple SQL dialects
+  When explicit static SQL would become unsafe or hard to review
+  Then the agent may use SeaQuery through rust-persistence-sql
+  And keeps sqlx as the execution, pooling, transaction, migration, or row-mapping layer when the project already uses sqlx
 ```
 
 ```gherkin
@@ -152,7 +162,15 @@ Scenario: PostgreSQL design is language-independent
   Given a change touches PostgreSQL tables, constraints, indexes, views, transactions, privileges, RLS, migrations, or query plans
   When the agent chooses specialist guidance
   Then it loads postgresql-sql-engineering
-  And keeps Rust SQLx, Python, or Bun adapter details in their language skills
+  And keeps Rust SQLx/SeaQuery, Python, or Bun adapter details in their language skills
+```
+
+```gherkin
+Scenario: SQLite design uses SQLite-specific guidance
+  Given a change touches SQLite schema, constraints, indexes, PRAGMAs, locking, migrations, transactions, temporary databases, or SQLite-backed tests
+  When the agent chooses specialist guidance
+  Then it loads sqlite-sql-engineering
+  And does not use SQLite-only evidence to claim PostgreSQL or MySQL behavior
 ```
 
 ```gherkin

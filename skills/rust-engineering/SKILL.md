@@ -1,6 +1,6 @@
 ---
 name: rust-engineering
-description: Core Rust engineering guidance. Use when adding or changing Rust crates, modules, public APIs, domain logic, ownership and lifetime structure, traits, generics, error types, feature flags, workspaces, refactors, design patterns, or declarative/procedural macros. Use rust-testing-quality for test and CI lanes, rust-async-web for Tokio/Axum/Leptos work, rust-persistence-sql for SQLx and database work, and rust-code-review for requested reviews.
+description: Core Rust engineering guidance. Use when adding or changing Rust crates, modules, public APIs, domain logic, ownership and lifetime structure, traits, generics, error types, feature flags, workspaces, refactors, design patterns, or declarative/procedural macros. Use rust-testing-quality for test and CI lanes, rust-async-web for Tokio/Axum/Leptos work, rust-persistence-sql for SQLx, SeaQuery, and database adapter work, and rust-code-review for requested reviews.
 ---
 
 # Rust Engineering

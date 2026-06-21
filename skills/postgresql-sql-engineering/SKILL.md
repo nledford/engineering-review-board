@@ -17,9 +17,9 @@ query behavior proven with the target database.
   reporting queries, or data repair scripts.
 - A change needs database correctness, performance, security, observability, or
   rollback evidence.
-- Rust code uses SQLx against PostgreSQL: use this skill for database design and
-  [`rust-persistence-sql`](../rust-persistence-sql/SKILL.md) for SQLx typing and
-  Rust adapter details.
+- Rust code uses SQLx or SeaQuery against PostgreSQL: use this skill for
+  database design and [`rust-persistence-sql`](../rust-persistence-sql/SKILL.md)
+  for Rust adapter, execution, and query-builder details.
 
 Do not use this skill for generic in-memory domain logic, ORM-only API usage
 with no SQL/schema behavior, or SQLite-specific behavior except when comparing

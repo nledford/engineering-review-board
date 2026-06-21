@@ -20,7 +20,10 @@ CI policy.
   CLIs.
 
 Do not use this skill for non-Python package managers, browser E2E test design,
-or domain/database design except where Python code owns the adapter boundary.
+or database-native design except where Python code owns the adapter boundary.
+Use [`sqlite-sql-engineering`](../sqlite-sql-engineering/SKILL.md) or
+[`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL.md) for
+schema, transaction, query-plan, and database-specific behavior.
 
 ## Workflow
 
