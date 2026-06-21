@@ -31,9 +31,20 @@ unloaded templates.
 | Skill authoring and governance | `create-agent-skill`, `code-review`, `review-verification-protocol`, `security-review-evidence` | Creating, validating, reviewing, and sanitizing durable agent guidance. |
 | Design methods | `brainstorming`, `behavior-driven-development`, `domain-driven-design`, `test-driven-development`, `gherkin` | Use the direct method skill that matches the work; do not load a meta-selection skill. |
 | Debugging and prevention | `systematic-debugging`, `root-cause-analysis` | Active symptom diagnosis first; postmortem and recurrence prevention after the direct cause is understood. |
-| Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests and quality gates, async/web/full-stack work, SQL persistence, and review. |
+| Data engineering | `postgresql-sql-engineering` | Language-independent PostgreSQL and SQL schema, migration, query, performance, transaction, security, and review guidance. |
+| Python engineering | `python-engineering` | Python implementation, review, testing, packaging, dependency management, quality gates, and `uv` workflows. |
+| Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests and quality gates, async/web/full-stack work, SQLx persistence, and review. |
+| JavaScript and TypeScript tooling | `bun-javascript-workflows` | Bun-backed JS/TS runtime, package, script, test, workspace, and workflow guidance without assuming a frontend framework. |
 | Project workflow tools | `git-commit`, `justfiles`, `playwright-e2e`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for common repository workflows and external documentation/icon checks. |
 | Third-party runtime installs | `agent-browser`, `anti-ai-slop-writing`, `find-skills`, `playwright-cli` | Installed locally for runtime use but ignored or lockfile-owned; do not edit as first-party skills. |
+
+## Language And Data Boundaries
+
+| Skill | Use For | Do Not Use For |
+| --- | --- | --- |
+| `postgresql-sql-engineering` | PostgreSQL/SQL schema design, migrations, constraints, indexes, views, transactions, query writing, query plans, RLS, privileges, performance, and database review in any language stack. | Rust SQLx typing, Python adapter code, SQLite-only behavior, or ORM API usage with no database-native change. |
+| `python-engineering` | Python source, tests, packaging, `pyproject.toml`, `uv.lock`, `uv`, Ruff/type/test gates, refactoring, and Python code review. | Non-Python package managers, database-native schema design, or browser E2E test design. |
+| `bun-javascript-workflows` | Bun runtime/package/script/test/workspace workflows, `package.json`, `bun.lock`, JS/TS quality gates, and one-off CLIs. | Checked-in Playwright test design, framework-specific frontend architecture, or Rust/Python/database work. |
 
 ## Rust Skill Boundaries
 
@@ -42,8 +53,8 @@ unloaded templates.
 | `rust-engineering` | Core Rust implementation, crate/workspace setup, feature flags, ownership/lifetimes, traits/generics, error design, refactoring, design patterns, and macros. | Test-runner strategy, SQLx/database specifics, or framework-specific async/web design except as boundary context. |
 | `rust-testing-quality` | Rust unit/integration/e2e/property/doctest/compile-fail tests, TDD/BDD loops, `cargo fmt`, `cargo check`, `cargo test`, `cargo test --doc`, `cargo clippy`, and `cargo nextest`. | General debugging without a known failing symptom, or SQLx/database-specific validation beyond naming the needed gate. |
 | `rust-async-web` | Tokio, async tasks, cancellation, timeouts, channels, backpressure, shared state, Axum, Leptos, Axum-Leptos, SSR, hydration, and WASM target concerns. | SQL schema/query design or generic Rust refactors with no async/web surface. |
-| `rust-persistence-sql` | SQLx, SQL, SQLite, PostgreSQL, migrations, constraints, indexes, views, transactions, query plans, and persistence boundaries. | Non-database Rust tests or web/UI behavior except at persistence adapter boundaries. |
-| `rust-code-review` | Requested reviews of Rust changes and Rust-specific risk triage across the other Rust skills. | Implementation work where the user has not asked for a review. |
+| `rust-persistence-sql` | SQLx queries/macros, Rust database adapters, pools, transactions, SQLx offline metadata, SQLite support, and Rust persistence boundaries. | Database-native PostgreSQL schema/query/index/security review; use `postgresql-sql-engineering`. |
+| `rust-code-review` | Requested reviews of Rust changes and Rust-specific risk triage across the other Rust skills. | Implementation work where the user has not asked for a review, or PostgreSQL-only review without Rust code. |
 
 ## Method Selection
 
@@ -65,10 +76,11 @@ Prefer one focused practice over several shallow ones.
 | Skill | Decision | Rationale |
 | --- | --- | --- |
 | `behavior-driven-development` | Keep | Clear boundary for behavior examples and acceptance criteria. |
+| `bun-javascript-workflows` | Add | Extracted project-neutral Bun package/script/test/lockfile guidance from Chidori's local Bun workflow skill. |
 | `brainstorming` | Keep | Useful for ambiguous engineering choices; non-goals are explicit. |
 | `cargo-clippy` | Merge into `rust-testing-quality` | Clippy is one Rust quality gate, not a standalone durable workflow. |
 | `cargo-nextest` | Merge into `rust-testing-quality` | Nextest belongs with Rust testing strategy, filtering, and reporting. |
-| `code-review` | Keep | General review owns finding format and severity; specialist skills add domain lenses. |
+| `code-review` | Update | General review owns finding format and severity; specialist skills add Rust, PostgreSQL/SQL, Python, Bun, browser, security, and workflow lenses. |
 | `context7-docs` | Keep | Covers current third-party docs lookup without replacing repo inspection. |
 | `create-agent-skill` | Keep | Canonical authoring workflow for new or updated skills. |
 | `domain-driven-design` | Keep | Clear domain modeling boundary and anti-ceremony guidance. |
@@ -76,18 +88,30 @@ Prefer one focused practice over several shallow ones.
 | `git-commit` | Keep | Broad but coherent commit-quality workflow. |
 | `justfiles` | Keep | Detailed because Justfile syntax and safety rules are operationally sharp. |
 | `playwright-e2e` | Keep | Distinct from browser automation; owns checked-in Playwright tests. |
+| `postgresql-sql-engineering` | Add | Extracted generic PostgreSQL schema, SQL review, performance, migration, transaction, RLS, and privilege guidance from Chidori's PostgreSQL skills and removed that overlap from Rust persistence. |
+| `python-engineering` | Add | Extracted Python typing, async, error-handling, pytest fixture, parametrization, mocking, and review gates from Chidori's Python review skills; added project-neutral `uv` and packaging workflow. |
 | `review-verification-protocol` | Keep | Required evidence gate for review findings. |
 | `root-cause-analysis` | Keep | Postmortem and recurrence-prevention workflow remains distinct from active debugging. |
 | `rust-async-web` | Add | Covers Tokio, Axum, Leptos, Axum-Leptos, SSR/hydration, WASM, and full-stack boundaries. |
 | `rust-code-review` | Rewrite | Review now routes to concise Rust workflow skills instead of a large reference library. |
 | `rust-engineering` | Add | Covers core Rust implementation, setup, refactoring, design patterns, and macros. |
-| `rust-persistence-sql` | Add | Covers SQLx, SQL, SQLite, PostgreSQL, migrations, and persistence review. |
+| `rust-persistence-sql` | Narrow | Covers SQLx, SQLite, Rust database adapters, and persistence boundaries; delegates generic PostgreSQL and SQL design to `postgresql-sql-engineering`. |
 | `rust-testing-quality` | Add | Consolidates Rust testing, Rustdoc tests, Clippy, nextest, and CI evidence. |
 | `rustdoc-guidance` | Merge into `rust-testing-quality` | Rustdoc examples and doctests are part of test and API quality workflow. |
 | `security-review-evidence` | Keep | Sanitized evidence checklist for security-sensitive changes. |
 | `suggest-lucide-icons` | Keep | Focused icon-selection workflow. |
 | `systematic-debugging` | Keep | Strong active-failure workflow; clear handoff to RCA. |
 | `test-driven-development` | Keep | Concise and directly actionable for behavior/test changes. |
+
+## Chidori Extraction Decisions
+
+| Chidori Source | Global Decision | Rationale |
+| --- | --- | --- |
+| `bun-workflows` | Extract into `bun-javascript-workflows` | Kept reusable Bun install/script/test/lockfile/CLI translation guidance; removed Chidori paths, Playwright recipe names, pinned versions, and Rust/Leptos topology. |
+| `python-code-review`, `pytest-code-review` | Extract into `python-engineering` | Kept typing, async, exception, fixture, parametrization, mocking, and review false-positive gates; removed narrow review-only structure and copied examples. |
+| `postgresql-code-review`, `postgresql-table-design`, `postgresql-optimization` | Extract into `postgresql-sql-engineering` | Kept constraints, FK index reminders, data type judgment, JSONB/range/full-text/index guidance, safe migrations, RLS/privilege checks, and plan-based review; removed project schema fragments, version pinning, and heavy tutorials. |
+| `rust-best-practices`, `rust-refactor`, `rust-project-setup`, `rust-testing`, `rust-async-patterns`, `tokio-async-code-review`, `axum-code-review`, `leptos-guide`, `macros-code-review`, `serde-code-review`, `rust-wasm`, `sqlx-code-review` | Absorb into existing Rust skills | Current global Rust skills already cover these domains. Reusable bits were folded into boundaries and checklists where needed instead of adding narrow duplicate skills. |
+| `rust-fullstack`, `sqlx-postgres`, `chidori-impeccable`, `leptos-mcp-server`, `utoipa-axum`, `impeccable` resources | Do not globalize | These contain Chidori-specific architecture, local MCP/tooling, exact schema workflow, UI policy, OpenAPI stack choices, or large specialized resources not justified as first-party global skills. |
 
 ## Acceptance Criteria
 
@@ -117,10 +141,42 @@ Scenario: Async full-stack Rust uses framework-specific boundaries
 
 ```gherkin
 Scenario: SQL-backed Rust uses persistence guidance
-  Given a change touches SQLx queries, migrations, PostgreSQL, SQLite, constraints, indexes, transactions, or query plans
+  Given a change touches SQLx queries, Rust database adapters, SQLite behavior, SQLx metadata, or Rust transaction code
   When the agent implements or reviews the work
   Then it loads rust-persistence-sql
-  And validates both Rust query types and database behavior
+  And validates Rust query types, adapter behavior, and database effects
+```
+
+```gherkin
+Scenario: PostgreSQL design is language-independent
+  Given a change touches PostgreSQL tables, constraints, indexes, views, transactions, privileges, RLS, migrations, or query plans
+  When the agent chooses specialist guidance
+  Then it loads postgresql-sql-engineering
+  And keeps Rust SQLx, Python, or Bun adapter details in their language skills
+```
+
+```gherkin
+Scenario: Python work uses uv-aware engineering guidance
+  Given a change touches Python source, tests, pyproject.toml, uv.lock, packaging, linting, typing, or dependency management
+  When the agent plans implementation or review
+  Then it loads python-engineering
+  And verifies behavior with the repo's configured uv, test, lint, format, type, or build lanes
+```
+
+```gherkin
+Scenario: Bun work stays framework-neutral
+  Given a change touches package.json, bun.lock, Bun scripts, Bun tests, JS/TS runtime code, or one-off package CLIs
+  When the agent chooses workflow guidance
+  Then it loads bun-javascript-workflows
+  And does not assume React, Vite, Next.js, Playwright, ESLint, or Prettier unless the repository config shows them
+```
+
+```gherkin
+Scenario: Chidori extraction remains sanitized
+  Given project-specific Chidori skills contain local paths, domain names, schema fragments, pinned versions, exact recipes, or architecture decisions
+  When reusable guidance is extracted into global skills
+  Then the global skill keeps only project-neutral workflows, checklists, commands, and review criteria
+  And no Chidori-specific assumption becomes global policy
 ```
 
 ```gherkin
