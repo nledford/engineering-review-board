@@ -9,3 +9,6 @@ __pycache__/
 /skills/find-skills/
 /skills/playwright-cli/
 /.weave/runtime
+
+# Local Serena project state.
+/.serena/
