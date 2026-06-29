@@ -36,6 +36,38 @@ services, features, databases, or CI parity.
 - Compile-fail tests or doctests: macro contracts, type-state APIs, trait-bound
   errors, and misuse that should not compile.
 
+## Async Rust And Tokio Tests
+
+- Use `#[tokio::test]` when the test must await async application services,
+  adapters, channels, timers, spawned tasks, or Tokio I/O. Keep pure domain tests
+  synchronous and independent from Tokio.
+- Test async application services at hexagonal boundaries with fake outbound
+  ports for repositories, clients, queues, clocks, and external services. The
+  fake should model success, domain-relevant failures, timeout/cancellation, and
+  ordering only where those are part of the behavior.
+- Test real async adapters with integration tests against the actual framework,
+  database, queue, filesystem, or client contract. Do not use adapter tests as a
+  substitute for narrow domain tests.
+- For BDD-style flows, drive the public API, inbound adapter, or use case. Avoid
+  Given/When/Then steps that depend on private tasks, Tokio channels, or database
+  rows unless those mechanisms are the public contract.
+- Test cancellation by creating a `CancellationToken`, starting the work, sending
+  cancellation or closing the relevant channel, then awaiting the `JoinHandle` or
+  `JoinSet` result. Assert externally visible cleanup, not just that a branch was
+  reached.
+- Test timeouts, retries, intervals, and backoff with Tokio time controls such as
+  `#[tokio::test(start_paused = true)]`, `tokio::time::pause`, and
+  `tokio::time::advance` when the repository's Tokio features support them.
+  Avoid real sleeps and arbitrary retry delays in tests.
+- Coordinate tests with channels, barriers, or observable state instead of racing
+  the scheduler. Bound all spawned work, close senders, abort only with intent,
+  and join tasks before the test exits.
+- Use the runtime flavor intentionally. `current_thread` can make single-threaded
+  scheduling assumptions visible; the multithreaded runtime is better evidence
+  for `Send` server/worker code.
+- Avoid nested runtimes in tests. If production code needs explicit runtime
+  construction, keep it behind a sync boundary and test the async core directly.
+
 ## Command Strategy
 
 Use the repo's documented command first. When direct Cargo commands are
@@ -114,6 +146,8 @@ cargo nextest run --profile <profile>
   and invariants.
 - Tests are deterministic: no shared global state, order dependence, real clock
   sleeps, uncontrolled ports, or cross-test database contamination.
+- Async tests await or supervise all spawned work, close channels deliberately,
+  and exercise cancellation/timeout behavior when those contracts changed.
 - Feature flags, target-specific code, examples, macros, doctests, and generated
   code are validated when touched.
 - CI evidence includes formatting, compile, tests, doctests when relevant,
@@ -126,6 +160,10 @@ cargo nextest run --profile <profile>
   contracts.
 - Treating snapshot churn, broad mocks, sleeps, retries, or fixture rewrites as
   proof of correctness.
+- Using `#[tokio::test]` for pure domain behavior that would be faster and
+  clearer as a synchronous unit test.
+- Relying on wall-clock sleeps, scheduler luck, detached tasks, or unclosed
+  channels to make async tests pass.
 - Running only nextest when doctests or compile-fail examples carry the changed
   contract.
 - Silencing Clippy or rustc warnings without explaining why the warning is

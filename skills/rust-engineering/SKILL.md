@@ -45,6 +45,9 @@ public contracts.
 - Error handling distinguishes caller errors, domain errors, I/O failures, and
   programmer bugs. Library-like crates should expose typed errors; application
   edges may add context and convert to user-facing responses.
+- Keep core domain APIs synchronous unless the domain behavior itself requires
+  asynchrony. Push async I/O, Tokio runtime details, channels, and task handles
+  to application services, ports, adapters, or process wiring.
 - Modules reveal boundaries. Public modules should be stable enough for callers;
   private modules can optimize for clarity and local cohesion.
 - Collections and iterators match the semantics: ordering, uniqueness, lookup
@@ -125,7 +128,8 @@ cargo fmt
   context matters more than typed recovery. Library-like crates and domain APIs
   should expose typed errors callers can handle.
 - `tokio`: use `rust-async-web` for runtime, task, cancellation, backpressure,
-  Axum, and Leptos details. Do not hide blocking work inside async functions.
+  Axum, and Leptos details. Introduce async deliberately for I/O-bound or
+  high-concurrency work; do not hide blocking work inside async functions.
 - `reqwest`: keep HTTP clients at adapter boundaries, configure timeouts, handle
   status codes deliberately, avoid logging secrets, and test request/response
   mapping without real network calls when practical.

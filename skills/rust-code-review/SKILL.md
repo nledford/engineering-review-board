@@ -67,6 +67,23 @@ Async, web, and persistence:
 
 - Async code does not block the runtime, leak tasks, ignore cancellation, hold
   incompatible guards across `.await`, or use unbounded queues without a reason.
+- Tokio runtime construction stays at process/test edges: no nested runtimes, no
+  hidden blocking work inside async APIs, and explicit `spawn_blocking` or worker
+  boundaries for unavoidable blocking/CPU-heavy operations.
+- Spawned tasks have ownership and supervision: `JoinHandle`, `JoinSet`, or task
+  tracker results are observed; detached tasks have a shutdown path,
+  instrumentation, and a documented reason.
+- Cancellation is cooperative and tested where it is part of the contract:
+  cancellation tokens, channel closure, signal handling, timeouts, and task
+  joining line up with graceful shutdown behavior.
+- Async boundaries follow the architecture: domain logic remains framework- and
+  Tokio-independent where practical; application services orchestrate async
+  ports; adapters own runtime, channel, retry, timeout, tracing, and driver
+  details.
+- Async trait choices are justified: native async traits, explicit future return
+  types, boxed futures, or `async-trait` match the repository's MSRV,
+  object-safety needs, allocation tolerance, dyn-dispatch needs, and `Send`
+  requirements.
 - Axum handlers, Leptos components/server functions, and persistence adapters
   are thin enough for domain logic to be tested outside the framework.
 - SQLx queries, SeaQuery builders, migrations, transactions, constraints, and
