@@ -41,9 +41,12 @@ code review instead.
 4. Read the full path: caller, middleware, validation, business rule, storage,
    logging, error handling, tests, config, docs, and deployment assumptions.
 5. Verify controls with tests, policies, config checks, dependency audit output,
-   or concrete code evidence. Do not report speculative vulnerabilities.
-6. Sanitize evidence. Never print secrets, cookies, tokens, private keys, raw
-   credentialed URLs, `.env` contents, or private host paths.
+   or concrete code evidence. Include dependency trust evidence when packages,
+   binaries, generated code, install hooks, or lockfiles change. Do not report
+   speculative vulnerabilities.
+6. Sanitize evidence and clean temporary security artifacts. Never print secrets,
+   cookies, tokens, private keys, raw credentialed URLs, `.env` contents, or
+   private host paths.
 7. Report findings through the code-review format with severity calibrated to
    exploitability, blast radius, data sensitivity, and existing mitigations.
 
@@ -54,7 +57,8 @@ code review instead.
   be bypassed by direct IDs, cache hits, background jobs, or client-only guards.
 - **Secrets and sessions:** tokens, cookies, credentials, key material, and
   session IDs are generated with secure randomness, scoped, rotated where needed,
-  stored safely, redacted from logs, and not leaked to clients or artifacts.
+  revoked or destroyed when no longer valid, stored safely, redacted from logs,
+  kept out of backups and artifacts, and cleaned up after fixture/test use.
 - **Crypto:** use vetted libraries and current repository conventions; do not
   invent algorithms, modes, padding, key derivation, signing formats, or random
   sources. Compare signatures and tokens with constant-time APIs when relevant.
@@ -71,7 +75,12 @@ code review instead.
   required, retained intentionally, and excluded from telemetry, screenshots,
   traces, reports, exceptions, and test artifacts.
 - **Dependencies and supply chain:** new packages, binaries, scripts, generated
-  code, lockfile changes, and install hooks have a clear need and review path.
+  code, lockfile changes, and install hooks have a clear need, review path,
+  provenance/checksum or signature evidence where available, and sanitized audit
+  output.
+- **Security artifacts:** traces, screenshots, reports, logs, dependency audit
+  output, temporary databases, export files, and reproduced exploit payloads are
+  sanitized, retained only when policy requires it, and cleaned up after review.
 
 ## Language and Surface Prompts
 
@@ -95,6 +104,9 @@ code review instead.
 - Add or request regression coverage for confirmed vulnerabilities when practical.
 - When a control cannot be verified locally, report the exact missing evidence and
   residual risk rather than claiming safety.
+- When artifact cleanup cannot be verified, report the artifact class, expected
+  cleanup, attempted cleanup, reason verification failed, residual exposure risk,
+  and follow-up owner/process without exposing raw paths or contents.
 - Security-sensitive randomness and identifiers should follow
   [`random-data-identifiers`](../random-data-identifiers/SKILL.md).
 
