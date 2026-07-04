@@ -103,12 +103,13 @@ first-party skills.
 | Skill authoring and governance | `create-agent-skill`, `code-review`, `review-verification-protocol` | Creating, validating, and reviewing durable agent guidance and repository changes. |
 | Security review | `security-review`, `security-review-evidence` | Security audit workflow and sanitized evidence handling for trust-boundary work. |
 | Documentation | `documentation-engineering` | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, examples, and documentation review. |
-| Design methods and architecture | `brainstorming`, `behavior-driven-development`, `clean-architecture`, `domain-driven-design`, `hexagonal-architecture`, `test-driven-development`, `gherkin` | Use the direct method or architecture skill that matches the work; do not load a meta-selection skill for simple changes. |
+| Design methods and architecture | `brainstorming`, `behavior-driven-development`, `clean-architecture`, `domain-driven-design`, `hexagonal-architecture`, `onion-architecture`, `test-driven-development`, `gherkin` | Use the direct method or architecture skill that matches the work; do not load a meta-selection skill for simple changes. |
 | Debugging and prevention | `systematic-debugging`, `root-cause-analysis` | Active symptom diagnosis first; postmortem and recurrence prevention after the direct cause is understood. |
 | Data, identifiers, and SQL | `random-data-identifiers`, `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering` | Randomness/IDs, database-neutral SQL, and engine-specific PostgreSQL/SQLite schema, migration, query, transaction, performance, security, and review guidance. |
 | Python engineering | `python-engineering` | Python implementation, review, testing, packaging, dependency management, quality gates, docs, and `uv` workflows. |
 | JavaScript and TypeScript engineering | `javascript-typescript-engineering`, `playwright-e2e` | JS/TS implementation/tooling/package workflows and checked-in Playwright E2E tests. |
 | Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests and quality gates, async/web/full-stack work, SQLx/SeaQuery/ORM persistence, and Rust review. |
+| Language design patterns and anti-patterns | `rust-design-patterns`, `rust-antipatterns`, `python-design-patterns`, `python-antipatterns`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns` | Standalone language-specific pattern selection and smell-detection guidance, with routing from the broader language skills. |
 | Project workflow tools | `git-commit`, `justfiles`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for commits, Justfiles, current external docs, and verified Lucide icon names. |
 | Third-party runtime installs | `agent-browser`, `anti-ai-slop-writing`, `find-skills`, `playwright-cli` | Installed locally for runtime use but ignored or lockfile-owned; do not edit as first-party skills. |
 
@@ -121,7 +122,11 @@ first-party skills.
 | `sqlite-sql-engineering` | SQLite schema design, migrations, constraints, indexes, transactions, PRAGMAs, locking, WAL, local/embedded behavior, temporary DB tests, and SQLite query review in any language stack. | PostgreSQL-native features, Rust SQLx/SeaQuery adapter choices, or using SQLite as proof of another database's behavior. |
 | `random-data-identifiers` | Random numbers, secure tokens, UUIDs/CUIDs/ULIDs, collision-resistant IDs, deterministic seeded tests, fixtures, simulations, and reproducibility. | Fixed examples with no randomness or database-native ID/index design without generated-value decisions. |
 | `python-engineering` | Python source, tests, pyproject.toml, uv.lock, packaging, linting, typing, docstrings, dependency management, and Python review. | Non-Python package managers, database-native schema design, or browser E2E test design. |
+| `python-design-patterns` | Python-specific design patterns such as dataclasses, value objects, protocols, context managers, adapters, repositories, factories, and Python expression of Clean/Hexagonal/Onion boundaries. | General Python workflow, package management, or smell-focused anti-pattern review. |
+| `python-antipatterns` | Python-specific generated-code and design smells such as mutable defaults, global state, import-time side effects, broad `Any`, broad exceptions, framework/ORM leakage, async blocking, and brittle tests. | Positive pattern selection or ordinary Python workflow. |
 | `javascript-typescript-engineering` | JS/TS source, package.json, lockfiles, Bun/Node/Deno workflows, TypeScript, lint/format/test/build scripts, dependencies, workspaces, and JS/TS review. | Checked-in Playwright spec design, Rust/Python/database work, or framework-specific frontend architecture not evidenced by local config. |
+| `typescript-javascript-design-patterns` | TypeScript/JavaScript-specific design patterns such as discriminated unions, branded types, runtime validation boundaries, adapter modules, functional core/imperative shell, use-case handlers, async orchestration, and test builders. | Package manager workflows, checked-in Playwright spec design, or smell-focused anti-pattern review. |
+| `typescript-javascript-antipatterns` | TypeScript/JavaScript smells such as `any`, unsafe assertions, missing runtime validation, unawaited promises, singleton service bags, import-time side effects, framework/UI leakage, weak randomness, over-mocked tests, and brittle E2E tests. | Positive pattern selection or ordinary JS/TS workflow. |
 | `documentation-engineering` | Markdown, README, API docs, code comments, rustdoc, pydoc/docstrings, examples, and documentation review. | Code-only behavior changes with no reader-facing documentation or comment impact. |
 
 ## Rust Skill Boundaries
@@ -129,6 +134,8 @@ first-party skills.
 | Skill | Use For | Do Not Use For |
 | --- | --- | --- |
 | `rust-engineering` | Core Rust implementation, crate/workspace setup, feature flags, ownership/lifetimes, traits/generics, error design, refactoring, design patterns, common crates, and macros. | Test-runner strategy, SQLx/SeaQuery/database specifics, or framework-specific async/web design except as boundary context. |
+| `rust-design-patterns` | Rust-specific pattern and idiom choices such as newtypes, enums, RAII guards, builders, traits as ports, compose-structs, small crates, contained unsafe modules, custom traits for complex bounds, and macros. | Broader Rust workflow, cargo quality gates, persistence-specific work, or smell-focused anti-pattern review. |
+| `rust-antipatterns` | Rust-specific generated-code and design smells such as clone-to-satisfy-borrow-checker, reflexive shared mutability, deref polymorphism, crate-root deny-warnings, panic at trust boundaries, async overuse, macro overreach, and framework leakage. | Positive pattern selection or ordinary Rust implementation. |
 | `rust-testing-quality` | Rust unit/integration/e2e/property/doctest/compile-fail tests, TDD/BDD loops, `cargo fmt`, `cargo check`, `cargo test`, `cargo test --doc`, `cargo clippy`, and `cargo nextest`. | General debugging without a known failing symptom, or SQLx/database-specific validation beyond naming the needed gate. |
 | `rust-async-web` | Tokio, async tasks, cancellation, timeouts, channels, backpressure, shared state, Axum, Leptos, Axum-Leptos, SSR, hydration, and WASM target concerns. | SQL schema/query design or generic Rust refactors with no async/web surface. |
 | `rust-persistence-sql` | SQLx queries/macros, SeaQuery builders, SeaORM/Diesel/raw-SQL choices, Rust database adapters, pools, transactions, SQLx offline metadata, SQLite support, dynamic SQL, and persistence boundaries. | Database-native PostgreSQL or SQLite schema/query/index/security review; use the data skills too. |
@@ -146,30 +153,44 @@ first-party skills.
 - Use **Hexagonal Architecture** when ports, adapters, external actors, multiple
   drivers, swappable infrastructure, or headless core testing shape the
   implementation.
+- Use **Onion Architecture** when domain/application rings around a protected
+  domain model are the clearest framing and infrastructure should stay outside
+  those rings.
 - Use **TDD** when behavior can be specified and protected with executable tests.
 - Use **Gherkin** when formal `.feature` syntax or durable Given/When/Then
   artifacts are useful.
 - Use **Brainstorming** only when there are multiple credible paths and tradeoffs
   worth comparing before implementation.
+- Use **language design pattern skills** when the main decision is how to express
+  a design idiomatically in Rust, Python, or TypeScript/JavaScript.
+- Use **language anti-pattern skills** when the task is smell detection, generated
+  code cleanup, or review of repeated language-specific failure modes.
 
 Combinations should be proportional:
 
 - **BDD + DDD:** when examples need domain language, invariants, roles, policies,
   or bounded-context distinctions before implementation.
-- **DDD + Clean or Hexagonal Architecture:** when the domain model needs
+- **DDD + Clean, Hexagonal, or Onion Architecture:** when the domain model needs
   protection from framework, persistence, messaging, SDK, or delivery-mechanism
   leakage. Use Clean wording for use-case/layer responsibilities; use Hexagonal
-  wording for port/adapter decisions.
-- **BDD + Clean or Hexagonal Architecture:** when behavior examples should
+  wording for port/adapter decisions; use Onion wording for domain/application
+  rings.
+- **BDD + Clean, Hexagonal, or Onion Architecture:** when behavior examples should
   execute at the system, inbound-adapter, or use-case boundary without exposing
   internals.
 - **BDD + TDD:** when acceptance examples should drive executable behavior tests.
 - **DDD + TDD:** when domain invariants, state transitions, value objects, or
   policies should be protected with narrow tests.
-- **TDD + Clean or Hexagonal Architecture:** when use cases should be tested with
-  fake or in-memory adapters before real infrastructure exists.
+- **TDD + Clean, Hexagonal, or Onion Architecture:** when use cases or
+  application services should be tested with fake or in-memory adapters before
+  real infrastructure exists.
 - **BDD + DDD + TDD:** when a significant feature has user-visible behavior,
   important domain modeling, and executable tests that should evolve together.
+- **Language engineering + design patterns:** when the implementation needs an
+  idiomatic expression of a boundary, invariant, state transition, resource
+  lifetime, or construction pattern.
+- **Language engineering + anti-patterns:** when reviewing generated code,
+  smell-heavy refactors, brittle tests, or repeated language-specific mistakes.
 - **None of these methods:** for formatting-only, docs-only, mechanical renames,
   generated updates, dependency bumps, or obvious one-line fixes with existing
   coverage.
@@ -194,14 +215,19 @@ reading the code, making a small change, and running the relevant check is enoug
 | `hexagonal-architecture` | Ports and Adapters, use cases, application services, dependency inversion, inbound/outbound adapters, and Clean/Onion-style core isolation. | Add. Reusable architecture guidance that complements DDD, BDD, and TDD without making ports/adapters mandatory. |
 | `javascript-typescript-engineering` | JS/TS source, TypeScript, package managers, scripts, tests, lint/format/build, dependencies, workspaces, and CLIs. | Rename from `bun-javascript-workflows`. Covers JS/TS broadly while preserving Bun-first guidance when local evidence supports it. |
 | `justfiles` | Designing, refactoring, auditing, and validating Justfiles and `just` workflows. | Keep. Long but justified by version-sensitive syntax and safety concerns. |
+| `onion-architecture` | Onion Architecture, domain/application rings, inward dependencies, infrastructure-at-the-edge design, and Clean/Hexagonal/Onion tradeoffs. | Add. Provides direct activation for Onion requests while cross-linking to Clean, Hexagonal, and DDD. |
 | `playwright-e2e` | Checked-in Playwright tests, configs, helpers, traces, lanes, and browser-visible behavior. | Keep. Distinct from generic browser automation and lower-level domain tests. |
 | `postgresql-sql-engineering` | PostgreSQL schema, migrations, SQL, transactions, indexes, JSONB, RLS, privileges, plans, maintenance, and review. | Keep. Engine-specific data skill; delegates Rust adapter details to `rust-persistence-sql`. |
+| `python-antipatterns` | Python generated-code and design smell review for mutable defaults, global state, import-time side effects, broad typing, framework leakage, async blocking, and brittle tests. | Add. Splits smell-focused Python review from positive pattern selection and broad Python workflow. |
+| `python-design-patterns` | Python pattern guidance for dataclasses, value objects, protocols, context managers, adapters, repositories, factories, fixtures, and architecture boundaries. | Add. Provides standalone pattern selection while `python-engineering` remains the workflow skill. |
 | `python-engineering` | Python code, tests, typing, packaging, dependency management, `uv`, Ruff, ty/mypy/Pyright, docstrings, and review. | Keep. Covers Python broadly while delegating database-native behavior to data skills. |
 | `random-data-identifiers` | Secure randomness, UUIDs/CUIDs/ULIDs, generated IDs, test data, seeded reproducibility, and collision review. | Add. Fills cross-language randomness and identifier coverage. |
 | `review-verification-protocol` | Evidence gates for review findings and specialist review lenses. | Keep. Hidden support skill required by `code-review`; prevents speculative findings. |
 | `root-cause-analysis` | Recurring failures, incidents, regressions, control gaps, and prevention work. | Keep. Clear handoff from active debugging after direct cause is understood. |
+| `rust-antipatterns` | Rust generated-code and design smell review for ownership workarounds, reflexive shared mutability, deref polymorphism, deny-warnings misuse, panic boundaries, async overuse, and framework leakage. | Add. Splits smell-focused Rust review from positive pattern selection and broad Rust engineering. |
 | `rust-async-web` | Tokio, async tasks, channels, cancellation, Axum, Leptos, Axum-Leptos, SSR, hydration, and WASM. | Keep. Focused runtime/web skill; delegates SQL and cargo lanes. |
 | `rust-code-review` | Rust-specific review lens for ownership, APIs, async, persistence, macros, unsafe, and performance. | Keep. Specialist review skill that routes to implementation and data skills. |
+| `rust-design-patterns` | Rust pattern and idiom guidance for newtypes, enums, RAII guards, builders, traits as ports, compose-structs, contained unsafe modules, custom traits, and macros. | Add. Provides standalone pattern selection while `rust-engineering` remains the workflow skill. |
 | `rust-engineering` | Core Rust implementation, crates, modules, APIs, ownership, traits, errors, features, refactors, common crates, and macros. | Keep. Primary Rust implementation skill; specialist work is delegated. |
 | `rust-persistence-sql` | Rust SQLx, SeaQuery, SeaORM/Diesel/raw-SQL choices, pools, transactions, offline metadata, database adapters, dynamic SQL, and persistence boundaries. | Keep. Owns Rust adapter/query-builder choices and delegates database-native design. |
 | `rust-testing-quality` | Rust tests, doctests, nextest, Clippy, formatting, cargo checks, TDD/BDD loops, and CI evidence. | Keep. Consolidates cargo quality gates that were too narrow as standalone skills. |
@@ -212,6 +238,8 @@ reading the code, making a small change, and running the relevant check is enoug
 | `suggest-lucide-icons` | Verified Lucide icon name selection for UI concepts and placements. | Keep. Small, focused workflow with concrete verification rules. |
 | `systematic-debugging` | Active failures, regressions, crashes, flakes, performance issues, build failures, and evidence-driven fixes. | Keep. Core workflow remains in `SKILL.md`; detailed failure heuristics moved to a reference. |
 | `test-driven-development` | Red-Green-Refactor, regression tests, test-level selection, and behavior-first implementation. | Keep. Concise method skill used by language and workflow skills. |
+| `typescript-javascript-antipatterns` | TypeScript/JavaScript generated-code and design smell review for `any`, unsafe assertions, missing runtime validation, unawaited promises, singleton state, framework/UI leakage, and brittle tests. | Add. Splits smell-focused JS/TS review from positive pattern selection and broad JS/TS workflow. |
+| `typescript-javascript-design-patterns` | TypeScript/JavaScript pattern guidance for discriminated unions, branded types, runtime validation boundaries, adapter modules, use-case handlers, async orchestration, and test builders. | Add. Provides standalone pattern selection while `javascript-typescript-engineering` remains the workflow skill. |
 
 ## Required Coverage Matrix
 
@@ -221,17 +249,18 @@ reading the code, making a small change, and running the relevant check is enoug
 | Security review and audit | `security-review`, `security-review-evidence`, `code-review`, language/data skills | Complete | Generic audit skill covers trust boundaries; support skill controls sanitized evidence. |
 | BDD | `behavior-driven-development`, `gherkin`, `playwright-e2e` | Complete | BDD principles and misuse are separate from formal `.feature` syntax. |
 | DDD | `domain-driven-design`, language/data skills | Complete | Strategic and tactical patterns with anti-ceremony guidance. |
-| Clean / Hexagonal Architecture / Ports and Adapters / Onion | `clean-architecture`, `hexagonal-architecture`, `domain-driven-design`, language/data skills | Complete | Core isolation, dependency direction, entities, use cases/interactors, interface adapters, ports/adapters, tests, tradeoffs, and when not to add indirection. |
+| Clean / Hexagonal Architecture / Onion / Ports and Adapters | `clean-architecture`, `hexagonal-architecture`, `onion-architecture`, `domain-driven-design`, language/data skills | Complete | Core isolation, dependency direction, entities, use cases/interactors, domain/application rings, interface adapters, ports/adapters, tests, tradeoffs, and when not to add indirection. |
 | TDD | `test-driven-development`, language/test skills | Complete | Red/green/refactor, test levels, regression, and misuse guidance. |
-| Combining BDD, DDD, TDD, Clean Architecture, and Hexagonal Architecture | This taxonomy plus BDD/DDD/TDD/Clean/Hexagonal cross-references | Complete | Composition guidance lives here to avoid a competing meta-skill. |
+| Combining BDD, DDD, TDD, Clean Architecture, Hexagonal Architecture, and Onion Architecture | This taxonomy plus BDD/DDD/TDD/Clean/Hexagonal/Onion cross-references | Complete | Composition guidance lives here to avoid a competing meta-skill. |
 | Gherkin and `.feature` files | `gherkin`, `behavior-driven-development`, `playwright-e2e` | Complete | Includes Given/When/Then discipline, outlines, anti-patterns, and language usage. |
+| Language-specific design patterns and anti-patterns | `rust-design-patterns`, `rust-antipatterns`, `python-design-patterns`, `python-antipatterns`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, language engineering skills | Complete | Pattern selection and smell detection are standalone skills, with short routing rules in each broader language skill. |
 | Random data and identifiers | `random-data-identifiers`, `security-review`, language/data skills | Complete | Covers CSPRNG defaults, seeded reproducibility, UUID/CUID/ULID-style choices, tests, and warnings. |
 | SQL | `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering`, `rust-persistence-sql` | Complete | Generic SQL plus engine and Rust adapter specialization. |
 | PostgreSQL | `postgresql-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Complete | JSONB, indexes, plans, constraints, transactions, privileges/RLS, and maintenance. |
 | SQLite | `sqlite-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Complete | PRAGMAs, WAL/locking, one-writer model, migrations, indexes, and limitations. |
-| Python | `python-engineering`, `documentation-engineering`, data/security skills | Complete | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, security, and DB delegation. |
-| JavaScript and TypeScript | `javascript-typescript-engineering`, `playwright-e2e`, `documentation-engineering`, data/security skills | Complete | Bun-first when local, but Node/pnpm/npm/yarn/Deno and Prettier/ecosystem tooling are covered. |
-| Rust | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Complete | Crates, workspaces, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
+| Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Complete | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, security, DB delegation, pattern selection, and smell detection. |
+| JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Complete | Bun-first when local, Node/pnpm/npm/yarn/Deno, Prettier/ecosystem tooling, pattern selection, smell detection, and browser E2E are covered. |
+| Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Complete | Crates, workspaces, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
 | Running tests effectively | `test-driven-development`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Complete | Unit, integration, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, selection, and failure interpretation are distributed to the relevant workflow skills. |
 | Root cause analysis and systematic debugging | `systematic-debugging`, `root-cause-analysis` | Complete | Reproduction, narrowing, hypotheses, instrumentation, logs/traces, minimal cases, fix validation, and prevention. |
 | Justfiles | `justfiles` | Complete | Recipe design, portability, parameters, env vars, docs, composition, safety, idempotence, and validation. |
