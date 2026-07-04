@@ -89,6 +89,9 @@ first-party skills.
 - Merge skills when they are mostly duplicate checklists with the same trigger.
 - Cross-reference related skills only when the relationship helps routing or
   execution.
+- Use [`docs/cross-reference-map.md`](cross-reference-map.md) for compact
+  routing matrices and validator-required relationships; keep this taxonomy
+  focused on inventory, boundaries, and coverage.
 - Keep vendor/tool-specific advice in the narrowest skill that needs it; use
   project-neutral wording elsewhere.
 - Retire stale skills instead of preserving compatibility for old names.
