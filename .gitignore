@@ -12,3 +12,6 @@ __pycache__/
 
 # Local Serena project state.
 /.serena/
+
+# Local CortexKit/Magic Context state.
+/.cortexkit/
