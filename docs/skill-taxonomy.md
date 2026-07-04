@@ -125,6 +125,108 @@ handoff.
 | Project workflow tools | `git-commit`, `justfiles`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for commits, Justfiles, current external docs, and verified Lucide icon names. |
 | Third-party runtime installs | `agent-browser`, `anti-ai-slop-writing`, `find-skills`, `playwright-cli` | Installed locally for runtime use but ignored or lockfile-owned; do not edit as first-party skills. |
 
+## Candidate Skill Contracts
+
+These contracts document planned boundaries only. Do not add either name to the
+current first-party inventory or validator-required link rules until
+`skills/<name>/SKILL.md` exists.
+
+### `observability-engineering`
+
+Draft frontmatter description:
+
+```yaml
+description: >-
+  Observability, telemetry, and production diagnostics guidance. Use when
+  designing, adding, reviewing, or testing logs, metrics, traces, span/context
+  propagation, correlation or request IDs, sampling, labels/cardinality,
+  dashboards, alerts, SLO/SLI/error-budget signals,
+  OpenTelemetry/Prometheus/Grafana/Datadog-style instrumentation, operational
+  runbooks, or incident visibility. Do not use for ordinary language
+  implementation, active debugging without instrumentation changes, Rust
+  async/web behavior, SQL schema/query design, API contract design,
+  architecture boundary selection, security review except telemetry leakage or
+  audit controls, BDD/TDD mechanics, or documentation-only edits; load those
+  existing skills instead or alongside it when their trigger is primary.
+```
+
+Boundary rules:
+
+- Owns telemetry semantics, signal quality, labels/cardinality, context
+  propagation, dashboards, alerts, SLOs, and operational visibility.
+- Use language engineering skills for implementation mechanics in Rust, Python,
+  JavaScript, or TypeScript. Add `observability-engineering` only when the task
+  needs instrumentation design or signal review, not because code happens to log.
+- Use `rust-async-web` for Tokio/Axum/Leptos runtime, handler, task, SSR,
+  hydration, and backpressure behavior. Add `observability-engineering` when the
+  primary decision is trace/span structure, async context propagation, request
+  correlation, metrics, dashboards, or alerts.
+- Use SQL skills for schema, query, transaction, index, privilege, RLS, and
+  query-plan behavior. Add `observability-engineering` only for database
+  telemetry such as slow-query signals, pool metrics, audit-log shape, or alert
+  thresholds.
+- Use architecture skills when ports/adapters, dependency direction,
+  domain/application rings, or system boundaries are the main design question;
+  observability should not introduce architecture ceremony by itself.
+- Use `security-review` and `security-review-evidence` when telemetry can expose
+  secrets, credentials, PII, tenant data, auth/session traces, exploit payloads,
+  or when logs/alerts are security controls or report evidence.
+- Use BDD/TDD skills when acceptance examples or executable tests drive the work;
+  observability owns what must be observable, not the test methodology.
+- Use `documentation-engineering` for runbooks, dashboard notes, API docs,
+  comments, and examples when the work is documentation-only.
+- Use `systematic-debugging` for active failures and `root-cause-analysis` for
+  recurrence prevention unless the fix requires durable instrumentation or
+  operational signal design.
+
+### `api-design`
+
+Draft frontmatter description:
+
+```yaml
+description: >-
+  API design and contract guidance. Use when defining, changing, reviewing, or
+  testing service or public interface contracts: HTTP/REST resources,
+  RPC/GraphQL operations, webhooks, event/message schemas,
+  request/response/error envelopes, pagination/filtering/sorting, idempotency,
+  versioning/deprecation/backward compatibility, OpenAPI/AsyncAPI/JSON
+  Schema/protobuf artifacts, SDK or CLI public surfaces, or consumer/provider
+  compatibility. Do not use for ordinary language/framework implementation,
+  Rust handler mechanics, SQL schema/query design, architecture boundary
+  selection, security controls, BDD/TDD mechanics, observability
+  instrumentation, or documentation-only API references after the contract is
+  set; load those existing skills instead or alongside it when their trigger is
+  primary.
+```
+
+Boundary rules:
+
+- Owns externally visible contract semantics: resource and operation shape,
+  request/response/error envelopes, versioning, compatibility, idempotency,
+  pagination/filtering/sorting, webhook/event schemas, and machine-readable
+  contract artifacts.
+- Use language engineering skills for implementation mechanics, type modeling,
+  package/tool workflow, generated clients, and tests in a specific language.
+- Use `rust-async-web` for Axum extractors, routers, middleware, Leptos server
+  functions, Tokio tasks, SSR/hydration, and Rust web runtime concerns. Add
+  `api-design` only when the public or service contract itself is being shaped.
+- Use SQL skills for database schemas, migrations, constraints, indexes, query
+  plans, and data integrity. Database schema design is not API design unless the
+  schema is directly published as an external contract.
+- Use Clean, Hexagonal, Onion, or DDD skills when dependency direction,
+  ports/adapters, domain language, aggregates, or application boundaries are the
+  main question. Add `api-design` only for the exposed interface contract.
+- Use `security-review` for auth, authorization, scopes, CORS/CSRF/CSP,
+  redirects/callbacks, input validation, webhooks/signatures, sensitive data
+  exposure, rate limits, abuse controls, or trust-boundary behavior in the API.
+- Use BDD/TDD skills for behavior examples, contract tests, regression tests, or
+  test-level selection. API design owns the contract; testing skills own the test
+  workflow.
+- Use `observability-engineering` for API telemetry, audit/event logs, request
+  correlation, SLOs, dashboards, and alerting.
+- Use `documentation-engineering` for reference docs, examples, changelogs, and
+  API prose when the contract has already been decided.
+
 ## Third-Party Install Commands
 
 Third-party classification and update operations are separate:
@@ -325,6 +427,8 @@ existing skill.
 | Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Baseline complete; known extensions tracked | Crates, workspaces, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
 | Running tests effectively | `test-driven-development`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Baseline complete | Unit, integration, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, selection, and failure interpretation are distributed to the relevant workflow skills. |
 | Root cause analysis and systematic debugging | `systematic-debugging`, `root-cause-analysis` | Baseline complete | Reproduction, narrowing, hypotheses, instrumentation, logs/traces, minimal cases, fix validation, and prevention. |
+| API design and contracts | `api-design` candidate contract plus language/framework/data/security/testing/docs skills | Candidate contract defined; not first-party yet | Contract and overlap boundaries are documented in Candidate Skill Contracts; existing skills remain primary when implementation, database behavior, security controls, tests, or docs are the main work. |
+| Observability and telemetry | `observability-engineering` candidate contract plus language/framework/security/debugging/docs skills | Candidate contract defined; not first-party yet | Contract and overlap boundaries are documented in Candidate Skill Contracts; existing skills remain primary for implementation mechanics, active debugging, security evidence, tests, and documentation-only edits. |
 | Justfiles | `justfiles` | Baseline complete | Recipe design, portability, parameters, env vars, docs, composition, safety, idempotence, and validation. |
 | Brainstorming and decision support | `brainstorming` | Baseline complete | Divergence, tradeoffs, assumptions, options, and actionable recommendations. |
 | Documentation | `documentation-engineering`, `python-engineering`, `rust-testing-quality`, `rust-engineering`, `code-review` | Baseline complete | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, maintainable examples, and anti-slop prose rules. |

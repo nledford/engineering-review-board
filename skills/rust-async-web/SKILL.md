@@ -12,6 +12,16 @@ testable without the framework. Use
 jobs, server functions, message consumers, persistence, or external clients need
 formal ports/adapters or shared application use cases.
 
+Do not use this skill for API-contract-only work such as endpoint/resource
+shape, request/response/error envelopes, versioning, pagination, idempotency, or
+OpenAPI/AsyncAPI/protobuf artifacts. Do not use it for observability-only work
+such as log/metric/trace schemas, context-propagation standards,
+labels/cardinality, dashboards, alerts, SLOs, or telemetry sampling. Those
+planned contracts are documented in
+[`docs/skill-taxonomy.md`](../../docs/skill-taxonomy.md#candidate-skill-contracts);
+add this skill only when the task also changes Tokio, Axum, Leptos, SSR,
+hydration, WASM, task, or runtime behavior.
+
 ## Workflow
 
 1. Inspect the runtime and stack: `Cargo.toml` features, `tokio` runtime setup,
@@ -32,7 +42,7 @@ Load [`security-review`](../security-review/SKILL.md) when async/web work
 touches auth, authorization, sessions or cookies, CORS/CSRF/CSP, redirects,
 SSR/hydration trust boundaries, server functions, uploads/downloads, path
 handling, request/response redaction, secrets, external-service calls,
-telemetry, or artifact handling. Use
+telemetry that may leak sensitive data, or artifact handling. Use
 [`threat-modeling`](../threat-modeling/SKILL.md) before or during new auth
 middleware, request/SSR/server-function boundaries, background workers, queues,
 webhooks, external-service integrations, or sensitive data flows. Use
