@@ -227,6 +227,35 @@ Boundary rules:
 - Use `documentation-engineering` for reference docs, examples, changelogs, and
   API prose when the contract has already been decided.
 
+## Cross-Stack Migration and Evolution Guidance
+
+Do not add a migration meta-skill for ordinary evolution work. Route by the
+primary compatibility risk, then add only the companion skill needed for evidence:
+
+- **API compatibility:** use `api-design` for public contract semantics,
+  versioning, deprecation, compatibility, and client/provider obligations. Add
+  language skills for implementation and
+  `documentation-engineering` for migration notes after the contract is settled.
+- **Database migration safety:** use `sql-engineering` plus the PostgreSQL or
+  SQLite skill when engine behavior matters. Add language persistence skills only
+  for adapter, transaction, backfill, or generated-query changes.
+- **Telemetry migration signals:** use `observability-engineering` for adoption
+  metrics, canary signals, SLO/alert changes, rollback thresholds, and evidence
+  that old paths can be removed.
+- **Rollout and rollback evidence:** keep feature-flag, deploy, and client code in
+  the relevant language/workflow skill; use observability for the signals and
+  documentation for runbooks or release notes.
+- **Architecture seams:** use DDD, Clean, Hexagonal, or Onion only when the
+  migration introduces durable bounded contexts, ports/adapters, dependency-rule
+  pressure, or compatibility adapters. Avoid architecture ceremony for a simple
+  schema or endpoint version change.
+- **Client migration notes:** use `documentation-engineering` for migration
+  guides, deprecation windows, examples, and changelog prose; add `api-design` or
+  a language skill only if the contract or SDK/example code is still changing.
+
+This section is routing guidance only; keep inventory and validator-required
+rules in their dedicated sections.
+
 ## Third-Party Install Commands
 
 Third-party classification and update operations are separate:
