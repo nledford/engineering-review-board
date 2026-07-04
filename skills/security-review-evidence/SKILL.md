@@ -47,9 +47,11 @@ this skill for evidence collection, redaction, and reporting guardrails.
   signature, install hooks, advisory state, and dependency-audit result.
   Redact private registry hosts, tokens, credentials, local cache paths, and
   customer or organization names when they are sensitive.
-- For browser/frontend evidence, verify artifacts and logs do not include
-  cookies, storage state, CSRF/session IDs, credentialed URLs, secrets, private
-  paths, or sensitive payloads.
+- For browser/frontend evidence, treat screenshots, traces, videos, storage
+  state, HAR/network dumps, downloads, reports, credentialed URLs, and live data
+  as local ignored artifacts by default. Record sanitized artifact classes,
+  redactions, policy or explicit approval, access boundary, and cleanup evidence
+  before anything is retained or shared.
 
 ## Secrets and Credential Lifecycle Checkpoints
 
@@ -72,27 +74,33 @@ this skill for evidence collection, redaction, and reporting guardrails.
 
 ## Forbidden Outputs
 
-Never print or store `.env` contents, secret files, private keys, cookies,
-tokens, CSRF values, password hashes, credential material, credentialed database
-URLs, browser storage state, raw import paths, or private host paths. Use
-placeholders such as `<redacted>`, `<local-secret-file>`, `<credentialed-url>`,
-`<private-registry>`, or `<private-path>`.
+Never print, commit, paste, publish, or attach `.env` contents, secret files,
+private keys, cookies, tokens, CSRF values, password hashes, credential material,
+credentialed database URLs, browser storage state, raw import paths, raw browser
+artifacts, or private host paths. Use placeholders such as `<redacted>`,
+`<local-secret-file>`, `<credentialed-url>`, `<private-registry>`, or
+`<private-path>`.
 
 ## Artifact Cleanup Expectations
 
-- Treat security traces, screenshots, videos, reports, logs, HAR/network dumps,
-  browser storage state, dependency audit output, temporary databases, export
-  files, reproduced exploit payloads, fuzzing/minimized payloads, and generated
-  fixtures as sensitive until reviewed and cleaned.
-- Prefer writing artifacts to documented temporary locations that can be deleted
-  after review. Do not move raw artifacts into the repository, issue trackers,
-  PR comments, shared chat, or persistent reports.
+- Treat security traces, screenshots, videos, storage state, HAR/network dumps,
+  downloads, reports, logs, credentialed URLs, live data, dependency audit
+  output, temporary databases, export files, reproduced exploit payloads,
+  fuzzing/minimized payloads, and generated fixtures as sensitive until reviewed
+  and cleaned.
+- Prefer writing raw artifacts to documented local temporary or ignored artifact
+  locations that can be deleted after review. Do not move raw artifacts into the
+  repository, issue trackers, PR comments, shared chat, or persistent reports.
+- The safe override path for sharing or retention is: sanitized artifact,
+  documented repository policy or explicit approval, and security evidence that
+  records redactions, retained class/location, access boundary, and cleanup.
 - Before reporting, inspect artifact names and sanitized summaries for secrets,
   credentialed URLs, cookies, tokens, private paths, customer data, exploit
   payloads, and private dependency or registry details.
 - Delete or securely dispose of raw security artifacts after extracting sanitized
-  evidence. If retention is required by project policy, record the retention
-  location/class and access boundary without exposing private paths or contents.
+  evidence. If retention is required by project policy or explicit approval,
+  record the retention class, access boundary, and cleanup/expiry expectation
+  without exposing private paths or contents.
 - Clean temporary databases, local export files, fixture credentials, generated
   payload files, and dependency audit logs after tests. Prefer automated cleanup
   in tests or teardown scripts over manual deletion.

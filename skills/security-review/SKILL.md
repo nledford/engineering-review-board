@@ -44,10 +44,13 @@ code review instead.
    or concrete code evidence. Include dependency trust evidence when packages,
    binaries, generated code, install hooks, or lockfiles change. Do not report
    speculative vulnerabilities.
-6. Sanitize evidence and clean temporary security artifacts. Never print secrets,
+6. Keep raw browser and security artifacts local and ignored by default. Share or
+   retain only sanitized artifacts when repository policy or explicit approval
+   allows it, and capture the security evidence for that exception.
+7. Sanitize evidence and clean temporary security artifacts. Never print secrets,
    cookies, tokens, private keys, raw credentialed URLs, `.env` contents, or
    private host paths.
-7. Report findings through the code-review format with severity calibrated to
+8. Report findings through the code-review format with severity calibrated to
    exploitability, blast radius, data sensitivity, and existing mitigations.
 
 ## Review Checklist
@@ -73,14 +76,17 @@ code review instead.
   layout.
 - **Data and logs:** sensitive data is classified, minimized, encrypted where
   required, retained intentionally, and excluded from telemetry, screenshots,
-  traces, reports, exceptions, and test artifacts.
+  traces, videos, network dumps, downloads, reports, exceptions, and test
+  artifacts.
 - **Dependencies and supply chain:** new packages, binaries, scripts, generated
   code, lockfile changes, and install hooks have a clear need, review path,
   provenance/checksum or signature evidence where available, and sanitized audit
   output.
-- **Security artifacts:** traces, screenshots, reports, logs, dependency audit
-  output, temporary databases, export files, and reproduced exploit payloads are
-  sanitized, retained only when policy requires it, and cleaned up after review.
+- **Security artifacts:** traces, screenshots, videos, storage state,
+  HAR/network dumps, downloads, reports, logs, dependency audit output,
+  temporary databases, export files, and reproduced exploit payloads stay local
+  and ignored by default; sanitized copies are retained or shared only under
+  documented policy or explicit approval with security-review evidence.
 
 ## Language and Surface Prompts
 
@@ -93,9 +99,12 @@ code review instead.
   error-to-response mapping.
 - **SQL/PostgreSQL/SQLite:** check injection, privileges, RLS/policies, least
   privilege, migration data exposure, constraints, and auditability.
-- **Browser tests/artifacts:** never retain or share raw traces, screenshots,
-  videos, storage state, network dumps, cookies, CSRF tokens, credentialed URLs,
-  or live data.
+- **Browser tests/artifacts:** use raw screenshots, traces, videos, storage
+  state, HAR/network dumps, downloads, reports, credentialed URLs, cookies,
+  CSRF/session values, or live data only for local ignored debugging. Retain or
+  share only sanitized derivatives when documented policy or explicit approval
+  permits it, and include [`security-review-evidence`](../security-review-evidence/SKILL.md)
+  for the sanitization, access, and cleanup record.
 
 ## Verification Expectations
 

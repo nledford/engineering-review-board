@@ -118,13 +118,16 @@ Prefer the repository's named recipe or CI lane for final evidence.
 4. Enable traces only as a narrow opt-in, for example
    `npx playwright test path/to/spec.ts --trace=retain-on-failure`.
 5. Inspect traces with Playwright's trace CLI when needed.
-6. Keep HTML reports, screenshots, videos, traces, and downloads in ignored local
-   artifact directories unless the repository explicitly publishes sanitized
-   artifacts.
+6. Keep raw screenshots, traces, videos, storage state, HAR/network dumps,
+   downloads, and reports in ignored local artifact directories by default.
+7. If an artifact must be shared or retained, create a sanitized derivative and
+   do so only when documented repository policy or explicit approval allows it;
+   capture [`security-review-evidence`](../security-review-evidence/SKILL.md)
+   for redactions, access, retention, and cleanup.
 
 Do not retain or share raw screenshots, videos, traces, network dumps, storage
 state, cookies, CSRF/session values, credentialed URLs, local paths, `.env`
-contents, or live data.
+contents, reports, downloads, or live data.
 
 ## Verification Guidance
 
@@ -160,6 +163,7 @@ contents, or live data.
 - Do not promote cross-browser, responsive, live-backend, or slow visual lanes
   into default checks without explicit need or repository policy.
 - Do not leave `test.only`, retained traces, screenshots, videos, HTML reports,
-  or raw browser artifacts in handoff evidence.
+  downloads, raw browser artifacts, or sanitized artifacts without policy and
+  security evidence in handoff evidence.
 - Do not assume `npx`, `npm`, `pnpm`, `yarn`, or `bun`; inspect the repository's
   package manager and scripts first.
