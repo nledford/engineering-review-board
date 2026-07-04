@@ -69,6 +69,12 @@ focused skill plus one companion covers the evidence.
 | Evolution seams and compatibility adapters | Architecture skill matching the design question | load: matching language/data skill when implementing; load: `api-design` when public contracts change | `test-driven-development`, `behavior-driven-development`, `documentation-engineering` | "introduce a port for old and new billing providers"; "strangler seam around legacy API"; "split a bounded context during migration" | "simple endpoint version bump"; "single SQL migration with no boundary change"; "docs-only migration guide" | Taxonomy method composition and architecture boundaries |
 | Client migration notes | `documentation-engineering` | load: `api-design` when compatibility policy is still being decided | Language skills for SDK/example changes, `observability-engineering` for adoption signals | "write a client migration guide"; "document deprecation window and replacement calls"; "update SDK examples after contract change" | "design the API contract from scratch"; "change generated client code with no docs"; "define production rollout metrics" | Taxonomy documentation and API design boundaries |
 
+### Code Navigation and Tooling
+
+| Route | Primary skill | Related required skill(s) | Optional companion skills | Should-trigger examples | Should-not-trigger examples | Validation source notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Semantic code exploration and refactoring | `serena` | — | Matching language skills, `systematic-debugging`, `code-review`, `context7-docs` for external docs | "find all references before renaming this method"; "trace implementations of this interface"; "inspect diagnostics for this module"; "explore this unfamiliar code path without reading every file" | "search README or config for exact text"; "tiny single-file text edit"; "look up third-party API docs"; "run tests, formatters, linters, or builds" | Taxonomy semantic code navigation boundary; skill frontmatter/body |
+
 ### Language Engineering
 
 | Route | Primary skill | Related required skill(s) | Optional companion skills | Should-trigger examples | Should-not-trigger examples | Validation source notes |
