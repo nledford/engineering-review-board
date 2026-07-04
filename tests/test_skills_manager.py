@@ -325,6 +325,71 @@ class SkillRegistryTests(unittest.TestCase):
                 result.warnings,
             )
 
+    def test_api_contract_category_requires_security_review_link(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            write_skill(repo / "skills", "contract-skill")
+            write_taxonomy(
+                repo,
+                ["contract-skill"],
+                categories={"API design and contracts": ["contract-skill"]},
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+            self.assertEqual(
+                [
+                    "contract-skill: SKILL.md should link to security-review for security-sensitive API contract work",
+                ],
+                result.warnings,
+            )
+
+    def test_api_and_observability_category_rules_accept_required_links(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            api_skill = write_skill(repo / "skills", "api-design")
+            observability_skill = write_skill(repo / "skills", "observability-engineering")
+            write_skill(repo / "skills", "security-review")
+            write_skill(repo / "skills", "security-review-evidence")
+            write_taxonomy(
+                repo,
+                [
+                    "api-design",
+                    "observability-engineering",
+                    "security-review",
+                    "security-review-evidence",
+                ],
+                categories={
+                    "API design and contracts": ["api-design"],
+                    "Observability and operations": ["observability-engineering"],
+                },
+            )
+            (api_skill / "SKILL.md").write_text(
+                "---\n"
+                "name: api-design\n"
+                "description: Test skill.\n"
+                "---\n\n"
+                "# api-design\n\n"
+                "Load [`security-review`](../security-review/SKILL.md).\n",
+                encoding="utf-8",
+            )
+            (observability_skill / "SKILL.md").write_text(
+                "---\n"
+                "name: observability-engineering\n"
+                "description: Test skill.\n"
+                "---\n\n"
+                "# observability-engineering\n\n"
+                "Load [`security-review`](../security-review/SKILL.md).\n"
+                "Use [`security-review-evidence`](../security-review-evidence/SKILL.md).\n",
+                encoding="utf-8",
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+            self.assertEqual([], result.warnings)
+
     def test_category_required_link_rule_accepts_required_links(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

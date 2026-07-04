@@ -24,6 +24,8 @@ TAXONOMY_CATEGORY_HEADING = "## Taxonomy"
 TAXONOMY_INVENTORY_HEADING = "## Current First-Party Inventory"
 TAXONOMY_INVENTORY_ROW_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|")
 TAXONOMY_SKILL_REFERENCE_RE = re.compile(r"`([^`]+)`")
+TAXONOMY_API_CONTRACT_CATEGORY = "API design and contracts"
+TAXONOMY_OBSERVABILITY_CATEGORY = "Observability and operations"
 SECURITY_LINK_REQUIRED_SKILLS = frozenset(
     {
         "code-review",
@@ -39,6 +41,7 @@ SECURITY_LINK_REQUIRED_SKILLS = frozenset(
     }
 )
 REQUIRED_SECURITY_LINKS = ("security-review", "security-review-evidence")
+REQUIRED_API_SECURITY_LINKS = ("security-review",)
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,16 @@ class RelatedSkillLinkRule:
 
 
 REQUIRED_RELATED_SKILL_LINK_RULES = (
+    RelatedSkillLinkRule(
+        required_links=REQUIRED_API_SECURITY_LINKS,
+        reason="security-sensitive API contract work",
+        taxonomy_categories=(TAXONOMY_API_CONTRACT_CATEGORY,),
+    ),
+    RelatedSkillLinkRule(
+        required_links=REQUIRED_SECURITY_LINKS,
+        reason="sensitive telemetry or security-evidence handling",
+        taxonomy_categories=(TAXONOMY_OBSERVABILITY_CATEGORY,),
+    ),
     RelatedSkillLinkRule(
         required_links=REQUIRED_SECURITY_LINKS,
         reason="security-sensitive work",

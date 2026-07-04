@@ -115,6 +115,8 @@ handoff.
 | Skill authoring and governance | `create-agent-skill`, `code-review`, `review-verification-protocol` | Creating, validating, and reviewing durable agent guidance and repository changes. |
 | Security review | `threat-modeling`, `security-review`, `security-review-evidence`, `dependency-supply-chain-review` | Security design analysis, implemented-control audits, sanitized evidence handling, and dependency/supply-chain risk for trust-boundary work. |
 | Documentation | `documentation-engineering` | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, examples, and documentation review. |
+| API design and contracts | `api-design` | Public/service interface contracts, compatibility, versioning, idempotency, request/response/error envelopes, schema artifacts, and consumer/provider obligations. |
+| Observability and operations | `observability-engineering` | Durable logs, metrics, traces, correlation, dashboards, alerts, SLO/SLI signals, runbooks, incident visibility, and telemetry safety. |
 | Design methods and architecture | `brainstorming`, `behavior-driven-development`, `clean-architecture`, `domain-driven-design`, `hexagonal-architecture`, `onion-architecture`, `test-driven-development`, `gherkin` | Use the direct method or architecture skill that matches the work; do not load a meta-selection skill for simple changes. |
 | Debugging and prevention | `systematic-debugging`, `root-cause-analysis` | Active symptom diagnosis first; postmortem and recurrence prevention after the direct cause is understood. |
 | Data, identifiers, and SQL | `random-data-identifiers`, `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering` | Randomness/IDs, database-neutral SQL, and engine-specific PostgreSQL/SQLite schema, migration, query, transaction, performance, security, and review guidance. |
@@ -125,29 +127,28 @@ handoff.
 | Project workflow tools | `git-commit`, `justfiles`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for commits, Justfiles, current external docs, and verified Lucide icon names. |
 | Third-party runtime installs | `agent-browser`, `anti-ai-slop-writing`, `find-skills`, `playwright-cli` | Installed locally for runtime use but ignored or lockfile-owned; do not edit as first-party skills. |
 
-## Candidate Skill Contracts
+## API and Observability Skill Boundaries
 
-These contracts document planned boundaries only. Do not add either name to the
-current first-party inventory or validator-required link rules until
-`skills/<name>/SKILL.md` exists.
+These first-party contracts document boundaries shared by the taxonomy,
+cross-reference map, and validator-required related-link rules. The skill files
+remain the detailed workflow source of truth.
 
 ### `observability-engineering`
 
-Draft frontmatter description:
+Frontmatter description:
 
 ```yaml
 description: >-
   Observability, telemetry, and production diagnostics guidance. Use when
-  designing, adding, reviewing, or testing logs, metrics, traces, span/context
-  propagation, correlation or request IDs, sampling, labels/cardinality,
-  dashboards, alerts, SLO/SLI/error-budget signals,
+  designing, adding, reviewing, or testing structured logs, metrics, traces,
+  span/context propagation, correlation or request IDs, sampling,
+  labels/cardinality, dashboards, alerts, SLO/SLI/error-budget signals,
   OpenTelemetry/Prometheus/Grafana/Datadog-style instrumentation, operational
   runbooks, or incident visibility. Do not use for ordinary language
-  implementation, active debugging without instrumentation changes, Rust
-  async/web behavior, SQL schema/query design, API contract design,
-  architecture boundary selection, security review except telemetry leakage or
-  audit controls, BDD/TDD mechanics, or documentation-only edits; load those
-  existing skills instead or alongside it when their trigger is primary.
+  implementation, active debugging without durable instrumentation changes,
+  security review except telemetry leakage or audit controls, BDD/TDD mechanics,
+  or documentation-only edits; load those existing skills instead or alongside
+  this skill when their trigger is primary.
 ```
 
 Boundary rules:
@@ -181,7 +182,7 @@ Boundary rules:
 
 ### `api-design`
 
-Draft frontmatter description:
+Frontmatter description:
 
 ```yaml
 description: >-
@@ -386,6 +387,7 @@ reading the code, making a small change, and running the relevant check is enoug
 
 | Skill | Purpose And Trigger | Audit Decision |
 | --- | --- | --- |
+| `api-design` | API contracts for HTTP/REST, RPC/GraphQL, webhooks, events, request/response/error envelopes, pagination/filtering/sorting, idempotency, versioning, schema artifacts, SDK/CLI surfaces, and consumer/provider compatibility. | Add. Provides first-party contract and compatibility guidance while language, data, security, testing, observability, and documentation skills own their primary mechanics. |
 | `behavior-driven-development` | Behavior examples, acceptance criteria, workflows, and executable specifications. | Keep. Focused method skill; overlaps with `gherkin` only at the formal syntax boundary. |
 | `brainstorming` | Structured option generation for ambiguous engineering choices before implementation. | Keep. Useful only when multiple credible paths exist; non-goals are explicit. |
 | `clean-architecture` | Clean Architecture, dependency rule, entities, use cases/interactors, interface adapters, framework/database/UI independence, and Clean vs Hexagonal/Onion/layered tradeoffs. | Add. Splits detailed Clean Architecture guidance from Ports and Adapters while preserving cross-links to avoid duplicate architecture checklists. |
@@ -400,6 +402,7 @@ reading the code, making a small change, and running the relevant check is enoug
 | `hexagonal-architecture` | Ports and Adapters, use cases, application services, dependency inversion, inbound/outbound adapters, and Clean/Onion-style core isolation. | Add. Reusable architecture guidance that complements DDD, BDD, and TDD without making ports/adapters mandatory. |
 | `javascript-typescript-engineering` | JS/TS source, TypeScript, package managers, scripts, tests, lint/format/build, dependencies, workspaces, and CLIs. | Rename from `bun-javascript-workflows`. Covers JS/TS broadly while preserving Bun-first guidance when local evidence supports it. |
 | `justfiles` | Designing, refactoring, auditing, and validating Justfiles and `just` workflows. | Keep. Long but justified by version-sensitive syntax and safety concerns. |
+| `observability-engineering` | Observability, telemetry, production diagnostics, structured logs, metrics, traces, context propagation, correlation/request IDs, dashboards, alerts, SLO/SLI/error-budget signals, runbooks, incident visibility, and telemetry safety. | Add. Provides first-party signal-design and operational-visibility guidance while implementation, security, debugging, testing, and documentation skills keep their primary boundaries. |
 | `onion-architecture` | Onion Architecture, domain/application rings, inward dependencies, infrastructure-at-the-edge design, and Clean/Hexagonal/Onion tradeoffs. | Add. Provides direct activation for Onion requests while cross-linking to Clean, Hexagonal, and DDD. |
 | `playwright-e2e` | Checked-in Playwright tests, configs, helpers, traces, lanes, and browser-visible behavior. | Keep. Distinct from generic browser automation and lower-level domain tests. |
 | `postgresql-sql-engineering` | PostgreSQL schema, migrations, SQL, transactions, indexes, JSONB, RLS, privileges, plans, maintenance, and review. | Keep. Engine-specific data skill; delegates Rust adapter details to `rust-persistence-sql`. |
@@ -456,8 +459,8 @@ existing skill.
 | Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Baseline complete; known extensions tracked | Crates, workspaces, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
 | Running tests effectively | `test-driven-development`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Baseline complete | Unit, integration, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, selection, and failure interpretation are distributed to the relevant workflow skills. |
 | Root cause analysis and systematic debugging | `systematic-debugging`, `root-cause-analysis` | Baseline complete | Reproduction, narrowing, hypotheses, instrumentation, logs/traces, minimal cases, fix validation, and prevention. |
-| API design and contracts | `api-design` candidate contract plus language/framework/data/security/testing/docs skills | Candidate contract defined; not first-party yet | Contract and overlap boundaries are documented in Candidate Skill Contracts; existing skills remain primary when implementation, database behavior, security controls, tests, or docs are the main work. |
-| Observability and telemetry | `observability-engineering` candidate contract plus language/framework/security/debugging/docs skills | Candidate contract defined; not first-party yet | Contract and overlap boundaries are documented in Candidate Skill Contracts; existing skills remain primary for implementation mechanics, active debugging, security evidence, tests, and documentation-only edits. |
+| API design and contracts | `api-design`, language/framework/data/security/testing/docs skills | Baseline complete | First-party API contract guidance covers resource/operation shape, request/response/error envelopes, idempotency, versioning, compatibility, schema artifacts, SDK/CLI surfaces, and consumer/provider obligations while existing skills remain primary for implementation, database behavior, security controls, tests, observability, and docs. |
+| Observability and telemetry | `observability-engineering`, language/framework/security/debugging/docs skills | Baseline complete | First-party observability guidance covers logs, metrics, traces, correlation/context propagation, telemetry safety, dashboards, alerts, SLO/SLI/error-budget signals, runbooks, and incident visibility while existing skills remain primary for implementation mechanics, active debugging, security evidence, tests, and documentation-only edits. |
 | Justfiles | `justfiles` | Baseline complete | Recipe design, portability, parameters, env vars, docs, composition, safety, idempotence, and validation. |
 | Brainstorming and decision support | `brainstorming` | Baseline complete | Divergence, tradeoffs, assumptions, options, and actionable recommendations. |
 | Documentation | `documentation-engineering`, `python-engineering`, `rust-testing-quality`, `rust-engineering`, `code-review` | Baseline complete | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, maintainable examples, and anti-slop prose rules. |
