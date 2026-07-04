@@ -115,6 +115,17 @@ when the repository has adopted it; otherwise use the configured type checker.
   state, broad `Any`, broad exceptions, framework/ORM leakage, async blocking,
   monkeypatch-heavy tests, or over-mocking.
 
+## Security Review Routing
+
+Load [`security-review`](../security-review/SKILL.md) when Python work touches
+auth, sessions, crypto, credentials, secrets or `.env`, deserialization,
+template rendering, subprocess or command execution, path handling,
+uploads/downloads, dependency trust, package/install hooks, or other trust
+boundaries. Pair it with
+[`security-review-evidence`](../security-review-evidence/SKILL.md) when
+reviewing security-sensitive changes, telemetry, generated artifacts, package
+metadata, or test evidence so examples stay sanitized.
+
 ## Testing Guidance
 
 - Unit tests cover pure domain logic, validation, parsing, error mapping, and

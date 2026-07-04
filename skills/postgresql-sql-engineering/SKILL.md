@@ -27,6 +27,16 @@ Do not use this skill for generic in-memory domain logic, ORM-only API usage
 with no SQL/schema behavior, or SQLite-specific behavior except when comparing
 it to PostgreSQL.
 
+## Security Review Routing
+
+Load [`security-review`](../security-review/SKILL.md) when PostgreSQL work
+touches roles, privileges, RLS/policies, `SECURITY DEFINER`, extensions,
+dynamic SQL or injection risk, tenant isolation, audit logs, sensitive
+migrations/backfills, data repair scripts, secrets, or production-data access.
+Pair it with [`security-review-evidence`](../security-review-evidence/SKILL.md)
+when evidence includes redacted SQL, `EXPLAIN` output, schema diffs,
+audit/log samples, dumps, or migration artifacts.
+
 ## Workflow
 
 1. Inspect the real database surface: migrations, schema dumps, SQL files,

@@ -63,6 +63,16 @@ same way.
 - Prefer parameterized statements and driver bind APIs; never interpolate
   user-controlled values into SQL strings.
 
+## Security Review Prompts
+
+Load [`security-review`](../security-review/SKILL.md) when SQLite work touches
+database file paths or permissions, import/export paths, extension loading,
+encryption or sensitive local data, user-controlled SQL, cache/session storage,
+local sync or shared database files, backups, or other local trust boundaries.
+Pair it with [`security-review-evidence`](../security-review-evidence/SKILL.md)
+when evidence includes sanitized database files, fixture dumps, import/export
+artifacts, logs, or reproduction data.
+
 ## Testing Guidance
 
 - Test against SQLite itself for SQLite behavior. Mocks do not prove locking,

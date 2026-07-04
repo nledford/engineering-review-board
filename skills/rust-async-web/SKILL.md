@@ -26,6 +26,17 @@ formal ports/adapters or shared application use cases.
 5. Verify the server side, client/WASM side, and hydration/SSR behavior with the
    repository's commands.
 
+## Security Review Prompts
+
+Load [`security-review`](../security-review/SKILL.md) when async/web work
+touches auth, authorization, sessions or cookies, CORS/CSRF/CSP, redirects,
+SSR/hydration trust boundaries, server functions, uploads/downloads, path
+handling, request/response redaction, secrets, dependency trust,
+external-service calls, telemetry, or artifact handling. Pair it with
+[`security-review-evidence`](../security-review-evidence/SKILL.md) when evidence
+includes sanitized HTTP traces, logs/spans, browser or server-function payloads,
+screenshots, generated assets, or test artifacts.
+
 ## When To Choose Async Rust
 
 - Use async deliberately for I/O-bound or high-concurrency work: network

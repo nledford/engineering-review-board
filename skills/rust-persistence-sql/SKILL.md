@@ -35,6 +35,17 @@ be outbound ports and adapters rather than core domain code.
 6. Update SQLx offline query metadata or document why it is not used by the
    repo.
 
+## Security Review Prompts
+
+Load [`security-review`](../security-review/SKILL.md) when Rust persistence work
+touches SQL injection risk, SQLx/SeaQuery dynamic SQL, database credentials or
+`DATABASE_URL`, migration/backfill exposure, RLS/privilege assumptions, tenant
+isolation, audit logs, startup migrations, database error leakage, or
+production-data access. Pair it with
+[`security-review-evidence`](../security-review-evidence/SKILL.md) when evidence
+includes sanitized SQL, bind values, query plans, `.sqlx` metadata, migration
+output, logs, dumps, or other persistence artifacts.
+
 ## SQLx Checklist
 
 - Prefer compile-checked SQLx macros such as `query!` or `query_as!` when the

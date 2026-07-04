@@ -95,6 +95,17 @@ cargo fmt
   reflexive `Arc<Mutex<_>>`, deref polymorphism, panic at trust boundaries,
   async overuse, framework leakage, or brittle Rust tests.
 
+## Security Review Routing
+
+Load [`security-review`](../security-review/SKILL.md) when Rust changes touch
+auth or session handling, crypto/randomness, credentials, secrets or `.env`,
+filesystem paths, command/process execution, dependency trust or supply chain
+surfaces, build scripts, proc macros, `unsafe`, FFI, plugin boundaries, HTTP
+clients, SQL binding, or other trust boundaries. Pair it with
+[`security-review-evidence`](../security-review-evidence/SKILL.md) when
+security findings need sanitized logs, telemetry, build artifacts, dependency
+reports, or test output.
+
 ## Refactoring Guidance
 
 - Protect current behavior first with focused tests, characterization tests, or

@@ -40,6 +40,17 @@ behavior. Use [`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL
 6. Verify against the target database engine, not mocks, when SQL semantics are
    the behavior being changed.
 
+## Security Review Routing
+
+Load [`security-review`](../security-review/SKILL.md) when SQL work touches
+injection risk or dynamic SQL, privileges, roles, RLS/policies, tenant
+isolation, audit logs, secret or sensitive-data handling, migration/backfill
+exposure, data repair scripts, production-data access, imports/exports, or safe
+error messages. Pair it with
+[`security-review-evidence`](../security-review-evidence/SKILL.md) when findings
+need sanitized queries, query plans, migration diffs, audit samples, dumps, or
+other database artifacts.
+
 ## Reading and Refactoring SQL
 
 - Trace each query from caller inputs to returned data and side effects.
