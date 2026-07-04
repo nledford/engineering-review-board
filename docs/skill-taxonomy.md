@@ -265,29 +265,34 @@ reading the code, making a small change, and running the relevant check is enoug
 
 ## Required Coverage Matrix
 
+Coverage status means the current first-party baseline is covered and validated,
+not that every future skill domain is exhausted. Add or split future skills only
+when repeated tasks show a durable activation boundary that does not fit an
+existing skill.
+
 | Required Topic | Covering Skill(s) | Status | Notes |
 | --- | --- | --- | --- |
-| Code review | `code-review`, `review-verification-protocol`, `rust-code-review` | Complete | Generic review plus Rust-specific review lens and evidence gates. |
-| Security review and audit | `security-review`, `security-review-evidence`, `code-review`, language/data skills | Complete | Generic audit skill covers trust boundaries; support skill controls sanitized evidence. |
-| BDD | `behavior-driven-development`, `gherkin`, `playwright-e2e` | Complete | BDD principles and misuse are separate from formal `.feature` syntax. |
-| DDD | `domain-driven-design`, language/data skills | Complete | Strategic and tactical patterns with anti-ceremony guidance. |
-| Clean / Hexagonal Architecture / Onion / Ports and Adapters | `clean-architecture`, `hexagonal-architecture`, `onion-architecture`, `domain-driven-design`, language/data skills | Complete | Core isolation, dependency direction, entities, use cases/interactors, domain/application rings, interface adapters, ports/adapters, tests, tradeoffs, and when not to add indirection. |
-| TDD | `test-driven-development`, language/test skills | Complete | Red/green/refactor, test levels, regression, and misuse guidance. |
-| Combining BDD, DDD, TDD, Clean Architecture, Hexagonal Architecture, and Onion Architecture | This taxonomy plus BDD/DDD/TDD/Clean/Hexagonal/Onion cross-references | Complete | Composition guidance lives here to avoid a competing meta-skill. |
-| Gherkin and `.feature` files | `gherkin`, `behavior-driven-development`, `playwright-e2e` | Complete | Includes Given/When/Then discipline, outlines, anti-patterns, and language usage. |
-| Language-specific design patterns and anti-patterns | `rust-design-patterns`, `rust-antipatterns`, `python-design-patterns`, `python-antipatterns`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, language engineering skills | Complete | Pattern selection and smell detection are standalone skills, with short routing rules in each broader language skill. |
-| Random data and identifiers | `random-data-identifiers`, `security-review`, language/data skills | Complete | Covers CSPRNG defaults, seeded reproducibility, UUID/CUID/ULID-style choices, tests, and warnings. |
-| SQL | `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering`, `rust-persistence-sql` | Complete | Generic SQL plus engine and Rust adapter specialization. |
-| PostgreSQL | `postgresql-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Complete | JSONB, indexes, plans, constraints, transactions, privileges/RLS, and maintenance. |
-| SQLite | `sqlite-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Complete | PRAGMAs, WAL/locking, one-writer model, migrations, indexes, and limitations. |
-| Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Complete | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, security, DB delegation, pattern selection, and smell detection. |
-| JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Complete | Bun-first when local, Node/pnpm/npm/yarn/Deno, Prettier/ecosystem tooling, pattern selection, smell detection, and browser E2E are covered. |
-| Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Complete | Crates, workspaces, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
-| Running tests effectively | `test-driven-development`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Complete | Unit, integration, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, selection, and failure interpretation are distributed to the relevant workflow skills. |
-| Root cause analysis and systematic debugging | `systematic-debugging`, `root-cause-analysis` | Complete | Reproduction, narrowing, hypotheses, instrumentation, logs/traces, minimal cases, fix validation, and prevention. |
-| Justfiles | `justfiles` | Complete | Recipe design, portability, parameters, env vars, docs, composition, safety, idempotence, and validation. |
-| Brainstorming and decision support | `brainstorming` | Complete | Divergence, tradeoffs, assumptions, options, and actionable recommendations. |
-| Documentation | `documentation-engineering`, `python-engineering`, `rust-testing-quality`, `rust-engineering`, `code-review` | Complete | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, maintainable examples, and anti-slop prose rules. |
+| Code review | `code-review`, `review-verification-protocol`, `rust-code-review` | Baseline complete | Generic review plus Rust-specific review lens and evidence gates. |
+| Security review and audit | `security-review`, `security-review-evidence`, `code-review`, language/data skills | Baseline complete | Generic audit skill covers trust boundaries; support skill controls sanitized evidence. |
+| BDD | `behavior-driven-development`, `gherkin`, `playwright-e2e` | Baseline complete | BDD principles and misuse are separate from formal `.feature` syntax. |
+| DDD | `domain-driven-design`, language/data skills | Baseline complete | Strategic and tactical patterns with anti-ceremony guidance. |
+| Clean / Hexagonal Architecture / Onion / Ports and Adapters | `clean-architecture`, `hexagonal-architecture`, `onion-architecture`, `domain-driven-design`, language/data skills | Baseline complete | Core isolation, dependency direction, entities, use cases/interactors, domain/application rings, interface adapters, ports/adapters, tests, tradeoffs, and when not to add indirection. |
+| TDD | `test-driven-development`, language/test skills | Baseline complete | Red/green/refactor, test levels, regression, and misuse guidance. |
+| Combining BDD, DDD, TDD, Clean Architecture, Hexagonal Architecture, and Onion Architecture | This taxonomy plus BDD/DDD/TDD/Clean/Hexagonal/Onion cross-references | Baseline complete | Composition guidance lives here to avoid a competing meta-skill. |
+| Gherkin and `.feature` files | `gherkin`, `behavior-driven-development`, `playwright-e2e` | Baseline complete | Includes Given/When/Then discipline, outlines, anti-patterns, and language usage. |
+| Language-specific design patterns and anti-patterns | `rust-design-patterns`, `rust-antipatterns`, `python-design-patterns`, `python-antipatterns`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, language engineering skills | Baseline complete; known extensions tracked | Pattern selection and smell detection are standalone skills, with short routing rules in each broader language skill. |
+| Random data and identifiers | `random-data-identifiers`, `security-review`, language/data skills | Baseline complete | Covers CSPRNG defaults, seeded reproducibility, UUID/CUID/ULID-style choices, tests, and warnings. |
+| SQL | `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering`, `rust-persistence-sql` | Baseline complete; known extensions tracked | Generic SQL plus engine and Rust adapter specialization. |
+| PostgreSQL | `postgresql-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | JSONB, indexes, plans, constraints, transactions, privileges/RLS, and maintenance. |
+| SQLite | `sqlite-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | PRAGMAs, WAL/locking, one-writer model, migrations, indexes, and limitations. |
+| Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, security, DB delegation, pattern selection, and smell detection. |
+| JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | Bun-first when local, Node/pnpm/npm/yarn/Deno, Prettier/ecosystem tooling, pattern selection, smell detection, and browser E2E are covered. |
+| Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Baseline complete; known extensions tracked | Crates, workspaces, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
+| Running tests effectively | `test-driven-development`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Baseline complete | Unit, integration, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, selection, and failure interpretation are distributed to the relevant workflow skills. |
+| Root cause analysis and systematic debugging | `systematic-debugging`, `root-cause-analysis` | Baseline complete | Reproduction, narrowing, hypotheses, instrumentation, logs/traces, minimal cases, fix validation, and prevention. |
+| Justfiles | `justfiles` | Baseline complete | Recipe design, portability, parameters, env vars, docs, composition, safety, idempotence, and validation. |
+| Brainstorming and decision support | `brainstorming` | Baseline complete | Divergence, tradeoffs, assumptions, options, and actionable recommendations. |
+| Documentation | `documentation-engineering`, `python-engineering`, `rust-testing-quality`, `rust-engineering`, `code-review` | Baseline complete | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, maintainable examples, and anti-slop prose rules. |
 
 ## Retired, Merged, Renamed, Or Third-Party Skills
 
