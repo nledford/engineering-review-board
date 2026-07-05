@@ -1,6 +1,6 @@
 ---
 name: javascript-typescript-engineering
-description: JavaScript and TypeScript engineering guidance. Use when adding, changing, reviewing, testing, linting, formatting, dependency-managing, packaging, or refactoring JS/TS source, package.json scripts, lockfiles, workspaces, CLIs, Bun/Node/Deno workflows, or project automation. Use api-design for public service/SDK/CLI contracts and observability-engineering for telemetry/logging signal design. Do not use for checked-in Playwright test design; use playwright-e2e.
+description: JavaScript and TypeScript engineering guidance. Use when adding, changing, reviewing, testing, linting, formatting, dependency-managing, packaging, or refactoring JS/TS source, package.json scripts, lockfiles, workspaces, CLIs, Bun/Node/Deno workflows, or project automation. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, and css-scss-styling for CSS/SCSS/CSS-module/CSS-in-JS/utility styling decisions. Do not use for checked-in Playwright test design; use playwright-e2e.
 ---
 
 # JavaScript and TypeScript Engineering
@@ -21,7 +21,10 @@ linter, test runner, or bundler.
 
 Do not use this skill for Rust, Python, database-native design, or checked-in
 Playwright test design. Use [`playwright-e2e`](../playwright-e2e/SKILL.md) for
-Playwright specs/configs and browser-visible test lanes.
+Playwright specs/configs and browser-visible test lanes. Use
+[`css-scss-styling`](../css-scss-styling/SKILL.md) for stylesheet architecture,
+CSS/SCSS migration, CSS modules, CSS-in-JS styling choices, utility classes,
+responsive layout, and design-token decisions.
 
 ## Workflow
 
@@ -111,6 +114,17 @@ deno task <task>
   runtime validation, unawaited promises, framework/UI leakage, singleton service
   bags, import-time side effects, weak randomness, over-mocked tests, or brittle
   E2E tests.
+
+## Styling Routing
+
+- Load [`css-scss-styling`](../css-scss-styling/SKILL.md) when JS/TS work
+  touches `.css`, `.scss`, `.sass`, CSS modules, CSS-in-JS, utility-class
+  conventions, PostCSS/Tailwind/Sass config, design tokens, responsive layout,
+  or browser-visible cascade behavior.
+- Keep this skill focused on package-manager workflow, TypeScript contracts,
+  bundler integration, component code, tests, and build commands. Let the styling
+  skill own CSS-vs-SCSS decisions, selector/cascade maintainability,
+  accessibility-related visual states, and stylesheet migration risks.
 
 ## API and Observability Routing
 

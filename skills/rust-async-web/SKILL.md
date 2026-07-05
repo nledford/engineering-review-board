@@ -1,6 +1,6 @@
 ---
 name: rust-async-web
-description: Async Rust and Rust web/full-stack guidance. Use when working with Tokio, async tasks, cancellation, timeouts, backpressure, channels, shared state, synchronization, Axum handlers/extractors/state/middleware, Leptos components/server functions/SSR/hydration/WASM, or Axum-Leptos full-stack applications. Use api-design for endpoint contracts, observability-engineering for durable telemetry, rust-persistence-sql for SQLx/database work, and rust-testing-quality for test lanes.
+description: Async Rust and Rust web/full-stack guidance. Use when working with Tokio, async tasks, cancellation, timeouts, backpressure, channels, shared state, synchronization, Axum handlers/extractors/state/middleware, Leptos components/server functions/SSR/hydration/WASM, or Axum-Leptos full-stack applications. Use api-design for endpoint contracts, observability-engineering for durable telemetry, css-scss-styling for CSS/SCSS/Leptos styling decisions, rust-persistence-sql for SQLx/database work, and rust-testing-quality for test lanes.
 ---
 
 # Rust Async And Web
@@ -26,7 +26,8 @@ task, or runtime behavior.
 
 1. Inspect the runtime and stack: `Cargo.toml` features, `tokio` runtime setup,
    Axum routers, Leptos app/hydration configuration, server functions, WASM
-   build target, middleware, tracing, and existing test recipes.
+   build target, stylesheet/static asset pipeline, middleware, tracing, and
+   existing test recipes.
 2. Define externally observable behavior with BDD-style acceptance criteria.
    Keep domain invariants in framework-independent types where practical.
 3. Design task ownership, cancellation, timeouts, backpressure, shared state,
@@ -246,6 +247,12 @@ loop {
   dependencies. Check crate features and target-specific modules.
 - Axum-Leptos integrations should keep router state, server function context,
   static assets, fallback handling, and error pages explicit.
+
+Load [`css-scss-styling`](../css-scss-styling/SKILL.md) when Leptos/Axum work
+touches `.css`, `.scss`, `.sass`, stylesheet entrypoints, Trunk/cargo-leptos
+style assets, class/style bindings, design tokens, responsive layout, CSS
+modules, or browser-visible cascade behavior. Keep this skill focused on Rust
+runtime, SSR, hydration, server functions, routing, and WASM constraints.
 
 ## Commands
 

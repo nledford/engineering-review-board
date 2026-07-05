@@ -1,6 +1,6 @@
 ---
 name: python-engineering
-description: Python engineering guidance with uv. Use when adding, changing, reviewing, testing, packaging, linting, formatting, typing, dependency-managing, or refactoring Python code, pyproject.toml, uv.lock, pytest/unittest tests, Python scripts, or Python project workflows. Use api-design for public service/SDK/CLI contracts and observability-engineering for telemetry/logging signal design.
+description: Python engineering guidance with uv. Use when adding, changing, reviewing, testing, packaging, linting, formatting, typing, dependency-managing, or refactoring Python code, pyproject.toml, uv.lock, pytest/unittest tests, Python scripts, Python web templates, or Python project workflows. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, and css-scss-styling for CSS/SCSS/template styling decisions.
 ---
 
 # Python Engineering
@@ -23,7 +23,10 @@ Do not use this skill for non-Python package managers, browser E2E test design,
 or database-native design except where Python code owns the adapter boundary.
 Use [`sqlite-sql-engineering`](../sqlite-sql-engineering/SKILL.md) or
 [`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL.md) for
-schema, transaction, query-plan, and database-specific behavior.
+schema, transaction, query-plan, and database-specific behavior. Use
+[`css-scss-styling`](../css-scss-styling/SKILL.md) when Python web work changes
+stylesheets, template class conventions, static CSS/SCSS assets, responsive
+layout, or design tokens.
 
 ## Workflow
 
@@ -133,6 +136,17 @@ when the repository has adopted it; otherwise use the configured type checker.
   [`api-design`](../api-design/SKILL.md) first if the contract is still being
   shaped; otherwise use
   [`documentation-engineering`](../documentation-engineering/SKILL.md).
+
+## Styling Routing
+
+- Load [`css-scss-styling`](../css-scss-styling/SKILL.md) when Django, Flask, or
+  other Python web work touches `.css`, `.scss`, `.sass`, static asset paths,
+  template class hooks, CSS modules through a frontend build, utility classes,
+  responsive layout, or accessibility-related visual states.
+- Keep this skill focused on Python routes, templates, packaging, tests, and
+  framework configuration. Let the styling skill own CSS-vs-SCSS decisions,
+  stylesheet build behavior, cascade/layout maintainability, and migration
+  validation.
 
 ## Security Review Routing
 

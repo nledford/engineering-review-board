@@ -123,6 +123,7 @@ handoff.
 | Data, identifiers, and SQL | `random-data-identifiers`, `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering` | Randomness/IDs, database-neutral SQL, and engine-specific PostgreSQL/SQLite schema, migration, query, transaction, performance, security, and review guidance. |
 | Python engineering | `python-engineering` | Python implementation, review, testing, packaging, dependency management, quality gates, docs, and `uv` workflows. |
 | JavaScript and TypeScript engineering | `javascript-typescript-engineering`, `playwright-e2e` | JS/TS implementation/tooling/package workflows and checked-in Playwright E2E tests. |
+| Frontend styling | `css-scss-styling` | CSS/SCSS/Sass stylesheet architecture, CSS modules, CSS-in-JS, utility-class conventions, design tokens, responsive layout, browser compatibility, and styling migrations across web stacks. |
 | Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests and quality gates, async/web/full-stack work, SQLx/SeaQuery/ORM persistence, and Rust review. |
 | Language design patterns and anti-patterns | `rust-design-patterns`, `rust-antipatterns`, `python-design-patterns`, `python-antipatterns`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns` | Standalone language-specific pattern selection and smell-detection guidance, with routing from the broader language skills. |
 | Project workflow tools | `git-commit`, `justfiles`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for commits, Justfiles, current external docs, and verified Lucide icon names. |
@@ -295,7 +296,8 @@ count as third-party skills.
 | `python-engineering` | Python source, tests, pyproject.toml, uv.lock, packaging, linting, typing, docstrings, dependency management, and Python review. | Non-Python package managers, database-native schema design, or browser E2E test design. |
 | `python-design-patterns` | Python-specific design patterns such as dataclasses, value objects, protocols, context managers, adapters, repositories, factories, and Python expression of Clean/Hexagonal/Onion boundaries. | General Python workflow, package management, or smell-focused anti-pattern review. |
 | `python-antipatterns` | Python-specific generated-code and design smells such as mutable defaults, global state, import-time side effects, broad `Any`, broad exceptions, framework/ORM leakage, async blocking, and brittle tests. | Positive pattern selection or ordinary Python workflow. |
-| `javascript-typescript-engineering` | JS/TS source, package.json, lockfiles, Bun/Node/Deno workflows, TypeScript, lint/format/test/build scripts, dependencies, workspaces, and JS/TS review. | Checked-in Playwright spec design, Rust/Python/database work, or framework-specific frontend architecture not evidenced by local config. |
+| `javascript-typescript-engineering` | JS/TS source, package.json, lockfiles, Bun/Node/Deno workflows, TypeScript, lint/format/test/build scripts, dependencies, workspaces, and JS/TS review. | Checked-in Playwright spec design, Rust/Python/database work, or CSS/SCSS styling decisions without JS/TS implementation or tooling impact. |
+| `css-scss-styling` | CSS, SCSS/Sass, CSS modules, CSS-in-JS styling choices, utility-class conventions, design tokens, cascade/layers, container/media queries, responsive layout, browser compatibility, and CSS-to-SCSS migration. | Pure JS/TS/Python/Rust behavior changes, API/data work, checked-in browser E2E strategy, or vendor-specific framework setup with no styling surface. |
 | `typescript-javascript-design-patterns` | TypeScript/JavaScript-specific design patterns such as discriminated unions, branded types, runtime validation boundaries, adapter modules, functional core/imperative shell, use-case handlers, async orchestration, and test builders. | Package manager workflows, checked-in Playwright spec design, or smell-focused anti-pattern review. |
 | `typescript-javascript-antipatterns` | TypeScript/JavaScript smells such as `any`, unsafe assertions, missing runtime validation, unawaited promises, singleton service bags, import-time side effects, framework/UI leakage, weak randomness, over-mocked tests, and brittle E2E tests. | Positive pattern selection or ordinary JS/TS workflow. |
 | `documentation-engineering` | Markdown, README, API docs, code comments, rustdoc, pydoc/docstrings, examples, and documentation review. | Code-only behavior changes with no reader-facing documentation or comment impact. |
@@ -313,8 +315,8 @@ that would make the broad language or review skill noisy or under-specific:
   `playwright-e2e`.
 - **Accessibility review:** recurring work is mostly WCAG criteria,
   keyboard/focus behavior, ARIA semantics, contrast, screen-reader behavior, or
-  axe-style findings across projects, rather than ordinary frontend fixes or
-  browser test implementation.
+  axe-style findings across projects, rather than ordinary CSS/SCSS styling fixes
+  covered by `css-scss-styling` or browser test implementation.
 - **Packaging and toolchains:** package metadata, builds, publishing, lockfiles,
   workspaces, dependency resolution, or release automation become version-sensitive
   enough that they can be handled without loading general implementation guidance.
@@ -424,6 +426,7 @@ reading the code, making a small change, and running the relevant check is enoug
 | `code-review` | General repository-local audit and review workflow, severity, and finding format. | Keep. Owns review reporting; specialist skills add narrow lenses. |
 | `context7-docs` | Current third-party library, framework, SDK, API, CLI, and tool documentation lookup. | Keep. External-docs skill; does not replace repository inspection. |
 | `create-agent-skill` | Creating, updating, validating, and maintaining reusable `SKILL.md` skills. | Keep. Canonical skill-authoring workflow. |
+| `css-scss-styling` | CSS and SCSS/Sass stylesheet work, CSS modules, CSS-in-JS styling choices, utility-class conventions, modern CSS features, Sass modules, responsive/accessibility/performance concerns, and CSS-to-SCSS migration. | Add. Fills cross-stack frontend styling guidance without splitting CSS and SCSS into duplicate skills; decision rules prevent SCSS-by-default advice. |
 | `dependency-supply-chain-review` | Dependency audits, SBOM/SCA output, CVE/GHSA advisories, package provenance, registries, manifests, lockfiles, install scripts, CI bootstrap dependencies, containers, binaries, and vendored/generated code. | Add. Specializes security review for supply-chain trust surfaces while language skills continue to own package-manager workflow and implementation details. |
 | `documentation-engineering` | Concise, accurate Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, examples, and documentation review. | Add. Fills documentation coverage without relying on third-party writing skills. |
 | `domain-driven-design` | Domain modeling, bounded contexts, invariants, repositories, services, events, and language. | Keep. Focused on domain boundaries and anti-ceremony guidance. |
@@ -487,6 +490,7 @@ existing skill.
 | SQLite | `sqlite-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | PRAGMAs, WAL/locking, one-writer model, migrations, indexes, and limitations. |
 | Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, security, DB delegation, pattern selection, and smell detection. |
 | JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | Bun-first when local, Node/pnpm/npm/yarn/Deno, Prettier/ecosystem tooling, pattern selection, smell detection, and browser E2E are covered. |
+| CSS and SCSS styling | `css-scss-styling`, `javascript-typescript-engineering`, `python-engineering`, `rust-async-web`, `playwright-e2e` | Baseline complete | CSS vs SCSS decisions, Sass modules, modern CSS features, detection heuristics, cross-stack integration, accessibility/responsive/performance concerns, and migration validation are covered. |
 | Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Baseline complete; known extensions tracked | Crates, workspaces, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
 | Running tests effectively | `test-driven-development`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Baseline complete | Unit, integration, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, selection, and failure interpretation are distributed to the relevant workflow skills. |
 | Root cause analysis and systematic debugging | `systematic-debugging`, `root-cause-analysis` | Baseline complete | Reproduction, narrowing, hypotheses, instrumentation, logs/traces, minimal cases, fix validation, and prevention. |
@@ -582,6 +586,16 @@ Scenario: JavaScript and TypeScript choose the local workflow
   When the agent chooses workflow guidance
   Then it loads javascript-typescript-engineering
   And does not assume Bun, Node, pnpm, npm, yarn, Deno, React, Vite, ESLint, or Prettier without repository evidence
+```
+
+```gherkin
+Scenario: CSS and SCSS changes preserve the local styling system
+  Given a change touches CSS, SCSS, Sass, CSS modules, CSS-in-JS, utility classes, design tokens, or stylesheet build config
+  When the agent chooses styling guidance
+  Then it loads css-scss-styling
+  And detects the existing styling system before editing
+  And prefers plain CSS unless SCSS provides clear repository-specific value
+  And validates the compiled or browser-visible result
 ```
 
 ```gherkin
