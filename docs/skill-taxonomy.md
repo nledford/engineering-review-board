@@ -113,7 +113,7 @@ handoff.
 | Category | Skills | Boundary |
 | --- | --- | --- |
 | Skill authoring and governance | `create-agent-skill`, `code-review`, `review-verification-protocol` | Creating, validating, and reviewing durable agent guidance and repository changes. |
-| Specialist reviews and release readiness | `adversarial-review`, `architecture-review`, `domain-modeling`, `prompt-engineering-review`, `release-readiness`, `testing-strategy` | Focused final verification, architecture/domain/test/prompt review, and evidence-based ship or hold decisions; implementation remains with the owning method or engineering skill. |
+| Specialist reviews and release readiness | `adversarial-review`, `architecture-review`, `domain-modeling`, `prompt-engineering-review`, `release-readiness`, `testing-strategy`, `ux-accessibility-review` | Focused final verification, architecture/domain/test/prompt/UX/accessibility review, and evidence-based ship or hold decisions; implementation remains with the owning method or engineering skill. |
 | Security review | `threat-modeling`, `security-review`, `security-review-evidence`, `dependency-supply-chain-review` | Security design analysis, implemented-control audits, sanitized evidence handling, and dependency/supply-chain risk for trust-boundary work. |
 | Documentation | `documentation-engineering` | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, examples, and documentation review. |
 | Internationalization and localization | `internationalization-localization` | User-facing text localization, Project Fluent, `.ftl` authoring, locale fallback, multilingual catalogs, and localized output validation across language stacks. |
@@ -270,21 +270,19 @@ count as third-party skills.
 | `typescript-javascript-antipatterns` | TypeScript/JavaScript smells such as `any`, unsafe assertions, missing runtime validation, unawaited promises, singleton service bags, import-time side effects, framework/UI leakage, weak randomness, over-mocked tests, and brittle E2E tests. | Positive pattern selection or ordinary JS/TS workflow. |
 | `documentation-engineering` | Markdown, README, API docs, code comments, rustdoc, pydoc/docstrings, examples, and documentation review. | Code-only behavior changes with no reader-facing documentation or comment impact. |
 
-### Future Python, TypeScript/JavaScript, and Accessibility Split Triggers
+### Future Python and TypeScript/JavaScript Split Triggers
 
 These are not backlog items. Split `python-engineering` or
-`javascript-typescript-engineering`, or treat a dedicated accessibility-review
-skill as eligible, only after repeated tasks show a durable activation boundary
-that would make the broad language or review skill noisy or under-specific:
+`javascript-typescript-engineering` only after repeated tasks show a durable
+activation boundary that would make the broad language skill noisy or
+under-specific. Cross-stack UI and accessibility audits now route to
+`ux-accessibility-review`; implementation remains with styling, language, i18n,
+and browser-test skills.
 
 - **Testing:** recurring work is mostly test strategy, fixtures, runner behavior,
   coverage, flake isolation, or CI lane selection across projects, rather than
   implementation plus its normal tests. Keep checked-in browser E2E work in
   `playwright-e2e`.
-- **Accessibility review:** recurring work is mostly WCAG criteria,
-  keyboard/focus behavior, ARIA semantics, contrast, screen-reader behavior, or
-  axe-style findings across projects, rather than ordinary CSS/SCSS styling fixes
-  covered by `css-scss-styling` or browser test implementation.
 - **Packaging and toolchains:** package metadata, builds, publishing, lockfiles,
   workspaces, dependency resolution, or release automation become version-sensitive
   enough that they can be handled without loading general implementation guidance.
@@ -438,6 +436,7 @@ reading the code, making a small change, and running the relevant check is enoug
 | `threat-modeling` | Threat models, abuse cases, actors, assets, data flows, trust boundaries, attack surface, security requirements, mitigations, assumptions, and residual risk. | Add. Covers design-time security analysis before implemented-control review; concrete vulnerabilities and evidence still route to `security-review` and `security-review-evidence`. |
 | `typescript-javascript-antipatterns` | TypeScript/JavaScript generated-code and design smell review for `any`, unsafe assertions, missing runtime validation, unawaited promises, singleton state, framework/UI leakage, and brittle tests. | Add. Splits smell-focused JS/TS review from positive pattern selection and broad JS/TS workflow. |
 | `typescript-javascript-design-patterns` | TypeScript/JavaScript pattern guidance for discriminated unions, branded types, runtime validation boundaries, adapter modules, use-case handlers, async orchestration, and test builders. | Add. Provides standalone pattern selection while `javascript-typescript-engineering` remains the workflow skill. |
+| `ux-accessibility-review` | Focused UI/UX, responsive, interaction-state, visual-polish, and WCAG 2.2 AA review using rendered-interface evidence. | Add. Establishes a cross-stack review boundary while styling, language, i18n, and Playwright skills own implementation and durable tests. |
 
 ## Required Coverage Matrix
 
@@ -448,7 +447,7 @@ existing skill.
 
 | Required Topic | Covering Skill(s) | Status | Notes |
 | --- | --- | --- | --- |
-| Code review | `code-review`, `review-verification-protocol`, `adversarial-review`, `architecture-review`, `domain-modeling`, `testing-strategy`, `rust-code-review` | Baseline complete | Generic review and evidence gates plus focused final, architecture, domain, test, and Rust review lenses. |
+| Code review | `code-review`, `review-verification-protocol`, `adversarial-review`, `architecture-review`, `domain-modeling`, `testing-strategy`, `ux-accessibility-review`, `rust-code-review` | Baseline complete | Generic review and evidence gates plus focused final, architecture, domain, test, UX/accessibility, and Rust review lenses. |
 | Security review and audit | `threat-modeling`, `security-review`, `security-review-evidence`, `dependency-supply-chain-review`, `code-review`, language/data skills | Baseline complete | Design-time modeling, implemented-control review, supply-chain review, generic audit routing, and sanitized evidence are covered. |
 | Threat modeling and security design | `threat-modeling`, `security-review`, `security-review-evidence`, architecture/method/language skills | Baseline complete | Actors, assets, entry points, data flows, trust boundaries, abuse cases, mitigations, security acceptance criteria, residual risk, and handoff to verified review are covered. |
 | Dependency and supply-chain review | `dependency-supply-chain-review`, `security-review`, `security-review-evidence`, language/workflow skills | Baseline complete | Manifests, lockfiles, SBOM/SCA/CVE/GHSA advisories, provenance, registries, install scripts, CI bootstrap, containers, binaries, vendored/generated code, and sanitized evidence are covered. |
@@ -465,7 +464,7 @@ existing skill.
 | SQLite | `sqlite-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | PRAGMAs, WAL/locking, one-writer model, migrations, indexes, and limitations. |
 | Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, security, DB delegation, pattern selection, and smell detection. |
 | JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | Node/npm defaults, `npx`, pnpm/yarn/Bun/Deno when local evidence requires them, Prettier/ecosystem tooling, pattern selection, smell detection, and browser E2E are covered. |
-| CSS and SCSS styling | `css-scss-styling`, `javascript-typescript-engineering`, `python-engineering`, `rust-async-web`, `playwright-e2e` | Baseline complete | CSS vs SCSS decisions, Sass modules, modern CSS features, detection heuristics, cross-stack integration, accessibility/responsive/performance concerns, and migration validation are covered. |
+| CSS and SCSS styling | `css-scss-styling`, `ux-accessibility-review`, `javascript-typescript-engineering`, `python-engineering`, `rust-async-web`, `playwright-e2e` | Baseline complete | CSS vs SCSS decisions, Sass modules, modern CSS features, detection heuristics, cross-stack integration, accessibility/responsive/performance concerns, focused UI review, and migration validation are covered. |
 | Internationalization and localization | `internationalization-localization`, language engineering skills, `api-design`, `css-scss-styling`, `playwright-e2e`, `security-review`, `security-review-evidence`, `context7-docs` | Baseline complete | Covers i18n/l10n concepts, Project Fluent and `.ftl` authoring, American English source locale, multilingual catalogs, locale fallback, Fluent JS/Python/Rust binding routing, localized output tests, accessibility, and trust-boundary/evidence handoffs. |
 | Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Baseline complete; known extensions tracked | Crates, workspaces, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
 | Running and reviewing tests effectively | `test-driven-development`, `testing-strategy`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Baseline complete | Unit, integration, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, strategy review, selection, and failure interpretation are distributed to the relevant workflow skills. |
@@ -478,6 +477,7 @@ existing skill.
 | Documentation | `documentation-engineering`, `python-engineering`, `rust-testing-quality`, `rust-engineering`, `code-review` | Baseline complete | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, maintainable examples, and anti-slop prose rules. |
 | Prompt engineering review | `prompt-engineering-review`, `create-agent-skill` | Baseline complete | Coding-agent prompt audits and rewrites are distinct from reusable skill authoring and application implementation. |
 | Release readiness | `release-readiness`, `adversarial-review`, `code-review`, specialist review skills | Baseline complete | Final ship or hold decisions cover scope, validation, migration, rollout, rollback, operations, cross-functional review evidence, and residual risk. |
+| UX and accessibility review | `ux-accessibility-review`, `css-scss-styling`, `playwright-e2e`, `internationalization-localization`, language engineering skills | Baseline complete | Cross-stack UI audits cover workflow usability, visual hierarchy, responsive and interaction states, rendered-interface evidence, and WCAG 2.2 AA concerns while implementation remains with the owning stack skill. |
 
 ## Retired, Merged, Renamed, Or Third-Party Skills
 
