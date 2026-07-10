@@ -1,6 +1,6 @@
 ---
 name: rust-async-web
-description: Async Rust and Rust web/full-stack guidance. Use when working with Tokio, async tasks, cancellation, timeouts, backpressure, channels, shared state, synchronization, Axum handlers/extractors/state/middleware, Leptos components/server functions/SSR/hydration/WASM, or Axum-Leptos full-stack applications. Use api-design for endpoint contracts, observability-engineering for durable telemetry, css-scss-styling for CSS/SCSS/Leptos styling decisions, rust-persistence-sql for SQLx/database work, and rust-testing-quality for test lanes.
+description: Async Rust and Rust web/full-stack guidance. Use when working with Tokio, async tasks, cancellation, timeouts, backpressure, channels, shared state, synchronization, Axum handlers/extractors/state/middleware, Leptos components, leptos-use, server functions, SSR/hydration/WASM, or Axum-Leptos full-stack applications. Use api-design for endpoint contracts, observability-engineering for durable telemetry, css-scss-styling for CSS/SCSS/Leptos styling decisions, rust-persistence-sql for SQLx/database work, and rust-testing-quality for test lanes.
 ---
 
 # Rust Async And Web
@@ -138,6 +138,32 @@ queues, and treat cancellation as real control flow.
   dependencies. Check crate features and target-specific modules.
 - Axum-Leptos integrations should keep router state, server function context,
   static assets, fallback handling, and error pages explicit.
+
+### Leptos-Use
+
+- Consult the current [Leptos-Use documentation](https://leptos-use.rs/) and the
+  repository's pinned Leptos and `leptos-use` versions before using an API.
+  Consider the crate before hand-writing reusable reactive wrappers for browser
+  events, media queries and preferences, storage, observers, timers, sensors,
+  streams, or other Web APIs. Prefer native Leptos or direct `web-sys` code when
+  the behavior is small, unsupported, or clearer without another abstraction.
+- Inspect each function's documented SSR behavior; server fallbacks vary by
+  utility. Use SSR-safe targets such as `use_window()` and `use_document()`
+  instead of accessing browser globals during server rendering, and verify that
+  fallback values cannot produce incorrect initial markup or hydration mismatches.
+- In an SSR application, enable `leptos-use/ssr` through the application's
+  server-only feature, not globally on the dependency. Inspect function-level
+  crate features and avoid shipping unused defaults when WASM size or compile
+  time matters, while preserving the repository's established feature policy.
+- Prefer utilities that bind cleanup to the Leptos owner for listeners,
+  observers, timers, and streams. Retain and call returned cleanup, pause, stop,
+  or close controls when behavior must end before owner cleanup; confirm any
+  same-thread restrictions in the selected API's documentation.
+- Treat local/session storage as user-visible, origin-scoped client state, not
+  trusted or secret storage. Account for decoding failures, unavailable storage,
+  cross-tab updates, and hydration timing. For permissions and sensors, handle
+  unsupported, denied, unavailable, and paused states rather than assuming a
+  successful browser API call.
 
 Load [`css-scss-styling`](../css-scss-styling/SKILL.md) when Leptos/Axum work
 touches `.css`, `.scss`, `.sass`, stylesheet entrypoints, Trunk/cargo-leptos
