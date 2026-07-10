@@ -23,6 +23,10 @@ For positive pattern selection, use
 [`typescript-javascript-design-patterns`](../typescript-javascript-design-patterns/SKILL.md).
 For broader workflow and tooling, use
 [`javascript-typescript-engineering`](../javascript-typescript-engineering/SKILL.md).
+For a requested review or audit, also load
+[`code-review`](../code-review/SKILL.md) and
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings.
 
 ## Common Anti-Patterns
 

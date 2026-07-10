@@ -22,6 +22,10 @@ code as an anti-pattern.
 For positive pattern selection, use
 [`python-design-patterns`](../python-design-patterns/SKILL.md). For broader
 workflow and tooling, use [`python-engineering`](../python-engineering/SKILL.md).
+For a requested review or audit, also load
+[`code-review`](../code-review/SKILL.md) and
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings.
 
 ## Common Anti-Patterns
 
@@ -84,4 +88,3 @@ workflow and tooling, use [`python-engineering`](../python-engineering/SKILL.md)
   rewrites into layers.
 - State which checks would validate the fix: unit tests, integration tests,
   type checks, linting, or framework-specific tests.
-

@@ -10,6 +10,10 @@ delegation instruction. Use
 [`create-agent-skill`](../create-agent-skill/SKILL.md) instead when creating or
 maintaining a reusable `SKILL.md` contract.
 
+Before reporting prompt findings, apply
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md) so
+each issue is anchored in the actual prompt and tied to likely agent behavior.
+
 Do not use it to implement the task described by the prompt unless the user also
 requests implementation.
 

@@ -10,6 +10,10 @@ complete, when the remaining question is whether the change is safe to merge or
 release. Load the relevant review skill when security, performance,
 accessibility, data, or architecture evidence is incomplete.
 
+Apply
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md) to
+every blocker, risk finding, and ship-or-hold rationale.
+
 Do not use it to replace implementation, a first code review, or a repository's
 deployment runbook.
 

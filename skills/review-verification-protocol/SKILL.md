@@ -1,15 +1,14 @@
 ---
 name: review-verification-protocol
-description: Mandatory evidence gates for code-review findings. Load with code-review and any specialist review skill before reporting findings, or read/apply manually if the runtime hides this skill.
+description: Mandatory evidence gates for review findings. Load with code-review and any specialist review skill before reporting findings, or read/apply manually if the runtime hides this skill.
 user-invocable: false
 ---
 
 # Review Verification Protocol
 
-Use this protocol before reporting any code-review finding. It is the evidence
-gate for [`code-review`](../code-review/SKILL.md) and any specialist review
-skills. Skipping it creates false positives that waste reviewer time and erode
-trust.
+Use this protocol before reporting any review finding. It is the evidence gate
+for [`code-review`](../code-review/SKILL.md) and every specialist review skill.
+Skipping it creates false positives that waste reviewer time and erode trust.
 
 ## Hard gates per finding
 
