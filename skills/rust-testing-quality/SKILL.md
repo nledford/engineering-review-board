@@ -1,6 +1,6 @@
 ---
 name: rust-testing-quality
-description: Rust testing and quality-gate guidance. Use when writing, updating, running, filtering, or reporting Rust unit, integration, end-to-end, property-style, compile-fail, or Rustdoc tests; when applying TDD or BDD to Rust changes; or when using cargo fmt, cargo check, cargo test, cargo test --doc, cargo clippy, cargo-nextest, and CI-oriented Rust validation.
+description: Rust testing and quality-gate guidance. Use when writing, updating, running, filtering, or reporting Rust unit, integration, end-to-end, property-style, compile-fail, or Rustdoc tests; when applying TDD or BDD to Rust changes; or when using cargo fmt, cargo check, cargo test, cargo test --doc, cargo clippy, cargo-nextest, Bacon/bacon.toml feedback loops, and CI-oriented Rust validation.
 ---
 
 # Rust Testing And Quality
@@ -11,8 +11,9 @@ services, features, databases, or CI parity.
 
 ## Workflow
 
-1. Inspect `Cargo.toml`, workspace layout, `rust-toolchain`, `.config/nextest.toml`,
-   CI files, Justfile/Makefile/scripts, README/AGENTS docs, and existing tests.
+1. Inspect `Cargo.toml`, workspace layout, `rust-toolchain`, `bacon.toml`,
+   `.config/nextest.toml`, CI files, Justfile/Makefile/scripts, README/AGENTS
+   docs, and existing tests.
 2. Define expected behavior before editing. Use TDD for behavior changes and
    BDD-style Given/When/Then acceptance criteria for externally visible flows.
 3. Pick the narrowest useful test level, write or update a failing test when
@@ -96,6 +97,39 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 Adapt `--all-features` to the repository's feature policy. Some workspaces have
 platform-specific or mutually incompatible features; match CI when final
 confidence matters.
+
+## Bacon Feedback Loops
+
+Use [Bacon](https://dystroy.org/bacon/) for continuous local Cargo feedback only
+when the repository adopts it or the task asks to establish that workflow.
+Prefer a checked-in `bacon.toml` over undocumented personal commands, and verify
+current Bacon syntax before creating or changing the file. Start from
+`bacon --init` when generating a new configuration.
+
+For a minimal explicit configuration:
+
+```toml
+default_job = "check"
+
+[jobs.check]
+command = ["cargo", "check"]
+
+[jobs.test]
+command = ["cargo", "test"]
+need_stdout = true
+```
+
+- Run `bacon` for `default_job` and `bacon test` for the named test job.
+- Keep `command` as an executable-token array. Match package, workspace, target,
+  and feature flags to the repository instead of copying broad flags blindly.
+- Bacon already watches conventional Rust paths. Add `watch` entries only for
+  relevant nonstandard inputs, or set `default_watch = false` when the job must
+  watch only explicitly listed paths.
+- Keep long-running Axum or Leptos process jobs in the framework workflow; use
+  [`rust-async-web`](../rust-async-web/SKILL.md) for restart and server/client
+  coordination.
+- Treat Bacon as an iteration loop, not final evidence. Run the repository's
+  direct or CI-equivalent Cargo commands before handoff.
 
 ## cargo-nextest
 

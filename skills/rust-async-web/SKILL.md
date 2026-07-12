@@ -25,9 +25,10 @@ task, or runtime behavior.
 ## Workflow
 
 1. Inspect the runtime and stack: `Cargo.toml` features, `tokio` runtime setup,
-   Axum routers, Leptos app/hydration configuration, server functions, WASM
-   build target, stylesheet/static asset pipeline, middleware, tracing, and
-   existing test recipes.
+   `bacon.toml`, Justfile/scripts, Axum routers, Leptos/cargo-leptos app and
+   hydration configuration, server functions, WASM build target,
+   stylesheet/static asset pipeline, middleware, tracing, and existing test
+   recipes.
 2. Define externally observable behavior with BDD-style acceptance criteria.
    Keep domain invariants in framework-independent types where practical.
 3. Design task ownership, cancellation, timeouts, backpressure, shared state,
@@ -119,8 +120,15 @@ queues, and treat cancellation as real control flow.
   shape before invoking domain behavior.
 - Prefer Tower middleware or extractors for cross-cutting HTTP concerns such as
   tracing, auth, timeouts, compression, and request ids.
-- Tests should cover handler behavior through routers where HTTP semantics
-  matter and through pure functions where they do not.
+- Expose application assembly separately from listener startup so tests can
+  construct the `Router` with controlled state.
+- Test HTTP semantics by calling the router as a Tower service with
+  `tower::ServiceExt::oneshot`; assert status, relevant headers, and a bounded or
+  collected response body. Cover extractor rejection, middleware, error mapping,
+  and state wiring where those behaviors matter.
+- Use pure or application-service tests when routing adds no behavior. Bind a
+  loopback listener on port `0` only when the test requires real transport,
+  connection metadata, protocol behavior, or client/server integration.
 
 ## Leptos And Axum-Leptos
 
@@ -138,6 +146,15 @@ queues, and treat cancellation as real control flow.
   dependencies. Check crate features and target-specific modules.
 - Axum-Leptos integrations should keep router state, server function context,
   static assets, fallback handling, and error pages explicit.
+- Test framework-independent component and application logic with ordinary host
+  Rust tests. Test SSR output, server functions, and backend routes through the
+  server application with the repository's server-side features enabled.
+- Test browser-targeted components with `wasm-bindgen-test` or the repository's
+  established WASM harness when DOM-level behavior is the narrowest useful
+  boundary. Match the runner and browser mode to the pinned toolchain.
+- Test hydration, navigation, forms, and other user-visible full-stack behavior
+  in a real browser. Load [`playwright-e2e`](../playwright-e2e/SKILL.md) when
+  adding or changing checked-in Playwright tests.
 
 ### Leptos-Use
 
@@ -171,10 +188,34 @@ style assets, class/style bindings, design tokens, responsive layout, CSS
 modules, or browser-visible cascade behavior. Keep this skill focused on Rust
 runtime, SSR, hydration, server functions, routing, and WASM constraints.
 
-## Commands
+## Development And Commands
 
 Prefer repository scripts for full-stack apps because they often manage CSS,
-WASM, assets, environment, and services. Useful direct checks include:
+WASM, assets, environment, and services.
+
+For an ordinary long-running Axum service, use a checked-in Bacon job when the
+repository adopts Bacon:
+
+```toml
+[jobs.server]
+command = ["cargo", "run"]
+need_stdout = true
+background = false
+on_change_strategy = "kill_then_restart"
+```
+
+Run it with `bacon server`. Adapt the command, package, features, environment,
+and watched paths to the repository. Add a custom `kill` command only when the
+application needs graceful shutdown and the command is verified for the target
+platform. Keep generic check/test jobs in
+[`rust-testing-quality`](../rust-testing-quality/SKILL.md).
+
+When a project uses cargo-leptos, prefer its documented `cargo leptos watch`
+workflow because it coordinates server and browser/WASM builds. Do not wrap one
+file-watching development server inside another; use Bacon separately for
+focused Cargo quality jobs.
+
+Useful direct checks include:
 
 ```sh
 cargo check -p <server-package> --all-targets
@@ -182,6 +223,11 @@ cargo check -p <client-package> --target wasm32-unknown-unknown
 cargo test -p <package>
 cargo clippy -p <package> --all-targets -- -D warnings
 ```
+
+For cargo-leptos projects, use `cargo leptos test` and configured
+`cargo leptos end-to-end` lanes when the pinned version and repository scripts
+support them. Verify host/SSR features separately from the `hydrate`
+`wasm32-unknown-unknown` build instead of assuming one command covers both.
 
 For final confidence, run the repository's broader Rust, browser, and service
 tests when the change affects hydrated UI, routing, server functions, or HTTP
