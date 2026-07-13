@@ -325,6 +325,26 @@ class SkillRegistryTests(unittest.TestCase):
                 result.warnings,
             )
 
+    def test_git_skills_require_security_review_links(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            write_skill(repo / "skills", "git-commit")
+            write_skill(repo / "skills", "git-workflows")
+            write_taxonomy(repo, ["git-commit", "git-workflows"])
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+            self.assertEqual(
+                [
+                    "git-commit: SKILL.md should link to security-review for security-sensitive work",
+                    "git-commit: SKILL.md should link to security-review-evidence for security-sensitive work",
+                    "git-workflows: SKILL.md should link to security-review for security-sensitive work",
+                    "git-workflows: SKILL.md should link to security-review-evidence for security-sensitive work",
+                ],
+                result.warnings,
+            )
+
     def test_api_contract_category_requires_security_review_link(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

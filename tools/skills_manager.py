@@ -29,6 +29,8 @@ TAXONOMY_OBSERVABILITY_CATEGORY = "Observability and operations"
 SECURITY_LINK_REQUIRED_SKILLS = frozenset(
     {
         "code-review",
+        "git-commit",
+        "git-workflows",
         "javascript-typescript-engineering",
         "justfiles",
         "postgresql-sql-engineering",
