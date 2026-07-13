@@ -22,12 +22,36 @@ when the working tree contains separable changes.
 - Do not create commits unless the user or active workflow authorizes commits;
   otherwise propose grouping and draft messages.
 
+## Scope and Routing
+
+Use this skill to construct new commits: inspect changes, choose logical groups,
+stage intentionally, validate, write messages, commit when authorized, and report
+the result.
+
+Use [`git-workflows`](../git-workflows/SKILL.md) for amend/fixup and autosquash,
+branch switching, merge or rebase, cherry-pick, revert or reset, conflict and
+reflog recovery, fetch/pull/push, remotes, tags, and worktrees. Authorization to
+commit never authorizes those operations or a push.
+
+Load [`security-review`](../security-review/SKILL.md) and
+[`security-review-evidence`](../security-review-evidence/SKILL.md) when a commit
+surface includes secrets, credentialed URLs, signing trust, untrusted hooks or
+configuration, or other security boundaries. Use
+[`dependency-supply-chain-review`](../dependency-supply-chain-review/SKILL.md)
+for submodule, hook-tool, dependency, vendored-source, or provenance review.
+
 ## Workflow
 
 1. Detect repository conventions.
    - Inspect recent history, for example `git log --oneline -10`.
    - Check project docs such as contributing guides, commit templates, hook
      configuration, or release notes when present.
+   - Check established commit-signing and signoff policy. Follow it without
+     changing key or trust configuration merely to complete the commit.
+   - In an unfamiliar repository, inspect the effective hook source before the
+     first commit. Treat hooks and `core.hooksPath` as executable configuration;
+     stop when provenance is unclear and do not bypass trusted hooks merely to
+     make a commit succeed.
    - Prefer existing style, casing, type names, scopes, ticket references, and
      body/footer conventions.
    - Do not introduce a new convention into an established repository without a
@@ -38,10 +62,14 @@ when the working tree contains separable changes.
    - Review unstaged changes with `git diff` and staged changes with
      `git diff --staged`.
    - Identify generated files, lockfiles, snapshots, vendored files,
-     dependency updates, local machine files, editor state, and other artifacts
-     that need extra care.
+     dependency updates, `.gitmodules`, submodule gitlinks, local machine files,
+     editor state, and other artifacts that need extra care.
    - Never stage secrets, credentials, private keys, environment files with real
      values, generated junk, or unrelated artifacts.
+   - If a secret may already be staged, committed, reflog-reachable, or pushed,
+     stop without printing it. Determine the exposure class, rotate or revoke
+     first, and coordinate any history rewrite or remote cleanup through the
+     security skills.
 
 3. Choose commit groups.
    - Commit after a coherent unit of work is complete.
@@ -56,6 +84,9 @@ when the working tree contains separable changes.
      change.
    - Use partial staging, such as `git add -p`, when a file contains unrelated
      edits that belong in different commits.
+   - Do not use reset, restore, checkout, clean, stash, amend, or rebase to make
+     grouping easier unless that exact operation is separately requested and
+     handled through `git-workflows`.
 
 4. Validate before committing.
    - Run the most relevant available formatter, linter, typecheck, build, or
@@ -82,6 +113,7 @@ when the working tree contains separable changes.
    - Summarize what was committed and why the grouping was chosen.
    - Include commit hashes when available.
    - State validation performed and any validation limitations.
+   - Redact credentialed URLs, secrets, private keys, and sensitive hook output.
 
 ## Conventional Commits
 
@@ -99,19 +131,6 @@ Format:
 [optional footer(s)]
 ```
 
-Common types:
-
-- `feat`: add user-facing or externally visible functionality.
-- `fix`: correct broken behavior.
-- `docs`: documentation-only changes.
-- `test`: add or update tests without production behavior changes.
-- `refactor`: restructure code without changing behavior.
-- `chore`: routine maintenance that does not fit a more specific type.
-- `build`: build system, dependency, or packaging changes.
-- `ci`: continuous integration configuration or scripts.
-- `style`: formatting or style-only changes with no behavior change.
-- `perf`: performance improvement.
-
 Use scopes to name the affected area when helpful and consistent with the
 project, for example `fix(parser): handle empty input`.
 
@@ -123,123 +142,29 @@ Breaking changes:
 - Use either form when local convention allows it; use both when extra clarity
   helps.
 
-Examples:
-
-```text
-feat(auth): add passkey enrollment
-fix(import): preserve file timestamps
-docs: document backup restore workflow
-test(parser): cover quoted delimiter edge cases
-refactor(cache): isolate eviction policy
-perf(search): avoid duplicate index scans
-```
-
-Breaking-change examples:
-
-```text
-feat(api)!: require explicit pagination limits
-
-BREAKING CHANGE: list endpoints now reject requests without a `limit`
-parameter. Set `limit` explicitly to preserve previous behavior.
-```
-
-```text
-refactor(config): remove legacy environment aliases
-
-The aliases obscured precedence rules and made invalid configurations look
-valid. Keep only the documented variable names.
-
-BREAKING CHANGE: `OLD_CACHE_URL` and `OLD_DB_URL` are no longer read.
-Use `CACHE_URL` and `DATABASE_URL` instead.
-```
-
-## Message Examples
-
-Poor subjects and better alternatives:
-
-| Poor | Better |
-| --- | --- |
-| `updates` | `Update image cache expiration rules` |
-| `fix stuff` | `Fix retry loop for transient upload errors` |
-| `misc changes` | Split into focused commits with specific subjects |
-| `WIP` | `Add draft import queue behind feature flag` if WIP commits are allowed |
-| `changed auth` | `Fix session renewal after password reset` |
-
-Subject-only commit:
-
-```text
-docs: fix typo in installation guide
-```
-
-Commit with body:
+Example:
 
 ```text
 fix(cache): prevent stale entries after rename
 
 Renaming an item updated the primary record but left the old cache key in
-place. Invalidate both the old and new keys so subsequent reads cannot return
-stale metadata.
+place. Invalidate both keys so subsequent reads cannot return stale metadata.
 ```
 
-Commit with body and footers:
-
-```text
-refactor(import): stream large CSV files
-
-The previous importer loaded entire files into memory before validation.
-Streaming keeps memory usage bounded and lets validation report the first
-failing row earlier.
-
-Refs: DATA-214
-```
-
-Non-Conventional style can be equally valid when local history uses it:
-
-```text
-Stream large CSV imports
-
-Keep memory usage bounded by validating records as they are read instead of
-loading the full file before processing.
-```
-
-## Splitting a Mixed Working Tree
-
-When the working tree contains separable changes, split them into logical
-commits. Example:
-
-```text
-Changed files:
-- src/importer.rs              # new streaming importer behavior
-- tests/importer_large.rs      # coverage for large files
-- src/importer.rs              # unrelated whitespace cleanup
-- README.md                    # document importer limits
-- Cargo.lock                   # dependency update from parser upgrade
-```
-
-Prefer commits like:
-
-1. `style(import): normalize importer formatting`
-   - Only formatting or whitespace cleanup.
-2. `build(parser): update CSV parser dependency`
-   - Dependency manifest and lockfile changes, plus required compatibility
-     adjustment if inseparable.
-3. `feat(import): stream large CSV files`
-   - Implementation and focused behavior tests for the new importer behavior.
-4. `docs(import): document CSV size limits`
-   - Documentation update once the behavior is established.
-
-If implementation and tests are easiest to review together, keep them in the
-same behavior commit. If tests document a separate regression or require a
-distinct review, commit them separately with a `test:` message.
+Load [`references/commit-examples.md`](references/commit-examples.md) when the
+task needs type selection, breaking-change examples, message comparisons, or a
+worked mixed-tree grouping example.
 
 ## Pre-Commit Checklist
 
 - Local convention checked.
 - Working tree inspected.
+- Signing/signoff policy and effective hooks checked when applicable.
 - Commit grouping chosen and unrelated edits kept out.
 - Secrets, local files, generated junk, and unintended artifacts excluded.
 - Lockfiles, generated files, snapshots, vendored files, and dependencies are
   included only when intentional and explained by the commit.
+- Submodule gitlinks and `.gitmodules` reviewed when present.
 - Relevant validation run, or limitation recorded.
 - Staged diff reviewed.
 - Commit message explains what changed and why.
@@ -257,5 +182,8 @@ risky, for example:
 - The repository convention conflicts with the user's requested message style.
 - The user requested a single commit, but the changes are clearly separable and
   mixing them would make review or revert materially worse.
+- Hook provenance is unclear, signing policy cannot be satisfied safely, or a
+  secret may already exist in Git history or a remote.
 
-Otherwise, proceed with the safest coherent grouping and explain the choice.
+Otherwise, proceed with the safest coherent non-destructive grouping and explain
+the choice. Do not push or rewrite history as part of a commit request.

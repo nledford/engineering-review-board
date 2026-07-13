@@ -128,7 +128,7 @@ handoff.
 | Frontend styling | `css-scss-styling` | CSS/SCSS/Sass stylesheet architecture, CSS modules, CSS-in-JS, utility-class conventions, design tokens, responsive layout, browser compatibility, and styling migrations across web stacks. |
 | Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests, Cargo/Bacon feedback and quality gates, async/web/full-stack work, SQLx/SeaQuery/ORM persistence, and Rust review. |
 | Language design patterns and anti-patterns | `rust-design-patterns`, `rust-antipatterns`, `python-design-patterns`, `python-antipatterns`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns` | Standalone language-specific pattern selection and smell-detection guidance, with routing from the broader language skills. |
-| Project workflow tools | `git-commit`, `justfiles`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for commits, Justfiles, current external docs, and verified Lucide icon names. |
+| Project workflow tools | `git-commit`, `git-workflows`, `justfiles`, `context7-docs`, `suggest-lucide-icons` | Narrow operational guidance for constructing commits, repository-state Git workflows, Justfiles, current external docs, and verified Lucide icon names. |
 | Third-party runtime installs | `agent-browser`, `anti-ai-slop-writing`, `find-skills`, `playwright-cli` | Installed locally for runtime use but ignored or lockfile-owned; do not edit as first-party skills. |
 
 ## API and Observability Skill Boundaries
@@ -401,6 +401,7 @@ reading the code, making a small change, and running the relevant check is enoug
 | `domain-modeling` | Tactical DDD review of aggregates, entities, value objects, invariants, services, lifecycle ownership, and ubiquitous language. | Provides a tactical review lens while `domain-driven-design` owns discovery and implementation. |
 | `gherkin` | Writing or editing `.feature` files and durable Given/When/Then artifacts. | Owns formal Gherkin syntax as a companion to BDD. |
 | `git-commit` | Atomic commits, logical grouping, staged diff review, and commit messages. | Keeps authorization, staging, grouping, and commit-message decisions in one workflow. |
+| `git-workflows` | Safe branch, remote, history-inspection, integration, rewrite, conflict, recovery, tag, and worktree workflows. | Owns repository-state operations beyond constructing a new commit while routing commit composition, security-sensitive Git incidents, and supply-chain provenance to their focused skills. |
 | `hexagonal-architecture` | Ports and Adapters, use cases, application services, dependency inversion, inbound/outbound adapters, and Clean/Onion-style core isolation. | Owns external-actor and port/adapter decisions without making indirection mandatory. |
 | `internationalization-localization` | Internationalization, localization, Project Fluent, Fluent Translation List (`.ftl`) authoring, locale fallback, multilingual catalogs, localized formatting, and cross-stack Fluent integration guidance. | Owns locale and message behavior while delegating stack mechanics, styling, security, testing, and documentation. |
 | `javascript-typescript-engineering` | JS/TS source, TypeScript, package managers, scripts, tests, lint/format/build, dependencies, workspaces, and CLIs. | Covers JS/TS broadly with Node/npm defaults and other runtimes only when local evidence requires them. |
@@ -474,6 +475,7 @@ existing skill.
 | API design and contracts | `api-design`, language/framework/data/security/testing/docs skills | Baseline complete | First-party API contract guidance covers resource/operation shape, request/response/error envelopes, idempotency, versioning, compatibility, schema artifacts, SDK/CLI surfaces, and consumer/provider obligations while existing skills remain primary for implementation, database behavior, security controls, tests, observability, and docs. |
 | Observability and telemetry | `observability-engineering`, language/framework/security/debugging/docs skills | Baseline complete | First-party observability guidance covers logs, metrics, traces, correlation/context propagation, telemetry safety, dashboards, alerts, SLO/SLI/error-budget signals, runbooks, and incident visibility while existing skills remain primary for implementation mechanics, active debugging, security evidence, tests, and documentation-only edits. |
 | Performance and scalability review | `performance-review`, `code-review`, `review-verification-protocol`, language/runtime/browser/SQL/observability skills | Baseline complete | Cross-stack review covers workload and baseline definition, hot-path and scaling evidence, measurement plans, resource bounds, and before/after verification while specialist skills own implementation mechanics. |
+| Git commits and repository workflows | `git-commit`, `git-workflows`, security and supply-chain skills when their triggers apply | Baseline complete | Commit construction remains separate from history inspection, branches, remotes, integration, history rewriting, conflicts, recovery, tags, and worktrees; both preserve unrelated work, require exact authorization for risky side effects, and route sensitive evidence conditionally. |
 | Justfiles | `justfiles` | Baseline complete | Recipe design, portability, parameters, env vars, docs, composition, safety, idempotence, and validation. |
 | Brainstorming and decision support | `brainstorming` | Baseline complete | Divergence, tradeoffs, assumptions, options, and actionable recommendations. |
 | Documentation | `documentation-engineering`, `python-engineering`, `rust-testing-quality`, `rust-engineering`, `code-review` | Baseline complete | Markdown, README, API docs, comments, rustdoc, pydoc/docstrings, maintainable examples, and anti-slop prose rules. |
@@ -550,6 +552,19 @@ Scenario: Dependency supply-chain review inspects trust signals safely
   When an agent reviews supply-chain risk
   Then it loads dependency-supply-chain-review with security-review and security-review-evidence
   And inspects provenance, pins, checksums, signatures, dependency-path impact, scripts, and sanitized advisory evidence without running untrusted code first
+```
+
+```gherkin
+Scenario: Git operations preserve work and require exact authorization
+  Given a task constructs commits or changes branches, refs, history, remotes, tags, or worktrees
+  When the agent chooses Git guidance
+  Then commit grouping, staging, validation, and messages load git-commit
+  And repository-state operations load git-workflows
+  And the agent inspects policy, current work, publication state, and affected refs before mutation
+  And worktree discard, history rewriting, ref deletion, remote updates, and forced changes require explicit authorization
+  And secrets, credentialed remotes, signing trust, or untrusted hooks load security-review and security-review-evidence
+  And submodule, hook-tool, vendored-source, or provenance questions load dependency-supply-chain-review
+  And the result, validation, skipped checks, and residual risk are reported without sensitive values
 ```
 
 ```gherkin
