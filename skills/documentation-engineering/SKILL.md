@@ -1,6 +1,6 @@
 ---
 name: documentation-engineering
-description: Documentation engineering guidance. Use when creating, editing, refactoring, or reviewing Markdown docs, README files, API docs, code comments, examples, rustdoc, pydoc/docstrings, changelog-like guidance, or developer-facing instructions. Do not use for code-only changes unless docs or comments are part of the change.
+description: Documentation engineering guidance. Use when creating, editing, refactoring, or reviewing Markdown docs, README files, API docs, code comments, examples, rustdoc, pydoc/docstrings, changelog-like guidance, or developer-facing instructions. Do not use for code-only changes unless docs or comments are part of the change. For reusable SKILL.md contracts, use create-agent-skill.
 ---
 
 # Documentation Engineering
@@ -21,7 +21,9 @@ place for filler, release diary, or generic best-practice dumps.
 
 Do not use this skill for code-only changes with no reader-facing documentation
 impact. Use language-specific skills for docstring/rustdoc syntax when code APIs
-also change.
+also change. For reusable agent-skill contracts, load
+[`create-agent-skill`](../create-agent-skill/SKILL.md) and use this skill as its
+documentation-quality companion.
 
 ## Workflow
 

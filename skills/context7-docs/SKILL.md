@@ -53,9 +53,11 @@ repository.
 1. Inspect the repository first for dependency versions and existing usage
    patterns.
 2. Identify the exact library, framework, SDK, API, CLI, or tool involved.
-3. If a Context7-compatible library ID is already known, query docs directly
-   with that ID.
-4. Otherwise, use the Context7 library-resolution tool first.
+3. Query docs directly only when the user supplied an exact Context7-compatible
+   library ID or the current context contains an ID returned by library
+   resolution.
+4. Otherwise, use the Context7 library-resolution tool first; do not guess or
+   reuse a remembered ID.
 5. Query only for the specific topic needed.
 6. Apply the retrieved docs to the task.
 7. Verify against local dependency versions, existing code style, tests, and
@@ -69,8 +71,8 @@ repository.
   Context7-compatible library ID.
 - Use `query-docs` with the resolved or known library ID to retrieve targeted
   documentation.
-- Prefer exact library IDs such as `/vercel/next.js`, `/supabase/supabase`, or
-  IDs discovered through resolution.
+- Prefer exact library IDs supplied by the user, such as `/vercel/next.js` or
+  `/supabase/supabase`, or IDs returned by resolution in the current context.
 - Prefer version-specific queries when the repository pins or implies a version.
 - Keep tool queries small and focused; ask for the API, option, or workflow you
   need, not the whole documentation set.

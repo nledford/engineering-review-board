@@ -1,6 +1,6 @@
 ---
 name: security-review-evidence
-description: Security-review evidence checklist. Use before and after security-sensitive behavior, documentation, or command-surface changes to keep findings sanitized, scoped, and tied to repository policy when one exists.
+description: Companion evidence checklist for security-sensitive changes and reviews. Use only with security-review, threat-modeling, or dependency-supply-chain-review to keep evidence sanitized, scoped, and tied to repository policy. Do not use as standalone security analysis.
 user-invocable: false
 ---
 
@@ -12,8 +12,12 @@ certificates, tokens, signatures, sessions, secrets, passwords, CORS, CSP, CSRF,
 validation, file import/export paths, plugin or extension trust roots, browser
 artifacts, or related commands/docs.
 
-Use [`security-review`](../security-review/SKILL.md) for the audit workflow and
-this skill for evidence collection, redaction, and reporting guardrails.
+Use this skill only as evidence support for the owning security workflow:
+[`security-review`](../security-review/SKILL.md) for implemented controls,
+[`threat-modeling`](../threat-modeling/SKILL.md) for design-time risks, or
+[`dependency-supply-chain-review`](../dependency-supply-chain-review/SKILL.md)
+for dependency and provenance risk. This skill owns collection, redaction, and
+reporting guardrails, not the security analysis itself.
 
 ## Source of Truth
 

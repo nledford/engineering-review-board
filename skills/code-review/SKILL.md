@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Perform repository-local code reviews. Use for requested audits, pull-request-style reviews, final focused review after implementation, or changes that affect behavior, APIs, domain boundaries, tests, security, workflows, dependencies, CI, documentation, or agent instructions.
+description: Perform repository-local code reviews. Use for requested audits, pull-request-style reviews, final focused review after implementation, or changes that affect behavior, APIs, domain boundaries, tests, security, workflows, dependencies, CI, documentation, or agent instructions. Do not use as the primary workflow for implementation, active failure debugging, or design-only threat modeling.
 ---
 
 # Code Review

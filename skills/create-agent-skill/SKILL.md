@@ -1,6 +1,6 @@
 ---
 name: create-agent-skill
-description: Create or improve reusable agent skills. Use when the user asks to create a new skill, update an existing skill, define skill instructions, scaffold a SKILL.md-based skill directory, validate skill structure, or turn repeated agent workflows into a global or project skill.
+description: Create or improve reusable agent skills. Use when the user asks to create a new skill, update an existing skill, define skill instructions, scaffold a SKILL.md-based skill directory, validate skill structure, or turn repeated agent workflows into a global or project skill. Do not use for ordinary documentation edits, application implementation, or ignored third-party runtime skills.
 ---
 
 # Create Agent Skill
