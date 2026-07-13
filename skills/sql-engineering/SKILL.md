@@ -123,6 +123,10 @@ other database artifacts.
 - Review security for injection, least privilege, RLS/policies when applicable,
   secret handling, audit logs, and safe error messages.
 
+Before handoff, report the data behavior protected, checks run and their results,
+important checks skipped with reasons, and remaining migration, correctness, or
+performance risk.
+
 ## Anti-Patterns
 
 - Treating application validation as the only protection for critical data

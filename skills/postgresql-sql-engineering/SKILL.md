@@ -1,15 +1,15 @@
 ---
 name: postgresql-sql-engineering
-description: PostgreSQL and SQL engineering guidance. Use when adding, changing, reviewing, testing, or optimizing PostgreSQL schemas, SQL queries, migrations, transactions, constraints, indexes, views, functions, row-level security, privileges, data behavior, or database performance in any language stack. Use api-design when migrations or query outputs affect published contracts and observability-engineering for PostgreSQL telemetry signals.
+description: PostgreSQL and SQL engineering guidance. Use with sql-engineering when adding, changing, reviewing, testing, or optimizing PostgreSQL schemas, SQL queries, migrations, transactions, constraints, indexes, views, functions, row-level security, privileges, data behavior, or database performance in any language stack. Do not use for unchanged-SQL ORM or adapter mechanics. Use api-design when migrations or query outputs affect published contracts and observability-engineering for PostgreSQL telemetry signals.
 ---
 
 # PostgreSQL And SQL Engineering
 
-Use this skill for database-native PostgreSQL and SQL work independent of the
-application language. Keep database invariants explicit, changes deployable, and
-query behavior proven with the target database. Use
-[`sql-engineering`](../sql-engineering/SKILL.md) for database-neutral SQL first
-passes when the target engine is unknown or multiple engines are involved.
+Use this skill with [`sql-engineering`](../sql-engineering/SKILL.md) for
+database-native PostgreSQL work independent of the application language. Let the
+database-neutral skill establish shared SQL behavior and use this skill for
+PostgreSQL semantics. Keep database invariants explicit, changes deployable, and
+query behavior proven with the target database.
 
 ## Use When
 

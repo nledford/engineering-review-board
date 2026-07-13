@@ -1,15 +1,16 @@
 ---
 name: sqlite-sql-engineering
-description: SQLite and SQL engineering guidance. Use when adding, changing, reviewing, testing, or optimizing SQLite schemas, migrations, constraints, indexes, transactions, query behavior, local/embedded database workflows, SQLite-backed tests, or SQLite adapter boundaries in any language stack. Use api-design when SQLite schemas or exports affect published contracts and observability-engineering for durable SQLite diagnostics.
+description: SQLite and SQL engineering guidance. Use with sql-engineering when adding, changing, reviewing, testing, or optimizing SQLite schemas, migrations, constraints, indexes, transactions, query behavior, local/embedded database workflows, SQLite-backed tests, or SQLite-specific adapter boundaries in any language stack. Do not use for unchanged-SQL ORM or generic adapter mechanics. Use api-design when SQLite schemas or exports affect published contracts and observability-engineering for durable SQLite diagnostics.
 ---
 
 # SQLite And SQL Engineering
 
-Use this skill for SQLite-specific database work independent of application
-language. Keep the guidance focused on SQLite behavior; use
-[`sql-engineering`](../sql-engineering/SKILL.md) for database-neutral SQL first
-passes, [`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL.md)
-for PostgreSQL-native design, and
+Use this skill with [`sql-engineering`](../sql-engineering/SKILL.md) for
+SQLite-specific database work independent of application language. Let the
+database-neutral skill establish shared SQL behavior and use this skill for
+SQLite semantics. Use
+[`postgresql-sql-engineering`](../postgresql-sql-engineering/SKILL.md) for
+PostgreSQL-native design, and
 [`rust-persistence-sql`](../rust-persistence-sql/SKILL.md) for Rust SQLx or
 SeaQuery adapter details.
 

@@ -54,6 +54,10 @@ contract is already settled.
   quotas, abuse controls, auditability, or other security-sensitive behavior.
   Keep this skill focused on the public contract shape; let security-review
   judge the security property and evidence.
+- Load [`observability-engineering`](../observability-engineering/SKILL.md) for
+  telemetry semantics, correlation, audit events, SLOs, dashboards, and alerts.
+  Keep this skill involved when a telemetry field or event is itself part of the
+  published API, SDK, CLI, webhook, or message contract.
 - Load [`context7-docs`](../context7-docs/SKILL.md) when the contract depends on
   current behavior of a third-party provider, API gateway, framework, SDK,
   schema tool, OpenAPI/AsyncAPI/GraphQL/protobuf library, cloud service,

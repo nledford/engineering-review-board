@@ -45,6 +45,9 @@ Do not use this skill as the primary workflow for:
   work is observability; use [`root-cause-analysis`](../root-cause-analysis/SKILL.md).
 - Documentation-only runbooks, dashboard notes, comments, or examples; use
   [`documentation-engineering`](../documentation-engineering/SKILL.md).
+- Public API, SDK, CLI, webhook, or message contract semantics; use
+  [`api-design`](../api-design/SKILL.md) for the exposed contract and add this
+  skill only when telemetry intent or operational signals also change.
 - Language-specific implementation, Rust async/web behavior, SQL schema/query
   design, architecture boundary selection, or BDD/TDD method choices unless the
   task also needs telemetry design.

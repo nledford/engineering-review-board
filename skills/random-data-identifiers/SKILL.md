@@ -1,6 +1,6 @@
 ---
 name: random-data-identifiers
-description: Randomness, generated identifiers, and test data guidance. Use when generating random numbers, UUIDs, CUIDs, ULIDs, nonces, tokens, filenames, fixture data, seeded simulations, or collision-resistant IDs in code or tests. Prefer cryptographically secure randomness for secrets and IDs; use explicit seeded PRNGs for reproducible tests and simulations.
+description: Randomness, generated identifiers, and test data guidance. Use when generating random numbers, UUIDs, CUIDs, ULIDs, nonces, tokens, filenames, fixture data, seeded simulations, or collision-resistant IDs in code or tests. Prefer cryptographically secure randomness for secrets and IDs; use explicit seeded PRNGs for reproducible tests and simulations. Do not use for fixed examples with no randomness or database-native ID/index design without a generated-value decision.
 ---
 
 # Random Data and Identifiers
