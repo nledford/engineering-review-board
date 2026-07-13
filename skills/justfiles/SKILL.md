@@ -34,6 +34,9 @@ scripts for package-local workflows that should remain inside that package.
   require 1.32+; recipe option/flag argument metadata requires 1.46+; `set
   default-list`, `set default-script`, `[shell]`, and optional-module disabling
   behavior require 1.52+.
+- Conditional `[windows]`/`[unix]` attributes on `set shell` require Just 1.56+.
+  Check the repository's pinned or declared minimum Just version before using
+  them.
 - Avoid unstable features unless the repository deliberately opts in with
   `--unstable`, `set unstable`, or `JUST_UNSTABLE` and documents the risk.
 
@@ -200,8 +203,18 @@ regen:
   cross-platform, or too awkward for shell. Prefer an external script once logic
   needs tests, functions, substantial branching, or robust argument parsing.
 - If changing the recipe shell globally with `set shell := [...]`, document why;
-  it affects recipe lines and backticks. Prefer `set windows-shell := [...]` over
-  deprecated Windows PowerShell settings.
+  it affects recipe lines and backticks. For platform-specific shells in Just
+  1.56+, use conditional attributes on `set shell` instead of `set windows-shell`:
+
+  ```just
+  [unix]
+  set shell := ["bash", "-uc"]
+
+  [windows]
+  set shell := ["powershell.exe", "-NoLogo", "-Command"]
+  ```
+
+  Confirm the repository minimum version supports this before adding it.
 - Avoid brittle `cd ../../...` paths. Use `justfile_directory()` or explicit
   `[working-directory]`/`[no-cd]` behavior when location matters.
 

@@ -43,17 +43,19 @@ obvious, or symbol relationships matter to correctness.
 
 1. Read local task instructions, repository docs, and AGENTS-style guidance first;
    Serena does not override project rules.
-2. Use ordinary `glob`, direct reads, and exact-text search to locate files,
+2. If not already read this session, call `serena_initial_instructions` before
+   using Serena's other tools.
+3. Use ordinary `glob`, direct reads, and exact-text search to locate files,
    docs, configs, generated assets, and literal strings.
-3. Switch to Serena when the question becomes semantic: "which symbol is this?",
+4. Switch to Serena when the question becomes semantic: "which symbol is this?",
    "who references it?", "what implements it?", or "can this be renamed safely?"
-4. Start with overviews or symbol searches. Retrieve only the symbol bodies needed
+5. Start with overviews or symbol searches. Retrieve only the symbol bodies needed
    for the decision instead of reading whole files by default.
-5. Before changing a public or shared symbol, inspect references, implementations,
+6. Before changing a public or shared symbol, inspect references, implementations,
    callers, and diagnostics that could be affected.
-6. Use symbol-level edits or semantic rename only when they match the intended
+7. Use symbol-level edits or semantic rename only when they match the intended
    change; otherwise use precise file edits.
-7. Verify with the repository's tests, formatters, linters, type checks, builds,
+8. Verify with the repository's tests, formatters, linters, type checks, builds,
    or focused manual checks. Serena is navigation and editing assistance, not
    validation evidence by itself.
 

@@ -10,16 +10,17 @@ artwork. Optimize for recognizable meaning in the user's context.
 
 ## Workflow
 
-1. Identify the concept, action, object, state, and UI placement.
-2. Generate 4-6 plausible Lucide icon names in kebab-case.
-3. Verify candidates against an authoritative source:
-   - `https://lucide.dev/icons/<icon-name>` when browsing is available;
-   - `https://unpkg.com/lucide-static@latest/icons/<icon-name>.svg` when direct
-     asset checks are easier;
-   - an installed `lucide-static` or `lucide-react` package when the repo already
-     vendors Lucide.
-4. Discard names that cannot be verified.
-5. Present up to 3 confirmed candidates and recommend one.
+1. When the project uses Lucide, inspect its manifest and installed package version
+   first. Verify candidates against that exact version; `@latest` is not proof of
+   project compatibility.
+2. Identify the concept, action, object, state, and UI placement.
+3. Generate 4-6 plausible Lucide icon names in kebab-case.
+4. Verify candidates against the installed package or versioned package assets. If
+   no project version constrains compatibility, use `https://lucide.dev/icons/<icon-name>`
+   or the current upstream package instead.
+5. Discard names that cannot be verified.
+6. Present up to 3 confirmed candidates and recommend one, stating the verification
+   source and version.
 
 If verification is blocked by network or tooling, say that candidates are
 unverified and do not present them as confirmed.

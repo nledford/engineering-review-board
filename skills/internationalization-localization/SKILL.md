@@ -52,10 +52,13 @@ for docs-only localization guidance.
 5. Design fallback before implementation. Typical order is requested locale,
    language fallback when supported, then `en-US`. Test missing-message and
    missing-variable behavior instead of assuming silent success.
-6. Fetch current upstream docs with [`context7-docs`](../context7-docs/SKILL.md)
+6. Apply the negotiated BCP 47 language and script-aware direction with `lang`
+   and `dir` on the document or localized subtree. Use logical CSS properties;
+   do not infer direction from arbitrary user strings.
+7. Fetch current upstream docs with [`context7-docs`](../context7-docs/SKILL.md)
    before changing version-sensitive binding APIs, framework adapters, CLI tools,
    or parser/validator behavior.
-7. Verify with the repository's parser, linter, typecheck, unit tests, snapshot
+8. Verify with the repository's parser, linter, typecheck, unit tests, snapshot
    tests, E2E tests, or build-time catalog validation.
 
 ## Fluent `.ftl` Authoring Rules
@@ -117,8 +120,9 @@ for docs-only localization guidance.
 - For Japanese, avoid assumptions about spaces, capitalization, or English plural
   categories. Let the message own sentence order and politeness level.
 - Test long strings, short strings, missing translations, bidirectional content,
-  pseudolocalized text, and accessible names. Include screen-reader text and ARIA
-  attributes in localization review when they are user-visible.
+  pseudolocalized text, and accessible names. Test a real RTL locale and
+  mixed-direction content, not only a flipped layout. Include screen-reader text
+  and ARIA attributes in localization review when they are user-visible.
 
 ## Binding Guidance
 
@@ -146,13 +150,20 @@ Use local dependency versions and current upstream docs before changing APIs.
 
 ## Testing and Validation
 
-- Validate `.ftl` resources at build time or CI. Distinguish parse errors from
-  semantic validity errors such as duplicate IDs, missing default variants,
-  unknown references, or missing required variables.
-- Test message IDs, fallback order, missing translations, variable formatting,
-  selector branches, locale-specific number/date output, and accessible labels.
+- Keep catalog and runtime validation separate. In the catalog lane, parse and
+  add each resource with the repository's pinned binding or parser, checking parse
+  and add-resource errors such as syntax failures, duplicate IDs, or missing
+  default variants.
+- In the runtime call-site lane, format through the pinned binding with
+  representative arguments; cover selector branches, fallback, locale-specific
+  number/date output, missing translations, unknown message, term, attribute, or
+  function references, and missing-argument/error handling. Format every relevant
+  message and attribute, or use a binding-specific semantic analyzer that proves
+  equivalent reference coverage. Test message IDs and accessible labels at the
+  call sites that render them.
 - Add regression tests near the code that formats messages; add E2E coverage when
-  locale affects layout, navigation, ARIA names, forms, or user-visible flows.
+  locale affects layout, navigation, ARIA names, forms, direction, or user-visible
+  flows.
 - Use pseudolocalization or long-string fixtures to catch clipped text,
   concatenation assumptions, and layout coupling.
 
