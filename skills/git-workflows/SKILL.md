@@ -59,8 +59,10 @@ for submodule, downloaded hook tooling, vendored-source, or provenance questions
 
 3. Protect current work.
    - Start from a clean state when the chosen operation requires it.
-   - If work is present, stop and decide whether it belongs in a commit, another
-     worktree, or an explicitly authorized stash. Do not choose silently.
+   - If work is present, stop and decide whether it belongs in a commit or an
+     explicitly authorized stash. A separate worktree can isolate a different
+     branch task, but it does not transfer staged, unstaged, or untracked changes
+     from the current tree. Do not choose silently.
    - Check untracked and ignored files before restore, reset, clean, checkout,
      worktree removal, or submodule recursion. Reflog cannot recover all of them.
    - Check for submodules before adding, moving, or removing worktrees. Git's
@@ -113,6 +115,32 @@ for submodule, downloaded hook tooling, vendored-source, or provenance questions
    - Report the operation, affected refs or paths, validation, and remaining
      risks. Never expose secrets, credentialed URLs, private keys, or sensitive
      hook output.
+
+## Worktree Decision And Lifecycle
+
+- Use a linked worktree when genuine concurrent branch work or a separate clean
+  checkout must proceed without disturbing a worktree that remains in use.
+  Prefer the current worktree for ordinary edits on the current task and branch.
+- Existing dirty work remains in its original worktree. Transfer it only through
+  a separate, explicitly chosen commit, patch, or authorized stash workflow.
+- Before adding a worktree, inspect `git worktree list`, relevant worktree statuses,
+  submodules, the target path, the intended commit or branch, and whether that
+  branch is already checked out. A branch is normally checked out in only one
+  worktree.
+- Specify branch intent. Without a commit-ish or explicit `-b`, `-B`, or
+  `--detach`, `git worktree add <path>` may create a branch named after the final
+  path component. Disclose the new directory, branch or detached state, and
+  linked-worktree metadata before creation.
+- Worktrees share repository objects and refs while keeping separate working
+  files, `HEAD`, and indexes. A ref update in one worktree can affect what the
+  others observe even though their uncommitted files remain separate.
+- Remove a clean linked worktree with `git worktree remove`; do not delete its
+  directory as the normal cleanup path. Forced removal of an unclean, locked, or
+  submodule-bearing worktree can discard work and requires explicit authorization.
+- Use `lock` for a worktree on storage that may be temporarily unavailable,
+  `prune` for stale administrative records after a worktree is already missing,
+  and `repair` for inconsistent metadata such as a manually moved worktree. Do
+  not use them as interchangeable cleanup commands.
 
 ## Security and Supply-Chain Escalation
 

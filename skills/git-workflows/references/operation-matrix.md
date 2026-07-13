@@ -95,7 +95,7 @@ Official references: [`git-merge`](https://git-scm.com/docs/git-merge),
 | Surface | Guidance |
 | --- | --- |
 | Release tags | Prefer annotated tags when release metadata matters; follow local signing policy; verify signatures when policy requires it; push tags explicitly and never silently replace a published release tag |
-| Worktrees | Use for concurrent branch work without disturbing the current tree; inspect `git worktree list`; check for submodules first because Git recommends against multiple superproject checkouts when submodules are present; worktrees with submodules cannot be moved and require `--force` for removal, which needs explicit authorization |
+| Worktrees | Use for genuine concurrent branch isolation or a separate clean checkout; prefer the current tree for ordinary edits. Existing dirty work stays in its original tree. Before `add`, inspect `git worktree list`, statuses, branch occupancy, submodules, target path, and explicit branch/detached intent; omitting commit-ish and branch options may create a branch named after the path. Remove clean trees with `git worktree remove`; forced removal or discard needs explicit authorization. Use `lock` for temporarily unavailable storage, `prune` for stale metadata after a tree is missing, and `repair` for inconsistent metadata such as a manually moved tree. |
 | Submodules | Cover only when present; the superproject records a gitlink commit; inspect `.gitmodules`, source URLs, pinned commits, detached state, local changes, and recursive push requirements |
 
 Official references: [`git-tag`](https://git-scm.com/docs/git-tag),
