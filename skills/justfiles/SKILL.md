@@ -30,13 +30,17 @@ scripts for package-local workflows that should remain inside that package.
 - Prefer stable, widely available features: recipes, variables, parameters,
   aliases, dependencies, doc comments, groups, imports, modules, and attributes.
 - Label or avoid newer/version-sensitive features when the project does not pin
-  `just`. Examples: modules are stable since `just` 1.31; `[script]` recipes
-  require 1.32+; recipe option/flag argument metadata requires 1.46+; `set
-  default-list`, `set default-script`, `[shell]`, and optional-module disabling
-  behavior require 1.52+.
+  `just`. Examples: modules are stable since `just` 1.31; `[script]` is stable
+  since 1.44 and was available only as unstable syntax from 1.32; recipe
+  option/flag argument metadata requires 1.46+; `set default-list`, `set
+  default-script`, `[shell]`, and optional-module disabling behavior require
+  1.52+.
 - Conditional `[windows]`/`[unix]` attributes on `set shell` require Just 1.56+.
   Check the repository's pinned or declared minimum Just version before using
   them.
+- Before Just 1.56, `--dry-run` may still execute `shell()` expressions. Inspect
+  those expressions first and do not treat a dry run as non-mutating evidence on
+  older versions.
 - Avoid unstable features unless the repository deliberately opts in with
   `--unstable`, `set unstable`, or `JUST_UNSTABLE` and documents the risk.
 
@@ -230,6 +234,10 @@ regen:
   credentials, and production safeguards in scripts or recipe logic.
 - Never print secrets. Dotenv-loaded values are environment variables referenced
   as `$NAME`, not Just variables like `{{NAME}}`.
+- Treat `just --evaluate` output as sensitive because it prints variable values,
+  including values derived from the environment or command expressions. Evaluate
+  only named, known non-sensitive variables when needed; otherwise skip it and
+  report why. Redact captured output.
 - Make CI and agent workflows explicit: recipes for setup, fast checks, full
   verification, formatting, linting, generated-code refresh, and drift checks
   should be easy to discover.
@@ -302,9 +310,11 @@ Before finishing Justfile work, verify:
 - `just --version` is compatible with any syntax you added.
 - `just --list --unsorted`, `just --groups`, and `just --summary` show a clear,
   navigable command surface.
-- `just --show <recipe>` and `just --dry-run <recipe> [args...]` match intended
-  behavior for changed recipes.
-- `just --evaluate` still resolves variables without leaking secrets.
+- `just --show <recipe>` and, after checking version and `shell()` expressions,
+  `just --dry-run <recipe> [args...]` match intended behavior for changed recipes.
+- Named, known non-sensitive variables resolve with `just --evaluate <variable>`
+  when that check is needed; blanket evaluation is avoided when values may be
+  sensitive.
 - `just --fmt --check` passes when the repository uses `just` formatting; note
   that formatting behavior is not part of `just`'s compatibility guarantee.
 - Affected recipes or their wrapped scripts were actually run when safe, or their
