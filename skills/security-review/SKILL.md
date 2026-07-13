@@ -46,6 +46,12 @@ security modeling or supply-chain-only review; route those surfaces as below.
   generated or vendored code, CI actions, containers, base images, checksums, or
   signatures. Bring confirmed supply-chain risk back here only when it affects a
   wider concrete security audit.
+- Use [`ci-release-engineering`](../ci-release-engineering/SKILL.md) for CI and
+  release workflow implementation, and
+  [`container-engineering`](../container-engineering/SKILL.md) for Docker/OCI and
+  Compose implementation. Add this skill when permissions, secrets, OIDC,
+  untrusted events, command injection, mounts, ports, capabilities, sockets, or
+  other trust boundaries need concrete security review.
 - For OAuth/OIDC/SAML, identity-provider, session-cookie, CSRF, redirect URI,
   token lifetime, scope/audience, signature, or key-rotation changes, inspect
   repository policy first and then current provider/protocol documentation before

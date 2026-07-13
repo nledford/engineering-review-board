@@ -1,6 +1,6 @@
 ---
 name: javascript-typescript-engineering
-description: JavaScript and TypeScript engineering guidance. Use when adding, changing, reviewing, testing, linting, formatting, dependency-managing, packaging, or refactoring JS/TS source, package.json scripts, lockfiles, workspaces, CLIs, Node/npm, Bun, Deno, pnpm, or Yarn workflows, or project automation. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, and css-scss-styling for CSS/SCSS/CSS-module/CSS-in-JS/utility styling decisions. Do not use for checked-in Playwright test design; use playwright-e2e.
+description: JavaScript and TypeScript engineering guidance. Use when adding, changing, reviewing, testing, linting, formatting, dependency-managing, packaging, or refactoring JS/TS source, package.json scripts, lockfiles, workspaces, CLIs, Node/npm, Bun, Deno, pnpm, or Yarn workflows, or project automation. Do not use for checked-in hosted CI/release-provider or Docker/OCI/Compose configuration except the JS/TS commands they invoke; use ci-release-engineering or container-engineering. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, and css-scss-styling for CSS/SCSS/CSS-module/CSS-in-JS/utility styling decisions. Do not use for checked-in Playwright test design; use playwright-e2e.
 ---
 
 # JavaScript and TypeScript Engineering
@@ -142,6 +142,15 @@ deno task <task>
   [`api-design`](../api-design/SKILL.md) first if the contract is still being
   shaped; otherwise use
   [`documentation-engineering`](../documentation-engineering/SKILL.md).
+
+## CI, Release, and Container Routing
+
+- Load [`ci-release-engineering`](../ci-release-engineering/SKILL.md) for hosted
+  workflow triggers, jobs, matrices, permissions, artifacts, and automated
+  releases. Keep package scripts and JavaScript/TypeScript build mechanics here.
+- Load [`container-engineering`](../container-engineering/SKILL.md) for
+  Dockerfile, OCI image, or Compose behavior; keep JS/TS runtime and bundler
+  behavior here.
 
 ## Formatting, Linting, Types, and Builds
 

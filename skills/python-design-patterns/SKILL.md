@@ -64,6 +64,19 @@ implementing a pattern, load
 - **Pytest fixtures/builders:** use fixtures for resource setup and builders for
   readable test data, with explicit cleanup and deterministic values.
 
+## Async Ownership Patterns
+
+- Prefer a supervised task group when sibling tasks share a lifetime: the
+  parent creates them, observes failures, propagates shutdown, and awaits every
+  child before leaving its resource scope.
+- Give each queue, finite worker set, and the resources those workers use one
+  explicit lifecycle owner. A task that must outlive a caller needs a named,
+  longer-lived supervisor rather than becoming detached work.
+
+Route cancellation, backpressure, overload, retry, ordering, recovery, and test
+workflow to [`python-engineering`](../python-engineering/SKILL.md) and its
+[asyncio concurrency reference](../python-engineering/references/asyncio-concurrency.md).
+
 ## Architecture And Methods
 
 - **DDD:** use value objects, entities with identity, domain services, policies,

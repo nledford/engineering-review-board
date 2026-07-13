@@ -1,6 +1,6 @@
 ---
 name: git-workflows
-description: Safe Git branch, remote, history-inspection, integration, rewrite, conflict, recovery, tag, and worktree workflows. Use when switching or restoring, fetching/pulling/pushing, managing upstreams or remotes, inspecting history with log/blame/bisect, merging/rebasing/squashing/cherry-picking/reverting/resetting, resolving conflicts, recovering with reflog, or managing tags and worktrees. Do not use for commit grouping or message drafting, code review, GitHub pull-request operations, or release-readiness decisions.
+description: Safe Git branch, remote, history-inspection, integration, rewrite, conflict, recovery, tag, and worktree workflows. Use when switching or restoring, fetching/pulling/pushing, managing upstreams or remotes, inspecting history with log/blame/bisect, merging/rebasing/squashing/cherry-picking/reverting/resetting, resolving conflicts, recovering with reflog, or managing tags and worktrees. Do not use for commit grouping or message drafting, checked-in CI/release automation, code review, GitHub pull-request operations, or release-readiness decisions.
 ---
 
 # Git Workflows
@@ -170,7 +170,11 @@ documentation links. Keep the core workflow above active for every operation.
   whether a release should ship.
 - GitHub issue, pull-request, review, or repository-administration APIs.
 - Editor workspaces or generic orchestration across unrelated repositories.
-- Deployment or release publication where Git is only an incidental command.
+- Checked-in CI or automated release publication where Git is only one pipeline
+  step; use [`ci-release-engineering`](../ci-release-engineering/SKILL.md).
+- Docker/OCI or Compose configuration; use
+  [`container-engineering`](../container-engineering/SKILL.md). Other deployment
+  systems require their applicable platform or repository-specific guidance.
 
 ## Handoff Checklist
 

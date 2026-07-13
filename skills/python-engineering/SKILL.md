@@ -1,6 +1,6 @@
 ---
 name: python-engineering
-description: Python engineering guidance with uv. Use when adding, changing, reviewing, testing, packaging, linting, formatting, typing, dependency-managing, or refactoring Python code, pyproject.toml, uv.lock, pytest/unittest tests, Python scripts, Python web templates, or Python project workflows. Do not use as the primary skill for smell-focused Python audits; use python-antipatterns. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, and css-scss-styling for CSS/SCSS/template styling decisions.
+description: Python engineering guidance with uv. Use when adding, changing, reviewing, testing, packaging, linting, formatting, typing, dependency-managing, or refactoring Python code, pyproject.toml, uv.lock, pytest/unittest tests, Python scripts, Python web templates, or Python project workflows. Do not use as the primary skill for smell-focused Python audits; use python-antipatterns. Do not use for checked-in hosted CI/release-provider or Docker/OCI/Compose configuration except the Python commands they invoke; use ci-release-engineering or container-engineering. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, and css-scss-styling for CSS/SCSS/template styling decisions.
 ---
 
 # Python Engineering
@@ -27,6 +27,30 @@ schema, transaction, query-plan, and database-specific behavior. Use
 [`css-scss-styling`](../css-scss-styling/SKILL.md) when Python web work changes
 stylesheets, template class conventions, static CSS/SCSS assets, responsive
 layout, or design tokens.
+
+## Async And Concurrency Handoff
+
+Load the [asyncio concurrency reference](references/asyncio-concurrency.md) only
+when queues, workers, task supervision, cancellation, backpressure, retries,
+rate limits, ordering, shared state, or recovery after process restart are
+primary risks. Routine `await` usage, sequential async I/O, and ordinary async
+context-manager use do not need the reference.
+
+For concurrency-heavy work, give every task a supervising owner and bounded
+lifetime; bound fan-out and queues; define overload behavior; specify
+cancellation, cleanup, timeout, retry, and rate-limit policy; decide whether
+failures are fail-fast or reported as partial success; test time-dependent policy
+with injected clocks or sleepers; and coordinate scheduling states with explicit
+events, queues, or barriers. Use
+[`python-design-patterns`](../python-design-patterns/SKILL.md) only for the
+task-group, queue, and resource-lifetime pattern; this skill and its reference
+own implementation and execution workflow.
+
+Use [`ci-release-engineering`](../ci-release-engineering/SKILL.md) when changing
+checked-in hosted workflow or automated release configuration, and
+[`container-engineering`](../container-engineering/SKILL.md) when changing
+Dockerfile, OCI image, or Compose behavior. Keep Python build, test, packaging,
+and executable-generation commands in this skill.
 
 ## Workflow
 

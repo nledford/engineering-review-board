@@ -28,7 +28,9 @@ TAXONOMY_API_CONTRACT_CATEGORY = "API design and contracts"
 TAXONOMY_OBSERVABILITY_CATEGORY = "Observability and operations"
 SECURITY_LINK_REQUIRED_SKILLS = frozenset(
     {
+        "ci-release-engineering",
         "code-review",
+        "container-engineering",
         "git-commit",
         "git-workflows",
         "javascript-typescript-engineering",

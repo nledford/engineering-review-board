@@ -1,6 +1,6 @@
 ---
 name: rust-testing-quality
-description: Rust testing and quality-gate guidance. Use when writing, updating, running, filtering, or reporting Rust unit, integration, end-to-end, property-style, compile-fail, or Rustdoc tests; when applying TDD or BDD to Rust changes; or when using cargo fmt, cargo check, cargo test, cargo test --doc, cargo clippy, cargo-nextest, Bacon/bacon.toml feedback loops, and CI-oriented Rust validation.
+description: Rust testing and quality-gate guidance. Use when writing, updating, running, filtering, or reporting Rust unit, integration, end-to-end, property-style, compile-fail, or Rustdoc tests; when applying TDD or BDD to Rust changes; or when using cargo fmt, cargo check, cargo test, cargo test --doc, cargo clippy, cargo-nextest, Bacon/bacon.toml feedback loops, and CI-oriented Rust validation. Do not use for checked-in hosted CI/release-provider configuration except the Rust commands and test lanes it invokes; use ci-release-engineering.
 ---
 
 # Rust Testing And Quality
@@ -11,7 +11,9 @@ services, features, databases, or CI parity.
 
 Load [`rust-engineering`](../rust-engineering/SKILL.md) when the test task also
 changes core Rust implementation. Do not require it for test-only or review-only
-work.
+work. Load [`ci-release-engineering`](../ci-release-engineering/SKILL.md) when
+the change is to hosted CI jobs, matrices, permissions, artifacts, or release
+gates rather than the Rust commands those jobs run.
 
 ## Workflow
 

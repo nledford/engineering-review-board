@@ -119,6 +119,13 @@ For CVE, GHSA, OSV, vendor, SCA, or package-manager advisory output, record:
   when database adapter crates or SQL tooling change.
 - Load [`justfiles`](../justfiles/SKILL.md) when package-manager or installer
   commands are encoded in Just recipes.
+- Load [`ci-release-engineering`](../ci-release-engineering/SKILL.md) for hosted
+  workflow triggers, jobs, permissions, artifacts, and release automation; keep
+  this skill focused on the trust of actions, tools, publishers, and provenance.
+- Load [`container-engineering`](../container-engineering/SKILL.md) for
+  Dockerfile, OCI image assembly, or Compose implementation; keep this skill
+  focused on base images, packages, registries, attestations, SBOMs, and
+  provenance.
 - Load database, testing, documentation, or architecture skills only when the
   dependency change also affects those surfaces.
 

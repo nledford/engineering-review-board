@@ -1,6 +1,6 @@
 ---
 name: rust-engineering
-description: Core Rust engineering guidance. Use when adding or changing Rust crates, modules, public APIs, domain logic, ownership and lifetime structure, traits, generics, error types, feature flags, workspaces, refactors, design patterns, or declarative/procedural macros. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, rust-testing-quality for test and CI lanes, rust-async-web for Tokio/Axum/Leptos work, rust-persistence-sql for SQLx, SeaQuery, and database adapter work, and rust-code-review for requested reviews.
+description: Core Rust engineering guidance. Use when adding or changing Rust crates, modules, public APIs, domain logic, ownership and lifetime structure, traits, generics, error types, feature flags, workspaces, refactors, design patterns, or declarative/procedural macros. Do not use for checked-in hosted CI/release-provider or Docker/OCI/Compose configuration except the Rust commands they invoke; use ci-release-engineering or container-engineering. Use api-design for public service/SDK/CLI contracts, observability-engineering for telemetry/logging signal design, rust-testing-quality for test and CI lanes, rust-async-web for Tokio/Axum/Leptos work, rust-persistence-sql for SQLx, SeaQuery, and database adapter work, and rust-code-review for requested reviews.
 ---
 
 # Rust Engineering
@@ -38,6 +38,11 @@ public contracts.
    abstraction, remove duplicated conversions, and make invalid states harder to
    express.
 7. Verify with the repository recipe or an appropriately scoped Cargo lane.
+
+Use [`ci-release-engineering`](../ci-release-engineering/SKILL.md) for hosted
+pipeline and automated release configuration, and
+[`container-engineering`](../container-engineering/SKILL.md) for Dockerfile, OCI
+image, and Compose behavior. Keep Cargo build and packaging mechanics here.
 
 ## Core Rust Checklist
 

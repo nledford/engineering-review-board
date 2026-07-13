@@ -347,6 +347,29 @@ class SkillRegistryTests(unittest.TestCase):
                 result.warnings,
             )
 
+    def test_ci_and_container_skills_require_security_links(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            write_skill(repo / "skills", "ci-release-engineering")
+            write_skill(repo / "skills", "container-engineering")
+            write_taxonomy(
+                repo,
+                ["ci-release-engineering", "container-engineering"],
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+            self.assertEqual(
+                [
+                    "ci-release-engineering: SKILL.md should link to security-review for security-sensitive work",
+                    "ci-release-engineering: SKILL.md should link to security-review-evidence for security-sensitive work",
+                    "container-engineering: SKILL.md should link to security-review for security-sensitive work",
+                    "container-engineering: SKILL.md should link to security-review-evidence for security-sensitive work",
+                ],
+                result.warnings,
+            )
+
     def test_api_contract_category_requires_security_review_link(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

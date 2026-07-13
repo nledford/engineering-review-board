@@ -15,7 +15,11 @@ Apply
 every blocker, risk finding, and ship-or-hold rationale.
 
 Do not use it to replace implementation, a first code review, or a repository's
-deployment runbook.
+deployment runbook. Use
+[`ci-release-engineering`](../ci-release-engineering/SKILL.md) to create or
+change checked-in CI and release automation, and
+[`container-engineering`](../container-engineering/SKILL.md) for Docker/OCI or
+Compose implementation.
 
 ## Workflow
 

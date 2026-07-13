@@ -119,6 +119,7 @@ handoff.
 | Internationalization and localization | `internationalization-localization` | User-facing text localization, Project Fluent, `.ftl` authoring, locale fallback, multilingual catalogs, and localized output validation across language stacks. |
 | API design and contracts | `api-design` | Public/service interface contracts, compatibility, versioning, idempotency, request/response/error envelopes, schema artifacts, and consumer/provider obligations. |
 | Observability and operations | `observability-engineering` | Durable logs, metrics, traces, correlation, dashboards, alerts, SLO/SLI signals, runbooks, incident visibility, and telemetry safety. |
+| CI, release, and container engineering | `ci-release-engineering`, `container-engineering` | Checked-in CI/release provider workflows, automated publication, Docker/OCI image construction, and Docker Compose implementation; language commands, security review, supply-chain trust, and final readiness remain with their owning skills. |
 | Semantic code navigation and refactoring | `serena` | MCP-based IDE-like code exploration, symbol/reference/implementation/declaration discovery, diagnostics, and semantic refactoring; direct file tools remain primary for non-code and exact text. |
 | Design methods and architecture | `brainstorming`, `behavior-driven-development`, `clean-architecture`, `domain-driven-design`, `hexagonal-architecture`, `onion-architecture`, `test-driven-development`, `gherkin` | Use the direct method or architecture skill that matches the work; do not load a meta-selection skill for simple changes. |
 | Debugging and prevention | `systematic-debugging`, `root-cause-analysis` | Active symptom diagnosis first; postmortem and recurrence prevention after the direct cause is understood. |
@@ -261,8 +262,8 @@ count as third-party skills.
 | `postgresql-sql-engineering` | PostgreSQL schema design, migrations, constraints, indexes, views, transactions, RLS, privileges, JSONB, query plans, maintenance, and database review in any language stack. | Rust SQLx/SeaQuery typing, Python adapter code, SQLite-only behavior, or ORM API usage with no database-native change. |
 | `sqlite-sql-engineering` | SQLite schema design, migrations, constraints, indexes, transactions, PRAGMAs, locking, WAL, local/embedded behavior, temporary DB tests, and SQLite query review in any language stack. | PostgreSQL-native features, Rust SQLx/SeaQuery adapter choices, or using SQLite as proof of another database's behavior. |
 | `random-data-identifiers` | Random numbers, secure tokens, UUIDs/CUIDs/ULIDs, collision-resistant IDs, deterministic seeded tests, fixtures, simulations, and reproducibility. | Fixed examples with no randomness or database-native ID/index design without generated-value decisions. |
-| `python-engineering` | Python source, tests, pyproject.toml, uv.lock, packaging, linting, typing, docstrings, dependency management, and Python review. | Non-Python package managers, database-native schema design, or browser E2E test design. |
-| `python-design-patterns` | Python-specific design patterns such as dataclasses, value objects, protocols, context managers, adapters, repositories, factories, and Python expression of Clean/Hexagonal/Onion boundaries. | General Python workflow, package management, or smell-focused anti-pattern review. |
+| `python-engineering` | Python source, tests, pyproject.toml, uv.lock, packaging, linting, typing, docstrings, dependency management, async task/queue execution, and Python review. | Non-Python package managers, database-native schema design, browser E2E test design, or hosted CI/release provider configuration. |
+| `python-design-patterns` | Python-specific design patterns such as dataclasses, value objects, protocols, context managers, supervised task groups, adapters, repositories, factories, and Python expression of Clean/Hexagonal/Onion boundaries. | General Python workflow, package management, async execution policy, or smell-focused anti-pattern review. |
 | `python-antipatterns` | Python-specific generated-code and design smells such as mutable defaults, global state, import-time side effects, broad `Any`, broad exceptions, framework/ORM leakage, async blocking, and brittle tests. | Positive pattern selection or ordinary Python workflow. |
 | `javascript-typescript-engineering` | JS/TS source, package.json, lockfiles, Node/npm, Bun, Deno, pnpm, or Yarn workflows, TypeScript, lint/format/test/build scripts, dependencies, workspaces, and JS/TS review. | Checked-in Playwright spec design, Rust/Python/database work, or CSS/SCSS styling decisions without JS/TS implementation or tooling impact. |
 | `css-scss-styling` | CSS, SCSS/Sass, CSS modules, CSS-in-JS styling choices, utility-class conventions, design tokens, cascade/layers, container/media queries, responsive layout, browser compatibility, and CSS-to-SCSS migration. | Pure JS/TS/Python/Rust behavior changes, API/data work, checked-in browser E2E strategy, or vendor-specific framework setup with no styling surface. |
@@ -284,8 +285,9 @@ and browser-test skills.
   implementation plus its normal tests. Keep checked-in browser E2E work in
   `playwright-e2e`.
 - **Packaging and toolchains:** package metadata, builds, publishing, lockfiles,
-  workspaces, dependency resolution, or release automation become version-sensitive
-  enough that they can be handled without loading general implementation guidance.
+  workspaces, or dependency resolution become version-sensitive enough that they
+  can be handled without loading general implementation guidance. Keep checked-in
+  provider workflows and automated publication in `ci-release-engineering`.
 - **Web/API frameworks:** framework routing, middleware, request lifecycles,
   server/client boundaries, SSR, validation adapters, or framework-specific test
   harnesses dominate the task. Keep public contract shape in `api-design` and
@@ -389,9 +391,11 @@ reading the code, making a small change, and running the relevant check is enoug
 | `architecture-review` | Architecture-focused audits of boundaries, dependency direction, ports/adapters, Clean/Hexagonal/Onion/DDD hybrids, and modular structure. | Separates architecture findings from architecture design and implementation guidance. |
 | `behavior-driven-development` | Behavior examples, acceptance criteria, workflows, and executable specifications. | Focuses on behavior discovery and examples; `gherkin` owns formal feature-file syntax. |
 | `brainstorming` | Structured option generation for ambiguous engineering choices before implementation. | Activates only when multiple credible paths and meaningful tradeoffs exist. |
+| `ci-release-engineering` | Checked-in CI and release-provider workflows for triggers, refs, jobs, matrices, services, caches, artifacts, permissions, concurrency, environments, automated versioning, tags, releases, and package or binary publication. | Owns hosted pipeline implementation while language/test skills own invoked commands, supply-chain and security skills own trust review, Git owns manual operations, and release readiness owns ship decisions. |
 | `clean-architecture` | Clean Architecture, dependency rule, entities, use cases/interactors, interface adapters, framework/database/UI independence, and Clean vs Hexagonal/Onion/layered tradeoffs. | Owns use-case and interface-adapter framing without duplicating ports/adapters or domain-ring guidance. |
 | `code-review` | General repository-local audit and review workflow, severity, and finding format. | Owns general review reporting while specialist skills add narrow evidence lenses. |
 | `context7-docs` | Current third-party library, framework, SDK, API, CLI, and tool documentation lookup. | Owns current external documentation lookup without replacing repository inspection. |
+| `container-engineering` | Dockerfile, Containerfile, `.dockerignore`, BuildKit/OCI image, and Docker Compose implementation, including stages, artifact transfer, runtime users, entrypoints, health, ports, networks, volumes, secrets/config, lifecycle, resources, and privileges. | Owns container build and Compose behavior while language skills own application commands, supply-chain and security skills own trust review, and CI/release engineering owns hosted pipelines. |
 | `create-agent-skill` | Creating, updating, validating, and maintaining reusable `SKILL.md` skills. | Owns reusable skill contracts and repository-specific skill governance. |
 | `css-scss-styling` | CSS and SCSS/Sass stylesheet work, CSS modules, CSS-in-JS styling choices, utility-class conventions, modern CSS features, Sass modules, responsive/accessibility/performance concerns, and CSS-to-SCSS migration. | Covers cross-stack styling without splitting CSS and SCSS into duplicate skills or defaulting to Sass. |
 | `dependency-supply-chain-review` | Dependency audits, SBOM/SCA output, CVE/GHSA advisories, package provenance, registries, manifests, lockfiles, install scripts, CI bootstrap dependencies, containers, binaries, and vendored/generated code. | Owns supply-chain trust while language skills own package-manager mechanics. |
@@ -412,8 +416,8 @@ reading the code, making a small change, and running the relevant check is enoug
 | `postgresql-sql-engineering` | PostgreSQL schema, migrations, SQL, transactions, indexes, JSONB, RLS, privileges, plans, maintenance, and review. | Owns PostgreSQL-native behavior while Rust adapter details stay in `rust-persistence-sql`. |
 | `prompt-engineering-review` | Review and, when requested, rewrite coding-agent prompts, roles, delegation instructions, acceptance criteria, and quality gates. | Owns prompt behavior and clarity while `create-agent-skill` owns reusable skill contracts. |
 | `python-antipatterns` | Python generated-code and design smell review for mutable defaults, global state, import-time side effects, broad typing, framework leakage, async blocking, and brittle tests. | Owns smell-focused Python review while positive patterns and broad workflow stay separate. |
-| `python-design-patterns` | Python pattern guidance for dataclasses, value objects, protocols, context managers, adapters, repositories, factories, fixtures, and architecture boundaries. | Owns positive pattern selection while `python-engineering` remains the workflow skill. |
-| `python-engineering` | Python code, tests, typing, packaging, dependency management, `uv`, Ruff, ty/mypy/Pyright, docstrings, and review. | Covers Python broadly while delegating database-native behavior to data skills. |
+| `python-design-patterns` | Python pattern guidance for dataclasses, value objects, protocols, context managers, supervised task groups, adapters, repositories, factories, fixtures, and architecture boundaries. | Owns positive pattern selection while `python-engineering` remains the workflow and concurrency-execution skill. |
+| `python-engineering` | Python code, tests, typing, packaging, dependency management, `uv`, Ruff, ty/mypy/Pyright, docstrings, async task/queue execution, and review. | Covers Python broadly while delegating database-native behavior, hosted pipelines, and container configuration to focused skills. |
 | `random-data-identifiers` | Secure randomness, UUIDs/CUIDs/ULIDs, generated IDs, test data, seeded reproducibility, and collision review. | Owns cross-language randomness and generated-identifier decisions. |
 | `release-readiness` | Final merge or release assessment across acceptance criteria, tests, docs, migrations, rollout, rollback, operations, and cross-functional risk. | Owns the evidence-based ship or hold decision after implementation and focused reviews. |
 | `review-verification-protocol` | Evidence gates for review findings and specialist review lenses. | Provides a hidden, reusable gate that prevents speculative findings across review skills. |
@@ -452,6 +456,8 @@ existing skill.
 | Security review and audit | `threat-modeling`, `security-review`, `security-review-evidence`, `dependency-supply-chain-review`, `code-review`, language/data skills | Baseline complete | Design-time modeling, implemented-control review, supply-chain review, generic audit routing, and sanitized evidence are covered. |
 | Threat modeling and security design | `threat-modeling`, `security-review`, `security-review-evidence`, architecture/method/language skills | Baseline complete | Actors, assets, entry points, data flows, trust boundaries, abuse cases, mitigations, security acceptance criteria, residual risk, and handoff to verified review are covered. |
 | Dependency and supply-chain review | `dependency-supply-chain-review`, `security-review`, `security-review-evidence`, language/workflow skills | Baseline complete | Manifests, lockfiles, SBOM/SCA/CVE/GHSA advisories, provenance, registries, install scripts, CI bootstrap, containers, binaries, vendored/generated code, and sanitized evidence are covered. |
+| CI and release automation | `ci-release-engineering`, language/test skills, `justfiles`, `git-workflows`, `dependency-supply-chain-review`, `security-review`, `release-readiness` | Baseline complete | Checked-in provider workflows, triggers, ref selection, job graphs, matrices, services, caches, artifacts, permissions, concurrency, environments, automated versioning, publication, rerun safety, and handoffs are covered. |
+| Docker/OCI and Compose implementation | `container-engineering`, language skills, `justfiles`, `dependency-supply-chain-review`, `security-review`, `ci-release-engineering` | Baseline complete | Build contexts/stages, artifact transfer, runtime users and entrypoints, health, ports, networks, volumes, secrets/config, lifecycle, resource/privilege controls, image validation, and hosted pipeline handoff are covered. |
 | BDD | `behavior-driven-development`, `gherkin`, `playwright-e2e` | Baseline complete | BDD principles and misuse are separate from formal `.feature` syntax. |
 | DDD | `domain-driven-design`, `domain-modeling`, language/data skills | Baseline complete | Strategic and tactical modeling guidance plus a focused tactical review lens with anti-ceremony boundaries. |
 | Clean / Hexagonal Architecture / Onion / Ports and Adapters | `clean-architecture`, `hexagonal-architecture`, `onion-architecture`, `architecture-review`, `domain-driven-design`, language/data skills | Baseline complete | Core isolation, dependency direction, entities, use cases/interactors, domain/application rings, interface adapters, ports/adapters, focused architecture review, tests, tradeoffs, and when not to add indirection. |
@@ -459,11 +465,11 @@ existing skill.
 | Combining BDD, DDD, TDD, Clean Architecture, Hexagonal Architecture, and Onion Architecture | This taxonomy plus BDD/DDD/TDD/Clean/Hexagonal/Onion cross-references | Baseline complete | Composition guidance lives here to avoid a competing meta-skill. |
 | Gherkin and `.feature` files | `gherkin`, `behavior-driven-development`, `playwright-e2e` | Baseline complete | Includes Given/When/Then discipline, outlines, anti-patterns, and language usage. |
 | Language-specific design patterns and anti-patterns | `rust-design-patterns`, `rust-antipatterns`, `python-design-patterns`, `python-antipatterns`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, language engineering skills | Baseline complete; known extensions tracked | Pattern selection and smell detection are standalone skills, with short routing rules in each broader language skill. |
-| Random data and identifiers | `random-data-identifiers`, `security-review`, language/data skills | Baseline complete | Covers CSPRNG defaults, seeded reproducibility, UUID/CUID/ULID-style choices, tests, and warnings. |
+| Random data and identifiers | `random-data-identifiers`, `security-review`, language/data skills | Baseline complete | Covers CSPRNG defaults for secrets and security-sensitive or public unguessable IDs, seeded reproducibility, UUID/CUID/ULID-style choices, tests, and warnings. |
 | SQL | `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering`, `rust-persistence-sql` | Baseline complete; known extensions tracked | Generic SQL plus engine and Rust adapter specialization. |
 | PostgreSQL | `postgresql-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | JSONB, indexes, plans, constraints, transactions, privileges/RLS, and maintenance. |
 | SQLite | `sqlite-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | PRAGMAs, WAL/locking, one-writer model, migrations, indexes, and limitations. |
-| Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, security, DB delegation, pattern selection, and smell detection. |
+| Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, async task ownership, bounded queues, cancellation/backpressure/retry policy, security, DB delegation, pattern selection, and smell detection. |
 | JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | Node/npm defaults, `npx`, pnpm/yarn/Bun/Deno when local evidence requires them, Prettier/ecosystem tooling, pattern selection, smell detection, and browser E2E are covered. |
 | CSS and SCSS styling | `css-scss-styling`, `ux-accessibility-review`, `javascript-typescript-engineering`, `python-engineering`, `rust-async-web`, `playwright-e2e` | Baseline complete | CSS vs SCSS decisions, Sass modules, modern CSS features, detection heuristics, cross-stack integration, accessibility/responsive/performance concerns, focused UI review, and migration validation are covered. |
 | Internationalization and localization | `internationalization-localization`, language engineering skills, `api-design`, `css-scss-styling`, `playwright-e2e`, `security-review`, `security-review-evidence`, `context7-docs` | Baseline complete | Covers i18n/l10n concepts, Project Fluent and `.ftl` authoring, American English source locale, multilingual catalogs, locale fallback, Fluent JS/Python/Rust binding routing, localized output tests, accessibility, and trust-boundary/evidence handoffs. |
@@ -574,7 +580,28 @@ Scenario: Randomness distinguishes security from reproducibility
   Given a change generates IDs, tokens, random test data, fixtures, or simulation inputs
   When the agent chooses randomness guidance
   Then it loads random-data-identifiers
-  And uses secure randomness for secrets and IDs or explicit seeded PRNGs for reproducible tests
+  And uses secure randomness for secrets and security-sensitive or public unguessable IDs
+  And uses explicit seeded PRNGs for reproducible tests
+```
+
+```gherkin
+Scenario: CI and release implementation stays separate from readiness review
+  Given a change touches checked-in CI or release-provider triggers, jobs, permissions, artifacts, versioning, tags, or publication
+  When the agent implements the workflow
+  Then it loads ci-release-engineering
+  And language and test skills own the commands run by jobs
+  And security-review and security-review-evidence handle permissions, secrets, OIDC, untrusted events, and command injection
+  And release-readiness remains the final ship or hold decision
+```
+
+```gherkin
+Scenario: Container implementation composes with security and supply-chain review
+  Given a change touches Dockerfile, Containerfile, .dockerignore, OCI image construction, or Docker Compose behavior
+  When the agent implements the container configuration
+  Then it loads container-engineering
+  And dependency-supply-chain-review handles base image, package, registry, SBOM, attestation, and provenance trust
+  And security-review and security-review-evidence handle secrets, mounts, ports, capabilities, sockets, and other trust boundaries
+  And ci-release-engineering owns hosted workflows that build, test, or publish the image
 ```
 
 ```gherkin

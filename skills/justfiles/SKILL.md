@@ -1,6 +1,6 @@
 ---
 name: justfiles
-description: Create, refactor, audit, and explain Justfiles for the just command runner. Use when writing or changing Justfile recipes, variables, parameters, groups, imports/modules, aliases, shells/scripts, safety gates, or project workflow commands. Do not use when only running existing recipes without assessing or changing Justfile design.
+description: Create, refactor, audit, and explain Justfiles for the just command runner. Use when writing or changing Justfile recipes, variables, parameters, groups, imports/modules, aliases, shells/scripts, safety gates, or project workflow commands. Do not use when only running existing recipes without assessing or changing Justfile design, or for hosted CI/release-provider or Docker/OCI/Compose semantics beyond the Just wrappers that invoke them.
 ---
 
 # Justfiles
@@ -241,6 +241,16 @@ regen:
 - Make CI and agent workflows explicit: recipes for setup, fast checks, full
   verification, formatting, linting, generated-code refresh, and drift checks
   should be easy to discover.
+
+## Workflow ownership routing
+
+- Load [`ci-release-engineering`](../ci-release-engineering/SKILL.md) when a
+  change affects hosted pipeline triggers, jobs, permissions, artifacts, or
+  automated release behavior; keep this skill focused on the Just recipe the
+  pipeline invokes.
+- Load [`container-engineering`](../container-engineering/SKILL.md) when a
+  change affects Dockerfile, OCI image, or Compose semantics; keep this skill
+  focused on container command wrappers and recipe design.
 
 ## Security and supply-chain routing
 
