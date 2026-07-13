@@ -1,6 +1,6 @@
 ---
 name: rust-design-patterns
-description: Rust design pattern and idiom guidance. Use when choosing, implementing, or reviewing Rust patterns such as newtypes, builders, RAII guards, traits, strategy, visitor, command, compose-structs, small crates, contained unsafe modules, custom traits for complex bounds, macros, or ownership-driven API design. Use rust-antipatterns for smell-focused audits and rust-engineering for broader Rust implementation.
+description: Rust design pattern and idiom guidance. Use when choosing, implementing, or reviewing Rust patterns such as newtypes, builders, RAII guards, traits, strategy, visitor, command, compose-structs, small crates, contained unsafe modules, custom traits for complex bounds, macros, or ownership-driven API design. Use rust-antipatterns for smell-focused audits and load rust-engineering whenever applying or implementing a pattern.
 ---
 
 # Rust Design Patterns
@@ -21,7 +21,9 @@ type system rather than copying object-oriented patterns from other languages.
 
 Do not use this skill to justify decorative abstractions. Use
 [`rust-antipatterns`](../rust-antipatterns/SKILL.md) when the task is mainly to
-find or remove generated-code smells.
+find or remove generated-code smells. Advice-only pattern selection may use this
+skill independently; load [`rust-engineering`](../rust-engineering/SKILL.md)
+whenever applying or implementing the pattern.
 
 ## Selection Rules
 
@@ -103,4 +105,3 @@ find or remove generated-code smells.
 
 - Rust Design Patterns, [Design Patterns](https://rust-unofficial.github.io/patterns/patterns/index.html).
 - Rust Design Patterns, [Summary](https://github.com/rust-unofficial/patterns/blob/main/src/SUMMARY.md).
-

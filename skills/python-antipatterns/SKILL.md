@@ -1,6 +1,6 @@
 ---
 name: python-antipatterns
-description: Python anti-pattern detection and correction guidance. Use when reviewing or refactoring generated or hand-written Python for mutable defaults, global state, import-time side effects, broad Any or dict-shaped data, broad exception handling, monkeypatch-heavy tests, Pydantic/ORM/framework leakage, async blocking, resource leaks, dependency sprawl, brittle tests, or architecture boundary violations.
+description: Python anti-pattern detection and correction guidance. Use when reviewing or refactoring generated or hand-written Python for mutable defaults, global state, import-time side effects, broad Any or dict-shaped data, broad exception handling, monkeypatch-heavy tests, Pydantic/ORM/framework leakage, async blocking, resource leaks, dependency sprawl, brittle tests, or architecture boundary violations. Do not use for ordinary Python implementation or workflow, or for positive pattern selection.
 ---
 
 # Python Anti-Patterns

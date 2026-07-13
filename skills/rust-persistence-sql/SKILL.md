@@ -17,6 +17,11 @@ SQLite-native schema, transaction, and test-database behavior, use
 whether repositories, database gateways, transactions, or query services should
 be outbound ports and adapters rather than core domain code.
 
+For a requested Rust review, use [`code-review`](../code-review/SKILL.md) with
+[`rust-code-review`](../rust-code-review/SKILL.md) and
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md) as the
+review workflow; add this skill for persistence-specific evidence.
+
 ## Workflow
 
 1. Inspect the persistence setup: `Cargo.toml` SQLx and SeaQuery dependencies,

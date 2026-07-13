@@ -1,6 +1,6 @@
 ---
 name: css-scss-styling
-description: CSS and SCSS/Sass styling guidance. Use when adding, changing, reviewing, refactoring, or migrating .css, .scss, .sass, CSS modules, design tokens, cascade layers, container/media queries, responsive layout, stylesheet build pipelines, CSS-in-JS, utility-class conventions, or styling integration in HTML, JavaScript/TypeScript, Python templates, or Rust Leptos/Axum apps. Use language/framework skills for non-styling implementation mechanics and do not use for behavior changes with no styling surface.
+description: CSS and SCSS/Sass styling guidance. Use when adding, changing, reviewing, refactoring, or migrating .css, .scss, .sass, CSS modules, design tokens, cascade layers, container/media queries, responsive layout, stylesheet build pipelines, CSS-in-JS, utility-class conventions, or styling integration in HTML, JavaScript/TypeScript, Python templates, or Rust Leptos/Axum apps. Use ux-accessibility-review for interface accessibility or UX audits. Use language/framework skills for non-styling implementation mechanics and do not use for behavior changes with no styling surface.
 ---
 
 # CSS And SCSS Styling
@@ -28,7 +28,10 @@ Do not use this skill for UI behavior with no stylesheet or browser-visible
 styling change. Use [`javascript-typescript-engineering`](../javascript-typescript-engineering/SKILL.md),
 [`python-engineering`](../python-engineering/SKILL.md), or
 [`rust-async-web`](../rust-async-web/SKILL.md) for language/framework mechanics;
-add this skill only when styling choices or style build behavior matter.
+add this skill only when styling choices or style build behavior matter. Use
+[`ux-accessibility-review`](../ux-accessibility-review/SKILL.md) as primary for a
+rendered-interface accessibility or UX audit; use this skill to implement or
+review the underlying stylesheet behavior.
 
 ## Workflow
 

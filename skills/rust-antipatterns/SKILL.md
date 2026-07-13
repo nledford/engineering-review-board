@@ -22,9 +22,12 @@ reporting or refactoring it.
 - The user asks for Rust smells, anti-patterns, cleanup, or idiomatic review.
 
 For positive pattern selection, use
-[`rust-design-patterns`](../rust-design-patterns/SKILL.md). For requested
-reviews, pair this skill with [`rust-code-review`](../rust-code-review/SKILL.md)
-and [`code-review`](../code-review/SKILL.md).
+[`rust-design-patterns`](../rust-design-patterns/SKILL.md). Read-only smell
+identification may use this skill independently. When correcting an issue, load
+[`rust-engineering`](../rust-engineering/SKILL.md). For requested reviews, pair
+this skill with [`rust-code-review`](../rust-code-review/SKILL.md),
+[`code-review`](../code-review/SKILL.md), and
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md).
 
 ## Common Anti-Patterns
 
@@ -97,4 +100,3 @@ and [`code-review`](../code-review/SKILL.md).
 - Rust Design Patterns, [Clone to satisfy the borrow checker](https://github.com/rust-unofficial/patterns/blob/main/src/anti_patterns/borrow_clone.md).
 - Rust Design Patterns, [`#![deny(warnings)]`](https://github.com/rust-unofficial/patterns/blob/main/src/anti_patterns/deny-warnings.md).
 - Rust Design Patterns, [Deref polymorphism](https://github.com/rust-unofficial/patterns/blob/main/src/anti_patterns/deref.md).
-
