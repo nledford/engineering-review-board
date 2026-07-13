@@ -6,9 +6,10 @@ description: Review UI and UX quality, visual polish, responsive behavior, inter
 # UX Accessibility Review Skill
 
 Use this skill as a focused review lens for user interfaces and end-to-end
-workflows. For repository change reviews, also load
-[`code-review`](../code-review/SKILL.md) and
-[`review-verification-protocol`](../review-verification-protocol/SKILL.md).
+workflows. Always load
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings. For repository change reviews, also load
+[`code-review`](../code-review/SKILL.md).
 
 Use [`css-scss-styling`](../css-scss-styling/SKILL.md) for stylesheet
 implementation and [`playwright-e2e`](../playwright-e2e/SKILL.md) for durable

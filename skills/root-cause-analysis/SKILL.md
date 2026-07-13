@@ -96,8 +96,10 @@ evidence, and isolate the direct cause.
   useful layer before or alongside implementation.
 - For domain failures, name the affected bounded context and invariant rather
   than describing only tables, routes, or UI widgets.
-- For security-sensitive incidents or prevention work, follow any repository
-  security policy that exists and obtain sanitized review evidence.
+- For security-sensitive incidents or prevention work, load
+  [`security-review`](../security-review/SKILL.md) and
+  [`security-review-evidence`](../security-review-evidence/SKILL.md), follow any
+  repository security policy that exists, and keep evidence sanitized.
 
 ## Guardrails
 

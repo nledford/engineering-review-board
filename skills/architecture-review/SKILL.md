@@ -6,9 +6,10 @@ description: Review architectural boundaries, dependency direction, ports and ad
 # Architecture Review Skill
 
 Use this skill as an architecture-specific review lens for an existing system,
-proposal, or diff. For repository change reviews, also load
-[`code-review`](../code-review/SKILL.md) and
-[`review-verification-protocol`](../review-verification-protocol/SKILL.md).
+proposal, or diff. Always load
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings. For repository change reviews, also load
+[`code-review`](../code-review/SKILL.md).
 
 Do not use it for simple code changes with no boundary impact. Use the matching
 Clean, Hexagonal, Onion, or DDD skill when the primary task is designing or

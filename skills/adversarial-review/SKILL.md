@@ -6,10 +6,10 @@ description: Skeptically verify completed changes, agent work, merge readiness, 
 # Adversarial Review Skill
 
 Use this skill for an independent final challenge after implementation or a
-primary review is complete. Load
-[`code-review`](../code-review/SKILL.md) and
-[`review-verification-protocol`](../review-verification-protocol/SKILL.md) when
-reviewing repository changes.
+primary review is complete. Always load
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings. For repository changes, also load
+[`code-review`](../code-review/SKILL.md).
 
 Do not use it to implement changes, debug an active unexplained failure, or
 replace the first focused review of a diff.

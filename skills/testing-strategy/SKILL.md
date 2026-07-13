@@ -6,9 +6,10 @@ description: Review test strategy, confidence gaps, TDD and BDD fit, flaky tests
 # Testing Strategy Skill
 
 Use this skill when the primary task is assessing whether a test suite or test
-plan provides the right confidence. For repository change reviews, also load
-[`code-review`](../code-review/SKILL.md) and
-[`review-verification-protocol`](../review-verification-protocol/SKILL.md).
+plan provides the right confidence. Always load
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings. For repository change reviews, also load
+[`code-review`](../code-review/SKILL.md).
 
 Use [`test-driven-development`](../test-driven-development/SKILL.md) for
 Red-Green-Refactor implementation, and `systematic-debugging` for an active

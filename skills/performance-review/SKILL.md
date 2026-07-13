@@ -5,9 +5,10 @@ description: Review performance and scalability using workload, baseline, profil
 
 # Performance Review
 
-Use this skill as a cross-stack review lens. For repository changes, also load
-[`code-review`](../code-review/SKILL.md) and
-[`review-verification-protocol`](../review-verification-protocol/SKILL.md).
+Use this skill as a cross-stack review lens. Always load
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings. For repository changes, also load
+[`code-review`](../code-review/SKILL.md).
 
 Use [`systematic-debugging`](../systematic-debugging/SKILL.md) first when an
 active regression has not been reproduced or narrowed. Use language, runtime,

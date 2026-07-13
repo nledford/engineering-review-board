@@ -5,9 +5,10 @@ description: Review tactical DDD models, aggregates, entities, value objects, in
 
 # Domain Modeling Skill
 
-Use this skill as a tactical domain-model review lens. For repository change
-reviews, also load [`code-review`](../code-review/SKILL.md) and
-[`review-verification-protocol`](../review-verification-protocol/SKILL.md).
+Use this skill as a tactical domain-model review lens. Always load
+[`review-verification-protocol`](../review-verification-protocol/SKILL.md)
+before reporting findings. For repository change reviews, also load
+[`code-review`](../code-review/SKILL.md).
 
 Use [`domain-driven-design`](../domain-driven-design/SKILL.md) when the primary
 task is discovering or implementing a model rather than reviewing one.
