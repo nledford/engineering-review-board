@@ -32,3 +32,12 @@ editing skills or repository documentation, read [`README.md`](README.md),
   changes.
 - Run `just check` for broader repository changes or before handoff when tooling,
   tests, scripts, or validation behavior may be affected.
+
+## Durable Plan Workflow
+
+Project-local implementation plans use the canonical contract in
+[`docs/implementation-plans/README.md`](docs/implementation-plans/README.md).
+The Planning Coordinator is the exclusive durable-plan writer and the Engineering
+Review Board is read-only. Keep OpenCode's live configuration machine-local;
+repository files are reviewed definitions and templates, not credentials or a
+replacement for a user's `opencode.jsonc`.

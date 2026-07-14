@@ -97,11 +97,13 @@ symlink to another location.
 ## OpenCode Agents And Commands
 
 Custom OpenCode definitions are tracked under `opencode/agents/` and
-`opencode/commands/`. `opencode/manifest.json` is the reviewed inventory. The
-validator requires every manifest entry to be a direct-child, regular Markdown
-file, rejects unexpected files, and checks that command `agent:` references
-resolve to tracked agents. Command frontmatter uses scalar top-level fields and
-must contain exactly one unquoted, lowercase `agent: agent-name` entry.
+`opencode/commands/`. `opencode/manifest.json` is the reviewed inventory for
+agents, commands, and supporting templates. Validation uses a documented,
+fail-closed subset of YAML frontmatter. It checks definition metadata, permission
+baseline ordering, one-level Task topology, primary command ownership,
+`subtask: false`, balanced Markdown fences, support-file safety, and synchronized
+implementation-plan templates. Command `agent:` values must be unquoted,
+lowercase IDs for tracked primary agents.
 
 The setup workflow manages these two links as one installation:
 
@@ -131,6 +133,28 @@ agent and command files take effect the next time OpenCode starts. Do not use th
 linked checkout for unreviewed branches. Keep provider credentials, secrets,
 packages, backups, runtime state, and the rest of `~/.config/opencode` outside
 this repository.
+
+## Durable Plan Workflow
+
+The repository includes a project-neutral implementation-plan contract in
+[`docs/implementation-plans/README.md`](docs/implementation-plans/README.md),
+with synchronized starter copies under
+[`opencode/project-template/`](opencode/project-template/). Plans use canonical
+series paths, Coordinator-only durable writes, read-only ERB review, explicit
+human approval, and dependency-aware execution. See the
+[legacy Weave cleanup checklist](opencode/cleanup/weave-cleanup-checklist.md)
+when migrating prior workflow material.
+
+To bootstrap a repository that does not already have plan guidance, copy
+`opencode/project-template/docs/implementation-plans/` to the target repository's
+`docs/implementation-plans/`, then merge—not replace—the relevant text from
+`opencode/project-template/AGENTS-plan-workflow-snippet.md` into its existing
+`AGENTS.md`. If either destination already exists, compare and reconcile it
+manually rather than overwriting project policy.
+
+`opencode/config/opencode.merge-fragment.jsonc` is a small merge reference, not
+an installer and not live configuration. Keep provider credentials, local
+plugins, and machine-specific OpenCode settings in the machine-local config.
 
 On another computer, clone the repository, install the global skills with
 `just setup` when needed, and run the OpenCode setup commands above. The target
