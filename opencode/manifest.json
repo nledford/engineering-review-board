@@ -1,0 +1,38 @@
+{
+  "agents": [
+    "accessibility-critic.md",
+    "adversarial-reviewer.md",
+    "api-design-critic.md",
+    "architecture-strategy-critic.md",
+    "change-verifier.md",
+    "database-engineering-critic.md",
+    "design-critic.md",
+    "distributed-systems-concurrency-critic.md",
+    "documentation-critic.md",
+    "domain-model-critic.md",
+    "engineering-lead.md",
+    "engineering-review-board.md",
+    "frontend-architecture-interaction-critic.md",
+    "implementation-worker.md",
+    "internationalization-localization-critic.md",
+    "performance-critic.md",
+    "planning-coordinator.md",
+    "prompt-critic.md",
+    "release-readiness-reviewer.md",
+    "security-critic.md",
+    "technical-debt-auditor.md",
+    "technical-researcher.md",
+    "testing-critic.md"
+  ],
+  "commands": [
+    "audit-technical-debt.md",
+    "convert-tapestry-plan.md",
+    "execute-plan.md",
+    "investigate-regression.md",
+    "normalize-plan.md",
+    "prepare-work.md",
+    "review-implementation.md",
+    "review-plan.md",
+    "revise-plan.md"
+  ]
+}
