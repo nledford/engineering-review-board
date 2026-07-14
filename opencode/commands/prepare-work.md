@@ -1,5 +1,5 @@
 ---
-description: Classify a task and create the lightest appropriate execution approach
+description: Classify work and choose the lightest safe execution or durable-plan workflow
 agent: engineering-lead
 subtask: false
 ---
@@ -8,20 +8,13 @@ Assess this work request:
 
 $ARGUMENTS
 
-Read applicable project guidance and inspect enough repository evidence to classify the task as:
+Read applicable guidance and inspect enough evidence to classify it as Trivial,
+Bounded, Complex, or Ambiguous / High-Risk. Do not implement in this command.
 
-- Trivial — proceed directly when later requested
-- Bounded — use a short in-session checklist
-- Complex — create a durable plan under `docs/implementation-plans/`
-- Ambiguous / High-Risk — ask the human whether or how to proceed
-
-Do not implement the task in this command.
-
-If a durable plan is warranted:
-
-1. Select the minimum useful specialists and gather bounded analyses.
-2. Delegate plan synthesis to `planning-coordinator`.
-3. Ensure the new plan begins with `status: draft` and `review_decision: pending`.
-4. Return the plan path and recommend `/review-plan <path>`.
-
-Return the classification, rationale, evidence inspected, uncertainties, recommended process, and next command.
+For Complex work, choose a series matching `[a-z][a-z0-9-]{1,19}`, gather only
+decision-relevant evidence, and invoke `planning-coordinator` to create a
+canonical plan at `docs/implementation-plans/plans/<series>/<NN>-<slug>.md`.
+The Coordinator—not the Lead—allocates `max(existing)+1` from `01` through `99`,
+never reuses gaps, and persists draft/pending revision `1` metadata. Return the classification,
+evidence, unresolved decisions, plan path when created, and next command
+(`/review-plan <path>`).

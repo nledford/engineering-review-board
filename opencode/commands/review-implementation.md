@@ -8,7 +8,7 @@ Review the completed implementation associated with:
 
 $ARGUMENTS
 
-Read the approved plan, current repository, referenced commits or diff, and supplied validation evidence.
+Read the approved plan, its matching approval record, current repository, referenced commits or diff, and supplied validation evidence. Do not modify lifecycle metadata; any later execution-record update belongs to `planning-coordinator` through the Engineering Lead.
 
 Use `change-verifier` to map objectives, guardrails, non-goals, implementation steps, acceptance criteria, and required validation to concrete evidence. Select the minimum additional specialist panel for the actual change surface. Use `adversarial-reviewer` after the primary review when an independent hidden-flaw challenge materially improves confidence.
 

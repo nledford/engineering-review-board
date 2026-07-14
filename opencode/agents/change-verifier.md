@@ -5,16 +5,22 @@ model: openai/gpt-5.6-terra
 reasoningEffort: high
 steps: 30
 permission:
+  "*": deny
+  read: allow
+  glob: allow
+  grep: allow
+  list: allow
+  lsp: allow
   edit: deny
   bash:
     "*": deny
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git grep*": allow
-    "git rev-parse*": allow
-    "git branch --show-current*": allow
+    "git status": allow
+    "git status --short": allow
+    "git diff": allow
+    "git diff --cached": allow
+    "git diff --check": allow
+    "git log --oneline -10": allow
+    "git branch --show-current": allow
   task: deny
   webfetch: deny
   websearch: deny

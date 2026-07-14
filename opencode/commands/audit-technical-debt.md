@@ -12,11 +12,14 @@ Treat the argument as either repository-wide scope or a focused concern such as 
 
 Include `technical-debt-auditor` as the central specialist and select only additional specialists whose evidence could materially change prioritization or remediation.
 
-Return between 3 and 30 distinct, evidence-supported findings. Do not pad the list and do not confuse active defects, acceptable trade-offs, or cosmetic preferences with compounding technical debt.
+Return between 0 and 30 distinct, evidence-supported findings. Do not pad the
+list and do not confuse active defects, acceptable trade-offs, or cosmetic
+preferences with compounding technical debt. When no material debt is found,
+say so explicitly and summarize the evidence examined.
 
 For each finding include priority, severity, confidence, classification, scope, concrete evidence, impact, durable fix, validation, effort, expected benefit, and dependencies.
 
-Do not modify the repository.
+Do not modify the repository or a durable plan. Recommend `/prepare-work` for an approved remediation initiative.
 
 Conclude with:
 

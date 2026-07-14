@@ -1,25 +1,22 @@
 ---
-description: Convert and revalidate a legacy Tapestry plan into the native implementation-plan format
+description: Convert and revalidate a legacy Tapestry plan into a canonical native plan
 agent: engineering-lead
 subtask: false
 ---
 
-Convert and revalidate the Tapestry plan at:
+Convert `$1` into series `$2`.
 
-$ARGUMENTS
+`$1` is a legacy Tapestry source plan. `$2` must match
+`[a-z][a-z0-9-]{1,19}`. Do not implement or approve the plan.
 
-Do not implement it.
+Read the complete source, current guidance, and repository evidence. Revalidate
+paths, symbols, behavior, dependencies, sequencing, acceptance criteria, and
+validation commands; identify assumptions that are current, stale, superseded,
+implemented, or unverified. Delegate only the durable conversion to
+`planning-coordinator`. The Coordinator allocates the canonical destination
+`docs/implementation-plans/plans/<series>/<NN>-<slug>.md` using max+1 without
+gap reuse from `01` through `99`, preserves `source_format: tapestry` and `source_plan`, and starts
+`status: draft`, `review_decision: pending`, `revision: 1`.
 
-Required process:
-
-1. Read the complete source plan and current project guidance.
-2. Validate its file paths, symbols, behavior claims, dependencies, sequencing, acceptance criteria, and verification commands against the current repository.
-3. Determine whether it has been partially implemented, superseded, or invalidated by repository drift.
-4. Gather only the specialist input that could materially change the converted plan.
-5. Delegate synthesis to `planning-coordinator`.
-6. Write the result under `docs/implementation-plans/` using the current template.
-7. Preserve provenance with `source_format: tapestry`, `source_plan`, conversion date, original baseline when known, and current baseline.
-8. Keep `status: draft` and `review_decision: pending`.
-9. Include `Conversion Notes` describing stale assumptions, completed work, and structural changes.
-
-Return the source path, converted path, conversion type, major changes, open decisions, and recommendation to run `/review-plan`.
+Return source and destination paths, identity, provenance, revalidation results,
+open decisions, skipped validation, and `/review-plan <destination>`.

@@ -17,18 +17,124 @@ DEFINITION_ROOT_NAME = "opencode"
 MANIFEST_NAME = "manifest.json"
 DEFINITION_KINDS = ("agents", "commands")
 DEFINITION_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*\.md$")
-COMMAND_FIELD_RE = re.compile(r"^([a-z][a-z0-9_-]*):\s*(.*)$")
-COMMAND_AGENT_VALUE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+SUPPORT_FILE_RE = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)+$"
+)
+TOP_LEVEL_FIELD_RE = re.compile(r"^([a-z][A-Za-z0-9_]*):(?:\s(.*))?$")
+PERMISSION_LEVEL_RE = re.compile(r'^  (?:"(\*)"|([a-z][a-z0-9_]*)):(?:\s(.*))?$')
+PERMISSION_RULE_RE = re.compile(r'^    (?:"([^"\\]+)"|([a-z0-9][a-z0-9-]*)):\s*(allow|ask|deny)$')
+MODEL_VALUE_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$")
+AGENT_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 COMMAND_FIELDS = frozenset({"description", "agent", "model", "variant", "subtask"})
+AGENT_FIELDS = frozenset(
+    {"description", "mode", "model", "reasoningEffort", "steps", "color", "permission"}
+)
+REQUIRED_AGENT_FIELDS = frozenset(
+    {"description", "mode", "model", "reasoningEffort", "steps", "permission"}
+)
+PERMISSION_ACTIONS = frozenset({"allow", "ask", "deny"})
+REASONING_EFFORTS = frozenset({"low", "medium", "high", "xhigh"})
+ROOT_ASK_AGENT_IDS = frozenset({"engineering-lead", "implementation-worker"})
+PLAN_PATH_EDIT_RULE = "docs/implementation-plans/**"
+PLAN_REDIRECTION_DENY_RULE = "*docs/implementation-plans*"
+KNOWN_PERMISSION_TOOLS = frozenset(
+    {
+        "*",
+        "edit",
+        "bash",
+        "task",
+        "webfetch",
+        "websearch",
+        "question",
+        "skill",
+        "read",
+        "glob",
+        "grep",
+        "list",
+        "lsp",
+    }
+)
+SAFE_EXACT_GIT_BASH_ALLOWS = frozenset(
+    {
+        "git status",
+        "git status --short",
+        "git diff",
+        "git diff --cached",
+        "git diff HEAD",
+        "git diff HEAD^ HEAD",
+        "git diff --check",
+        "git diff --stat",
+        "git show HEAD",
+        "git show HEAD^",
+        "git log",
+        "git log --oneline -10",
+        "git rev-parse HEAD",
+        "git branch --show-current",
+        "git show",
+        "git ls-files",
+        "pwd",
+    }
+)
+REQUIRED_SUPPORT_FILES = (
+    "cleanup/weave-cleanup-checklist.md",
+    "config/opencode.merge-fragment.jsonc",
+    "project-template/AGENTS-plan-workflow-snippet.md",
+    "project-template/docs/implementation-plans/README.md",
+    "project-template/docs/implementation-plans/TEMPLATE.md",
+)
+PLAN_TEMPLATE_TOKENS = (
+    "plan_id: <series>-<NN>",
+    "series: <series>",
+    "sequence: <integer>",
+    "title: <human-readable title>",
+    "status: draft",
+    "revision: 1",
+    "review_decision: pending",
+    "reviewed_at:",
+    "approved_at:",
+    "approved_revision:",
+    "depends_on: []",
+    "baseline_commit: <commit or null>",
+    "execution_owner: engineering-lead",
+    "source_format: native",
+    "source_plan:",
+    "created: YYYY-MM-DD",
+    "updated: YYYY-MM-DD",
+    "completed_at:",
+)
+PLAN_PATH_TOKEN = "docs/implementation-plans/plans/<series>/<NN>-<slug>.md"
+PLAN_TEMPLATE_HEADINGS = (
+    "## Executive Summary",
+    "## Objectives",
+    "## Non-Goals",
+    "## Current-State Evidence",
+    "## Dependencies",
+    "## Implementation Sequence",
+    "## Test Strategy",
+    "## Open Decisions",
+    "## ERB Review History",
+    "## Approval History",
+    "## Amendments",
+    "## Execution Record",
+)
 
 
 @dataclass(frozen=True)
 class DefinitionInventory:
     agents: tuple[str, ...]
     commands: tuple[str, ...]
+    support_files: tuple[str, ...]
 
     def for_kind(self, kind: str) -> tuple[str, ...]:
         return getattr(self, kind)
+
+
+@dataclass(frozen=True)
+class ParsedFrontmatter:
+    fields: dict[str, str | None]
+    permissions: dict[str, str | tuple[tuple[str, str], ...]]
+    closing_index: int
 
 
 @dataclass
@@ -65,11 +171,14 @@ class OpenCodeInstallService:
         if inventory is None:
             return OperationResult(errors=errors)
 
+        errors.extend(self._validate_support_files(inventory.support_files))
         for kind in DEFINITION_KINDS:
             errors.extend(self._validate_kind(kind, inventory.for_kind(kind)))
 
         if not errors:
-            errors.extend(self._validate_command_agents(inventory))
+            agent_metadata = self._agent_metadata(inventory)
+            errors.extend(self._validate_task_delegation(agent_metadata))
+            errors.extend(self._validate_command_agents(inventory, agent_metadata))
 
         if errors:
             return OperationResult(errors=errors)
@@ -228,12 +337,15 @@ class OpenCodeInstallService:
         except (OSError, UnicodeError, json.JSONDecodeError):
             return None, ["OpenCode manifest is not valid UTF-8 JSON"]
 
-        if not isinstance(data, dict) or set(data) != set(DEFINITION_KINDS):
-            return None, ["OpenCode manifest must contain only agents and commands lists"]
+        manifest_kinds = (*DEFINITION_KINDS, "support_files")
+        if not isinstance(data, dict) or set(data) != set(manifest_kinds):
+            return None, [
+                "OpenCode manifest must contain only agents, commands, and support_files lists"
+            ]
 
         values: dict[str, tuple[str, ...]] = {}
         errors: list[str] = []
-        for kind in DEFINITION_KINDS:
+        for kind in manifest_kinds:
             entries = data.get(kind)
             if not isinstance(entries, list) or not all(
                 isinstance(entry, str) for entry in entries
@@ -244,7 +356,8 @@ class OpenCodeInstallService:
                 errors.append(
                     f"OpenCode manifest {kind} filenames must be sorted and unique"
                 )
-            invalid = [entry for entry in entries if not DEFINITION_NAME_RE.fullmatch(entry)]
+            entry_pattern = DEFINITION_NAME_RE if kind in DEFINITION_KINDS else SUPPORT_FILE_RE
+            invalid = [entry for entry in entries if not entry_pattern.fullmatch(entry)]
             if invalid:
                 errors.append(f"OpenCode manifest {kind} contains an invalid filename")
             values[kind] = tuple(entries)
@@ -255,7 +368,63 @@ class OpenCodeInstallService:
         return DefinitionInventory(
             agents=values["agents"],
             commands=values["commands"],
+            support_files=values["support_files"],
         ), []
+
+    def _validate_support_files(self, support_files: tuple[str, ...]) -> list[str]:
+        if support_files != REQUIRED_SUPPORT_FILES:
+            return ["OpenCode manifest support_files inventory is not canonical"]
+
+        contents: dict[str, str] = {}
+        errors: list[str] = []
+        for relative_path in support_files:
+            path = self.definition_root
+            safe_path = True
+            for part in Path(relative_path).parts:
+                path /= part
+                if path.is_symlink():
+                    safe_path = False
+                    break
+            if not safe_path or not path.is_file():
+                errors.append("support file is missing or is not a regular file")
+                continue
+            try:
+                contents[relative_path] = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
+                errors.append("support file is not readable UTF-8")
+
+        if errors:
+            return errors
+
+        template = contents["project-template/docs/implementation-plans/TEMPLATE.md"]
+        if not all(token in template for token in PLAN_TEMPLATE_TOKENS):
+            errors.append("implementation plan template metadata is not canonical")
+        if not all(heading in template for heading in PLAN_TEMPLATE_HEADINGS):
+            errors.append("implementation plan template headings are not canonical")
+        for path in (
+            "project-template/AGENTS-plan-workflow-snippet.md",
+            "project-template/docs/implementation-plans/README.md",
+        ):
+            if PLAN_PATH_TOKEN not in contents[path]:
+                errors.append("implementation plan support path token is missing")
+        for name in ("README.md", "TEMPLATE.md"):
+            root_copy = self.repo_root / "docs" / "implementation-plans" / name
+            template_copy = (
+                self.definition_root
+                / "project-template"
+                / "docs"
+                / "implementation-plans"
+                / name
+            )
+            if root_copy.is_symlink() or not root_copy.is_file():
+                errors.append("root implementation plan file is missing or is not a regular file")
+                continue
+            try:
+                if root_copy.read_bytes() != template_copy.read_bytes():
+                    errors.append("root implementation plan files differ from project-template copies")
+            except OSError:
+                errors.append("root implementation plan file is not readable")
+        return errors
 
     def _validate_kind(self, kind: str, expected: tuple[str, ...]) -> list[str]:
         root = self.sources[kind]
@@ -286,79 +455,395 @@ class OpenCodeInstallService:
             except (OSError, UnicodeError):
                 errors.append(f"{kind}: '{name}' is not readable UTF-8")
                 continue
-            errors.extend(self._validate_markdown(kind, name, text))
+            parsed, markdown_errors = self._parse_frontmatter(kind, name, text)
+            errors.extend(markdown_errors)
+            if parsed is None:
+                continue
+            if kind == "agents":
+                errors.extend(self._validate_agent_frontmatter(name, parsed))
+            else:
+                errors.extend(self._validate_command_frontmatter(name, parsed))
 
         return errors
 
     @staticmethod
-    def _validate_markdown(kind: str, name: str, text: str) -> list[str]:
+    def _parse_frontmatter(
+        kind: str,
+        name: str,
+        text: str,
+    ) -> tuple[ParsedFrontmatter | None, list[str]]:
+        """Parse this repository's scalar frontmatter and permission-map subset.
+
+        This deliberately does not implement YAML. Supported definitions use
+        unindented scalar fields and one ``permission`` mapping with optional
+        four-space wildcard/action rule maps; other YAML forms fail closed.
+        """
         lines = text.splitlines()
         if not lines or lines[0] != "---":
-            return [f"{kind}: '{name}' is missing YAML frontmatter"]
+            return None, [f"{kind}: '{name}' is missing YAML frontmatter"]
         try:
             closing_index = lines.index("---", 1)
         except ValueError:
-            return [f"{kind}: '{name}' has unterminated YAML frontmatter"]
+            return None, [f"{kind}: '{name}' has unterminated YAML frontmatter"]
         if not "\n".join(lines[closing_index + 1 :]).strip():
-            return [f"{kind}: '{name}' has an empty prompt body"]
-        return []
+            return None, [f"{kind}: '{name}' has an empty prompt body"]
 
-    def _validate_command_agents(self, inventory: DefinitionInventory) -> list[str]:
-        agent_names = {Path(name).stem for name in inventory.agents}
+        errors: list[str] = []
+        fields: dict[str, str | None] = {}
+        permissions: dict[str, str | tuple[tuple[str, str], ...]] = {}
+        active_permission: str | None = None
+        permission_rules: list[tuple[str, str]] = []
+
+        def finish_permission_rules() -> None:
+            nonlocal active_permission, permission_rules
+            if active_permission is not None:
+                permissions[active_permission] = tuple(permission_rules)
+            active_permission = None
+            permission_rules = []
+
+        for line in lines[1:closing_index]:
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            if line.startswith("    "):
+                if active_permission is None:
+                    errors.append(
+                        f"{kind}: '{name}' metadata must use supported top-level fields"
+                    )
+                    continue
+                rule_match = PERMISSION_RULE_RE.fullmatch(line)
+                if rule_match is None:
+                    errors.append(
+                        f"{kind}: '{name}' permission rules must use canonical key-value fields"
+                    )
+                    continue
+                rule_key = rule_match.group(1) or rule_match.group(2)
+                if any(existing_key == rule_key for existing_key, _ in permission_rules):
+                    errors.append(
+                        f"{kind}: '{name}' has duplicate permission rule '{rule_key}'"
+                    )
+                    continue
+                permission_rules.append((rule_key, rule_match.group(3)))
+                continue
+
+            if line.startswith("  "):
+                finish_permission_rules()
+                if "permission" not in fields:
+                    errors.append(
+                        f"{kind}: '{name}' metadata must use scalar top-level fields"
+                    )
+                    continue
+                permission_match = PERMISSION_LEVEL_RE.fullmatch(line)
+                if permission_match is None:
+                    errors.append(
+                        f"{kind}: '{name}' permission fields must use canonical key-value fields"
+                    )
+                    continue
+                wildcard_key, named_key, value = permission_match.groups()
+                permission_key = wildcard_key or named_key
+                if permission_key in permissions:
+                    errors.append(
+                        f"{kind}: '{name}' has duplicate permission '{permission_key}'"
+                    )
+                    continue
+                if value is None:
+                    active_permission = permission_key
+                    continue
+                if value not in PERMISSION_ACTIONS:
+                    errors.append(
+                        f"{kind}: '{name}' permission values must be allow, ask, or deny"
+                    )
+                    continue
+                permissions[permission_key] = value
+                continue
+
+            finish_permission_rules()
+            field_match = TOP_LEVEL_FIELD_RE.fullmatch(line)
+            if field_match is None:
+                errors.append(
+                    f"{kind}: '{name}' metadata must use canonical key-value fields"
+                )
+                continue
+            key, value = field_match.groups()
+            allowed_fields = AGENT_FIELDS if kind == "agents" else COMMAND_FIELDS
+            if key not in allowed_fields:
+                errors.append(f"{kind}: '{name}' has unsupported '{key}' field")
+                continue
+            if key in fields:
+                errors.append(f"{kind}: '{name}' has duplicate '{key}' field")
+                continue
+            if key == "permission":
+                if value is not None:
+                    errors.append(f"{kind}: '{name}' permission must be a block")
+                    continue
+                fields[key] = None
+                continue
+            if value is None or not value.strip():
+                errors.append(f"{kind}: '{name}' field '{key}' must be a non-empty scalar")
+                continue
+            fields[key] = value
+        finish_permission_rules()
+
+        fence: tuple[str, int] | None = None
+        for line in lines[closing_index + 1 :]:
+            match = FENCE_RE.fullmatch(line)
+            if match is None:
+                continue
+            marker, suffix = match.groups()
+            if fence is None:
+                fence = (marker[0], len(marker))
+            elif (
+                marker[0] == fence[0]
+                and len(marker) >= fence[1]
+                and not suffix.strip()
+            ):
+                fence = None
+        if fence is not None:
+            errors.append(f"{kind}: '{name}' has an unclosed Markdown code fence")
+
+        if errors:
+            return None, errors
+        return ParsedFrontmatter(fields, permissions, closing_index), []
+
+    @staticmethod
+    def _validate_agent_frontmatter(name: str, parsed: ParsedFrontmatter) -> list[str]:
+        fields = parsed.fields
+        agent_id = Path(name).stem
+        errors: list[str] = []
+        missing = sorted(REQUIRED_AGENT_FIELDS - fields.keys())
+        if missing:
+            errors.append(f"agents: '{name}' is missing required '{missing[0]}' field")
+            return errors
+        if fields["mode"] not in {"primary", "subagent"}:
+            errors.append(f"agents: '{name}' has invalid mode")
+        if not MODEL_VALUE_RE.fullmatch(fields["model"] or ""):
+            errors.append(f"agents: '{name}' has invalid model")
+        if fields["reasoningEffort"] not in REASONING_EFFORTS:
+            errors.append(f"agents: '{name}' has invalid reasoningEffort")
+        steps = fields["steps"] or ""
+        if not steps.isdecimal() or int(steps) < 1:
+            errors.append(f"agents: '{name}' must use positive integer steps")
+        if not parsed.permissions:
+            errors.append(f"agents: '{name}' must define a permission block")
+            return errors
+        if "task" not in parsed.permissions:
+            errors.append(f"agents: '{name}' permission block must define task")
+            return errors
+        permission_items = tuple(parsed.permissions.items())
+        expected_baseline = "ask" if agent_id in ROOT_ASK_AGENT_IDS else "deny"
+        if not permission_items or permission_items[0][0] != "*":
+            errors.append(f"agents: '{name}' permission wildcard baseline must be first")
+        elif permission_items[0][1] != expected_baseline:
+            errors.append(
+                f"agents: '{name}' permission wildcard baseline must be {expected_baseline}"
+            )
+        for level, value in parsed.permissions.items():
+            if isinstance(value, str):
+                if level == "task" and value != "deny":
+                    errors.append(f"agents: '{name}' task permission must deny by default")
+                continue
+            if not value or value[0][0] != "*":
+                errors.append(
+                    f"agents: '{name}' permission '{level}' must put its wildcard baseline first"
+                )
+                continue
+            if level == "task" and value[0][1] != "deny":
+                errors.append(f"agents: '{name}' task permission must deny by default")
+        errors.extend(
+            OpenCodeInstallService._validate_capability_schema(
+                name,
+                agent_id,
+                parsed.permissions,
+                expected_baseline,
+            )
+        )
+        errors.extend(
+            OpenCodeInstallService._validate_core_permission_ownership(
+                name,
+                agent_id,
+                parsed.permissions,
+                expected_baseline,
+            )
+        )
+        return errors
+
+    @staticmethod
+    def _validate_capability_schema(
+        name: str,
+        agent_id: str,
+        permissions: dict[str, str | tuple[tuple[str, str], ...]],
+        baseline: str,
+    ) -> list[str]:
+        errors: list[str] = []
+        unknown_tools = set(permissions) - KNOWN_PERMISSION_TOOLS
+        if unknown_tools:
+            errors.append(f"agents: '{name}' has unsupported permission tool")
+
+        bash = permissions.get("bash")
+        if bash == "allow":
+            errors.append(f"agents: '{name}' bash permission must be a rule map")
+        elif baseline == "deny" and isinstance(bash, str) and bash != "deny":
+            errors.append(
+                f"agents: '{name}' bash permission must be deny or a rule map"
+            )
+        elif agent_id in ROOT_ASK_AGENT_IDS and isinstance(bash, str):
+            errors.append(f"agents: '{name}' bash permission must be a rule map")
+        elif isinstance(bash, tuple):
+            for rule, action in bash:
+                if action == "allow" and any(marker in rule for marker in "*?["):
+                    errors.append(
+                        f"agents: '{name}' bash permission must not allow wildcard rules"
+                    )
+                    break
+                if action == "allow" and rule not in SAFE_EXACT_GIT_BASH_ALLOWS:
+                    errors.append(
+                        f"agents: '{name}' bash permission has an unsafe allow rule"
+                    )
+                    break
+
+        expected_network_action = "ask" if agent_id in {
+            "engineering-lead",
+            "technical-researcher",
+        } else "deny"
+        for tool in ("webfetch", "websearch"):
+            if permissions.get(tool) != expected_network_action:
+                errors.append(
+                    f"agents: '{name}' network permissions must be {expected_network_action}"
+                )
+                break
+        return errors
+
+    @staticmethod
+    def _validate_core_permission_ownership(
+        name: str,
+        agent_id: str,
+        permissions: dict[str, str | tuple[tuple[str, str], ...]],
+        baseline: str,
+    ) -> list[str]:
+        edit = permissions.get("edit")
+        expected_edit: str | tuple[tuple[str, str], ...]
+        if agent_id == "engineering-lead":
+            expected_edit = (("*", "ask"), (PLAN_PATH_EDIT_RULE, "ask"))
+        elif agent_id == "implementation-worker":
+            expected_edit = (("*", "ask"), (PLAN_PATH_EDIT_RULE, "deny"))
+        elif agent_id == "planning-coordinator":
+            expected_edit = (("*", "deny"), (PLAN_PATH_EDIT_RULE, "ask"))
+        else:
+            expected_edit = "deny"
+
+        errors: list[str] = []
+        permitted_edit_values: set[str | tuple[tuple[str, str], ...]] = {expected_edit}
+        if agent_id not in {
+            "engineering-lead",
+            "implementation-worker",
+            "planning-coordinator",
+        }:
+            permitted_edit_values.add((("*", "deny"),))
+        if edit not in permitted_edit_values:
+            errors.append(f"agents: '{name}' violates core edit ownership")
+
+        bash = permissions.get("bash")
+        if agent_id in ROOT_ASK_AGENT_IDS:
+            if not isinstance(bash, tuple) or not bash or bash[-1] != (
+                PLAN_REDIRECTION_DENY_RULE,
+                "deny",
+            ):
+                errors.append(
+                    f"agents: '{name}' must end bash rules with the plan redirection deny"
+                )
+        return errors
+
+    @staticmethod
+    def _validate_command_frontmatter(name: str, parsed: ParsedFrontmatter) -> list[str]:
+        fields = parsed.fields
+        errors: list[str] = []
+        if parsed.permissions:
+            return [f"commands: '{name}' does not support a permission block"]
+        for field in ("description", "agent", "subtask"):
+            if field not in fields:
+                errors.append(f"commands: '{name}' must define exactly one {field}")
+        if errors:
+            return errors
+        if not AGENT_ID_RE.fullmatch(fields["agent"] or ""):
+            errors.append(f"commands: '{name}' must use a canonical bare agent name")
+        if fields["subtask"] != "false":
+            errors.append(f"commands: '{name}' must use literal 'subtask: false'")
+        for optional_field in ("model", "variant"):
+            if optional_field in fields and not fields[optional_field]:
+                errors.append(f"commands: '{name}' field '{optional_field}' must be a non-empty scalar")
+        return errors
+
+    def _agent_metadata(
+        self,
+        inventory: DefinitionInventory,
+    ) -> dict[str, tuple[str, tuple[tuple[str, str], ...]]]:
+        metadata: dict[str, tuple[str, tuple[tuple[str, str], ...]]] = {}
+        for name in inventory.agents:
+            try:
+                text = (self.sources["agents"] / name).read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
+                continue
+            parsed, errors = self._parse_frontmatter("agents", name, text)
+            if parsed is None or errors:
+                continue
+            task_rules = parsed.permissions.get("task")
+            metadata[Path(name).stem] = (
+                parsed.fields["mode"] or "",
+                task_rules if isinstance(task_rules, tuple) else (),
+            )
+        return metadata
+
+    @staticmethod
+    def _validate_task_delegation(
+        agent_metadata: dict[str, tuple[str, tuple[tuple[str, str], ...]]],
+    ) -> list[str]:
+        subagents = {
+            agent_id for agent_id, (mode, _) in agent_metadata.items() if mode == "subagent"
+        }
+        errors: list[str] = []
+        for agent_id, (mode, task_rules) in agent_metadata.items():
+            non_wildcard_rules = [
+                (target, action) for target, action in task_rules if target != "*"
+            ]
+            if mode == "subagent" and non_wildcard_rules:
+                errors.append(
+                    f"agents: '{agent_id}.md' subagents must not define non-wildcard task rules"
+                )
+                continue
+            for target, action in non_wildcard_rules:
+                if action != "allow":
+                    errors.append(
+                        f"agents: '{agent_id}.md' primary task rules must use allow"
+                    )
+                if target not in subagents:
+                    errors.append(f"agents: '{agent_id}.md' has unknown task target '{target}'")
+        return errors
+
+    def _validate_command_agents(
+        self,
+        inventory: DefinitionInventory,
+        agent_metadata: dict[str, tuple[str, tuple[tuple[str, str], ...]]],
+    ) -> list[str]:
+        primary_agents = {
+            agent_id for agent_id, (mode, _) in agent_metadata.items() if mode == "primary"
+        }
+        all_agents = set(agent_metadata)
         errors: list[str] = []
         for name in inventory.commands:
-            command_path = self.sources["commands"] / name
             try:
-                lines = command_path.read_text(encoding="utf-8").splitlines()
-                closing_index = lines.index("---", 1)
-            except (OSError, UnicodeError, ValueError):
+                text = (self.sources["commands"] / name).read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
                 errors.append(f"commands: '{name}' could not be revalidated")
                 continue
-
-            fields: dict[str, str] = {}
-            command_errors: list[str] = []
-            for line in lines[1:closing_index]:
-                if not line.strip() or line.lstrip().startswith("#"):
-                    continue
-                if line[0].isspace():
-                    command_errors.append(
-                        f"commands: '{name}' metadata must use scalar top-level fields"
-                    )
-                    continue
-                match = COMMAND_FIELD_RE.fullmatch(line)
-                if match is None:
-                    command_errors.append(
-                        f"commands: '{name}' metadata must use canonical key-value fields"
-                    )
-                    continue
-                key, value = match.groups()
-                if key not in COMMAND_FIELDS:
-                    command_errors.append(
-                        f"commands: '{name}' has unsupported '{key}' field"
-                    )
-                    continue
-                if key in fields:
-                    command_errors.append(
-                        f"commands: '{name}' has duplicate '{key}' field"
-                    )
-                    continue
-                fields[key] = value
-
-            if command_errors:
-                errors.extend(command_errors)
+            parsed, parse_errors = self._parse_frontmatter("commands", name, text)
+            if parsed is None or parse_errors:
+                errors.append(f"commands: '{name}' could not be revalidated")
                 continue
-
-            if "agent" not in fields:
-                errors.append(f"commands: '{name}' must define exactly one agent")
-                continue
-
-            agent_name = fields["agent"]
-            if COMMAND_AGENT_VALUE_RE.fullmatch(agent_name) is None:
-                errors.append(f"commands: '{name}' must use a canonical bare agent name")
-                continue
-            if agent_name not in agent_names:
+            agent_id = parsed.fields.get("agent")
+            if agent_id not in all_agents:
+                errors.append(f"commands: '{name}' references unknown agent '{agent_id}'")
+            elif agent_id not in primary_agents:
                 errors.append(
-                    f"commands: '{name}' references unknown agent '{agent_name}'"
+                    f"commands: '{name}' must reference a manifested primary agent"
                 )
         return errors
 

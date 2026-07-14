@@ -1,21 +1,28 @@
 ---
-description: Audit one or more implementation plans before execution
+description: Independently review one or more canonical implementation plans before human approval
 agent: engineering-review-board
 subtask: false
 ---
 
-Review the following implementation plan path or paths before execution:
+Review these plan paths:
 
 $ARGUMENTS
 
-Operate as the Engineering Review Board.
+Operate as the read-only Engineering Review Board. Inspect each plan and current
+repository evidence; select only critics that can materially change the decision.
+Do not modify plans or source. Check canonical identity/path, revision, baseline,
+authoritative `depends_on`, sequencing, scope, guardrails, open decisions,
+acceptance criteria, and validation.
 
-Inspect the plans and current repository evidence. Determine whether the plans are correctly scoped, technically sound, sufficiently evidenced, properly sequenced, safely constrained, testable, and execution-ready. For multiple plans, also identify cross-plan conflicts, dependencies, duplicated work, and required ordering.
+If a baseline predates the Board's exact permitted `HEAD`/`HEAD^` inspection
+forms, require a supplied content-bearing baseline-to-current diff or equivalent
+commit evidence. Without it, report the gap and do not return `ready`.
 
-Select the minimum sufficient registered specialists. Do not modify source code or plan files.
-
-Return Board summary, specialist coverage, strengths, omissions, sequencing issues, weak acceptance criteria, missing guardrails, missing verification, required revisions, residual risk, and one decision for each plan:
-
-- Ready
-- Ready With Revisions
-- Not Ready
+For every plan, return an independent structured review record containing exact
+`plan_path`, `plan_id`, `revision`, `baseline_commit`, normalized `decision`
+(`ready`, `ready-with-revisions`, or `not-ready`), `reviewed_at`, findings, and
+`next_command`, which is always `/record-plan-review <path>` before any revision
+or approval. A `ready` record is review evidence only; it is not approval.
+For multi-plan reviews, identify cross-plan conflicts but do not collapse their
+records. Return the Board summary, coverage, required actions, skipped
+validation, residual risk, and one decision per plan.
