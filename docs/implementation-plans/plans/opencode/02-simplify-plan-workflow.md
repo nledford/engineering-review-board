@@ -420,9 +420,17 @@ must not claim that native UI behavior supplies those constraints.
 
 ## Alternatives and Trade-offs
 
+- **Keep direct Lead plan ownership from revision 1:** rejected by the human.
+  Planned work needs a dedicated top-level owner so ordinary Lead delivery and
+  plan execution cannot bypass one another.
 - **Retain the Coordinator, persisted review, or approval as optional modes:**
-  rejected by the human. Keeping dormant lifecycle concepts would preserve the
-  same ceremony and ambiguity under different wording.
+  rejected. Keeping lifecycle concepts would preserve the same ceremony and
+  ambiguity under different wording.
+- **Add the Plan Orchestrator beside the Coordinator:** rejected. The selected
+  role replaces the old definition and ID, preserving the 23-agent total.
+- **Split create, update, and execute back into separate commands:** rejected.
+  `/start-work` and ordinary Plan Orchestrator conversation own all three
+  operations, with explicit plan-only behavior when execution should stop.
 - **Store review-advice levels or ERB findings in plans:** rejected. Review is
   out-of-band and advisory; durable storage would recreate state and gating.
 - **Rewrite existing plans into the lean shape:** rejected. Historical files are
@@ -433,9 +441,12 @@ must not claim that native UI behavior supplies those constraints.
 - **Copy Weave's rolling-window machinery:** rejected. Native `todowrite` already
   provides replace-in-order and clear behavior; prompt policy and tests cover the
   repository-specific limits without plugin state.
-- **Give the Lead plan-path Bash access:** rejected. Direct edit-tool writes are
-  sufficient and preserve the existing defense-in-depth boundary, at the cost of
-  blocking when an edit tool cannot create a required parent safely.
+- **Give the Plan Orchestrator plan-path Bash access:** rejected. Edit-tool writes
+  are sufficient and preserve the existing defense-in-depth boundary, at the
+  cost of blocking when an edit tool cannot create a required parent safely.
+- **Let the Plan Orchestrator invoke ERB or specialist Tasks:** rejected. Optional
+  independent review stays top-level, and planned implementation delegation has
+  one exact child: `implementation-worker`.
 
 ## Dependencies
 
@@ -446,10 +457,11 @@ and synchronized documentation changes must agree before rollout.
 
 Within execution, `tools/opencode_manager.py` and
 `tests/test_opencode_manager.py` have shared ownership and must be changed
-serially or by one Worker. Root and project-template README/template pairs must
-be updated together. Command deletion/addition and manifest inventory changes
-must land together. No package, service, live OpenCode configuration, plugin, or
-external repository is an implementation dependency.
+serially or in one bounded Worker assignment. Root and project-template
+README/template pairs must be updated together. Command deletion/addition and
+manifest inventory changes must land together. No package, service, live
+OpenCode configuration, plugin, or external repository is an implementation
+dependency.
 
 ## Specialist Contributions
 
@@ -461,8 +473,9 @@ external repository is an implementation dependency.
   of the Coordinator, retention of Worker and independent ERB boundaries,
   removal of lifecycle-only commands, and preservation of path, delegation, Git,
   destructive-action, validation, and machine-local configuration safeguards.
-  Its recommendation to remove Tapestry conversion was superseded by the
-  human's explicit decision to keep `/convert-tapestry-plan`.
+  The human superseded its direct-Lead ownership and Tapestry-removal
+  recommendations by selecting a dedicated Plan Orchestrator and retaining
+  `/convert-tapestry-plan`; the boundary and safety recommendations remain useful.
 
 ## Risks and Guardrails
 
@@ -471,13 +484,25 @@ external repository is an implementation dependency.
 - Lean plans can become vague if context and acceptance are over-pruned. Keep
   decision-relevant findings and real dependencies while excluding recoverable
   inventories and history.
-- Direct Lead writes concentrate authority. Preserve series validation,
-  max-plus-one allocation, gap non-reuse, collision/exhaustion checks, symlink
-  containment, edit-tool-only writes, rereading, and plan-path Bash denial.
+- The Plan Orchestrator combines plan authorship and planned implementation.
+  Bound that authority with series validation, max-plus-one allocation, gap
+  non-reuse, collision/exhaustion checks, symlink containment, edit-tool-only
+  plan writes, rereading, plan-path Bash denial, evidence-gated checkboxes, and
+  Task delegation only to `implementation-worker`.
+- The Plan Orchestrator's self-check can be mistaken for independent review.
+  Prompts, commands, docs, validator rules, and tests must prohibit ERB review,
+  approval, readiness, and sign-off labels for that internal check.
 - Legacy detection must fail closed. Never mutate or execute a verbose plan as if
   it were lean, and never infer a dependency from sequence order.
 - Optional review must not become an implicit gate through wording such as
   “ready,” “approved,” “signed off,” or “required before execution.”
+- `/start-work` defaults to execution for new requests and lean or legacy plan
+  paths. The command and prompt must recognize explicit plan-only intent and stop
+  before source edits, Worker delegation, checkbox completion, or execution TODO
+  state.
+- The Lead and ERB could bypass ownership through helpful implementation. Their
+  prompts, plan edit permissions, command routing, Task topology, and mutation
+  tests must direct planned work to `/start-work`.
 - Native TODO state is session-scoped and replace-all. Never use it as history,
   claim it persists plan truth, or let stale completed items survive a successful
   final report.
@@ -491,7 +516,7 @@ external repository is an implementation dependency.
 
 ### Execution stop conditions
 
-Stop and return to the Lead if:
+Stop planned execution if:
 
 - repository drift after execution starts overlaps an owned file, or execution
   would modify `opencode-01`;
@@ -500,11 +525,25 @@ Stop and return to the Lead if:
 - implementation would retain or recreate approval, sign-off, lifecycle state,
   revision transitions, persisted review, normalization, or compatibility
   aliases;
-- safe direct Lead writes require plan-path Bash access, cannot prove containment,
-  collide, exhaust a series, or cannot create the destination parent with an
-  available edit tool;
+- safe Plan Orchestrator writes require plan-path Bash access, cannot prove
+  containment, collide, exhaust a series, or cannot create the destination
+  parent with an available edit tool;
 - a legacy plan would be rewritten or executed rather than succeeded;
-- the ERB would become a Lead Task child or regain a readiness/approval decision;
+- the manifest would add a second planning agent, omit the dedicated primary Plan
+  Orchestrator, or differ from 23 agents and 6 commands;
+- the Plan Orchestrator could delegate to any ID other than
+  `implementation-worker`, or the Worker could delegate again;
+- the Lead could edit, update, execute, or implement a plan, retain a Coordinator
+  or Plan Orchestrator Task edge, or fail to route planned work to `/start-work`;
+- the ERB could execute or implement planned work, become a Task child, regain a
+  plan readiness or implementation approval/sign-off decision, persist review
+  state, or make review an execution prerequisite;
+- the self-check would be described as independent review, approval, readiness,
+  sign-off, or ERB evidence;
+- `/start-work` cannot distinguish new requests, lean paths, legacy paths,
+  conversational updates, default execution, and explicit plan-only behavior;
+- `/convert-tapestry-plan` would be removed, mutate its source, or execute without
+  an explicit human execution request;
 - TODO prompt/tests cannot distinguish start, transition, resume,
   blocked/failure, final completion, and clearing, or would claim unsupported UI
   enforcement;
@@ -517,8 +556,8 @@ Stop and return to the Lead if:
 
 ### 1. Replace the documented plan contract
 
-**Objective:** Define the lean format and direct-author workflow in every
-authoritative and copied guide.
+**Objective:** Define the lean format, dedicated Plan Orchestrator, and unified
+start-work flow in every authoritative and copied guide.
 
 **Scope and stable interfaces:** Update `AGENTS.md`, `README.md`,
 `docs/implementation-plans/README.md`,
@@ -534,11 +573,14 @@ the README/template pair.
 
 - The template contains one title and exactly the authorized sections, with
   numbered checkbox TODOs and no frontmatter or lifecycle/history content.
-- Guidance explains direct Lead create/update, conversational plan changes,
-  legacy succession, retained Tapestry conversion, optional review advice, and
-  non-executable legacy shapes.
+- Guidance assigns creation, conversational updates, self-check, legacy
+  succession, planned execution, and TODO ownership to `plan-orchestrator`, while
+  retaining plan-only behavior and Tapestry conversion.
+- Guidance keeps the Lead on ordinary unplanned work, makes ERB review optional
+  advice, and routes both roles to `/start-work` for planned changes or execution.
 - No active guide describes review, approval, sign-off, revision, normalization,
-  or execution history as plan state.
+  or execution history as plan state, and no guide calls the self-check an ERB
+  review or decision.
 - Root and project-template README/template copies are byte-identical.
 
 **Validation:** Run plan-template contract and synchronization tests, inspect
@@ -546,85 +588,105 @@ local links, and run `just validate-opencode` plus `just validate`.
 
 ### 2. Simplify runtime roles and permissions
 
-**Objective:** Make the Lead the safe direct plan writer while preserving
-implementation and independent-review boundaries.
+**Objective:** Install the dedicated primary Plan Orchestrator and enforce clear
+planned-work, unplanned-work, review, and Worker boundaries.
 
 **Scope and stable interfaces:** Update
 `opencode/agents/engineering-lead.md`,
 `opencode/agents/implementation-worker.md`, and
-`opencode/agents/engineering-review-board.md`; delete
-`opencode/agents/planning-coordinator.md`. Remove only the Coordinator Task edge,
-add flat `todowrite: allow` to the Lead, retain the Lead's plan edit rule at
-`ask`, and preserve every authorized MCP prefix, `pbcopy`, plan Bash deny,
-surviving exact Task ID, one-level delegation rule, and Worker restriction.
+`opencode/agents/engineering-review-board.md`; replace
+`opencode/agents/planning-coordinator.md` with
+`opencode/agents/plan-orchestrator.md`. Give the Plan Orchestrator broad-ask
+primary implementation authority, plan edit `ask`, plan-path Bash deny, flat
+`todowrite: allow`, and a Task allowlist containing only
+`implementation-worker`. Change the Lead's plan edit rule to `deny`, remove any
+Coordinator/Plan-Orchestrator Task edge, and preserve every authorized MCP
+prefix, `pbcopy`, plan Bash deny, valid non-plan Task edge, Git safeguard, and
+destructive-action rule.
 
 **Dependencies:** Step 1 defines the contract these prompts implement.
 
 **Acceptance criteria:**
 
-- The Lead can create/update/check plan TODOs directly through edit tools and
-  owns sidebar updates, with the complete safe-path and post-write checks.
-- The Coordinator file and Lead Task edge are absent; no substitute planning
-  role or recursive delegation is added.
-- The Worker reports bounded acceptance/validation evidence and cannot edit the
-  plan/sidebar, delegate, commit, push, or use plan-path Bash.
-- The ERB remains primary/read-only and returns advisory findings without plan
-  readiness or implementation approval/sign-off decisions.
-- `todowrite: allow`, `pbcopy`, configured MCP prefixes, and all unrelated
-  permission actions validate exactly.
+- `plan-orchestrator` is primary, replaces the old ID without changing the agent
+  count, writes and re-reads plans through edit tools, can implement directly,
+  and delegates only to `implementation-worker`.
+- The Plan Orchestrator prompt owns self-checking, checkboxes, sidebar state,
+  integration, validation, and completion reporting without describing its
+  self-check as independent review or a decision.
+- The Lead denies plan edits, retains plan-path Bash denial, has no Task edge to
+  either planning ID, preserves Worker access for non-plan work, and contains the
+  exact `/start-work` routing guardrail.
+- The ERB remains primary/read-only, cannot execute or implement plans, removes
+  plan and implementation decision/sign-off language, and routes follow-up to
+  `/start-work` without making review a prerequisite.
+- The Worker accepts bounded assignments from either authorized primary, reports
+  evidence, and cannot edit plans/sidebar, delegate, commit, push, deploy, or use
+  plan-path Bash.
+- Plan Orchestrator `todowrite: allow`, Lead `pbcopy`, every configured Lead MCP
+  prefix, plan-path edit/Bash rules, and all unrelated permission actions
+  validate exactly.
 
-**Validation:** Add permission, Task-topology, removed-agent, Worker-denial, and
-ERB advisory-contract mutations; run the focused manager tests and
-`just validate-opencode`.
+**Validation:** Add permission, exact-ID, mode, Task-topology, replacement-agent,
+Lead/ERB guardrail, Worker-denial, self-check terminology, and ERB advisory
+mutations; run the focused manager tests and `just validate-opencode`.
 
 ### 3. Replace the plan command surface
 
-**Objective:** Expose only the six selected plan commands and remove lifecycle
-ceremony.
+**Objective:** Expose `/start-work` as the only create, update, and execute entry
+point while retaining conversion and optional advice.
 
-**Scope and stable interfaces:** Add `opencode/commands/create-plan.md` and
-`opencode/commands/update-plan.md`; rewrite `convert-tapestry-plan.md`,
-`review-plan.md`, `execute-plan.md`, and `review-implementation.md`; delete
-`prepare-work.md`, `record-plan-review.md`, `revise-plan.md`, `approve-plan.md`,
-and `normalize-plan.md`. Update `opencode/manifest.json` atomically with those
-file changes. Leave the unrelated audit/regression definitions and cleanup
-checklist untouched.
+**Scope and stable interfaces:** Add `opencode/commands/start-work.md`; rewrite
+`convert-tapestry-plan.md`, `review-plan.md`, and `review-implementation.md`;
+delete `prepare-work.md`, `record-plan-review.md`, `revise-plan.md`,
+`approve-plan.md`, `normalize-plan.md`, and `execute-plan.md`. Do not add create,
+update, execute, or compatibility-alias commands. Update
+`opencode/manifest.json` atomically with those file changes. Leave the unrelated
+audit/regression definitions and cleanup checklist untouched.
 
 **Dependencies:** Steps 1 and 2 establish format and authority.
 
 **Acceptance criteria:**
 
-- Create/update/convert/execute are Lead-owned; both optional reviews and the two
-  unrelated commands remain ERB-owned; every command keeps `subtask: false`.
-- Create/update enforce safe direct writes, allocation/collision rules,
-  rereading, and conversational update behavior. Update creates a successor for
-  a legacy target rather than modifying it.
-- Tapestry conversion remains available, revalidates the source, emits only lean
-  content, and preserves the source without provenance metadata in the plan.
-- Execution has no review/approval/lifecycle gate, rejects legacy shape, and
-  applies the complete checkbox/sidebar evidence contract.
+- `/start-work` and `/convert-tapestry-plan` are owned by `plan-orchestrator`;
+  both optional reviews and the two unrelated commands remain ERB-owned; every
+  command keeps `subtask: false`.
+- `/start-work` handles a new request, lean path with optional conversational
+  updates, and immutable legacy path with successor allocation. It self-checks
+  every resulting lean plan and executes by default unless the human explicitly
+  requests plan-only behavior.
+- `/convert-tapestry-plan` revalidates and preserves its source, emits only lean
+  content, self-checks it, and does not execute unless the human also asks.
+- Planned execution has no review/approval/lifecycle gate and applies the full
+  evidence-gated checkbox/sidebar contract through the Plan Orchestrator.
 - Review commands are read-only advice with no durable record, readiness,
-  approval, sign-off, or mandatory next gate.
-- The manifest is sorted and contains exactly 22 agents and 8 commands; removed
-  files and aliases are absent.
+  approval, sign-off, or mandatory next gate; each points to `/start-work` only as
+  the route for requested changes or execution.
+- The manifest is sorted and contains exactly 23 agents and 6 commands; the old
+  agent ID, removed command files, prohibited new commands, and aliases are
+  absent.
 - Audit/regression commands and the cleanup checklist are byte-unchanged.
 
 **Validation:** Add command-owner/inventory and prompt-contract mutations,
-validate removed-command absence in changed workflow files, then run the focused
-manager suite and `just validate-opencode`.
+including all `/start-work` modes, plan-only handling, conversion's explicit
+execution opt-in, and removed-command absence; then run the focused manager suite
+and `just validate-opencode`.
 
 ### 4. Rebase validator and fixtures on the lean contract
 
 **Objective:** Make repository validation reject regressions to lifecycle
-ceremony and protect the direct-Lead permissions and command inventory.
+ceremony and protect the selected role, permissions, routing, and inventory.
 
 **Scope and stable interfaces:** Update `tools/opencode_manager.py` and
 `tests/test_opencode_manager.py`. Replace lifecycle-oriented
 `PLAN_TEMPLATE_TOKENS`, `PLAN_TEMPLATE_HEADINGS`, and fixture content with the
-closed lean shape; recognize and require the Lead's flat `todowrite` permission;
-remove Coordinator-specific ownership cases; retain support-file safety,
-frontmatter parsing, manifest, synchronization, permission-ordering, command
-owner, Task, setup/verify/uninstall, and Markdown-fence coverage.
+closed lean shape; add `todowrite` to known permission tools; require the Plan
+Orchestrator's flat allow and safe broad-ask permission shape; replace Coordinator
+ownership cases with Plan Orchestrator cases; change Lead plan edit ownership to
+deny; and encode the selected command owners, role guardrails, and exact Task
+edges. Retain support-file safety, frontmatter parsing, manifest,
+synchronization, permission-ordering, setup/verify/uninstall, and Markdown-fence
+coverage.
 
 **Dependencies:** The exact prompts, command inventory, and template from steps
 1 through 3. One Worker owns both files or changes them serially.
@@ -634,31 +696,51 @@ owner, Task, setup/verify/uninstall, and Markdown-fence coverage.
 - Removing any required lean heading/label or numbered checkbox example fails;
   adding frontmatter, lifecycle metadata, or removed history headings fails.
 - Root/template drift and symlinked support/root plan files still fail closed.
-- The Lead must have flat `todowrite: allow`, configured MCP access, `pbcopy`,
-  plan edit `ask`, and the required plan-path Bash deny; Coordinator expectations
-  are gone and Worker expectations remain.
-- Manifest and command tests accept only the selected assets/owners and catch a
-  removed command/agent reappearing or a new alias.
+- The Plan Orchestrator must be primary, broad-ask, plan-edit `ask`, plan-Bash
+  denied, flat `todowrite: allow`, and Task-limited to `implementation-worker`.
+- The Lead must retain configured MCP access, `pbcopy`, broad-ask behavior,
+  Worker access, and plan-path Bash denial while its plan edit rule is `deny` and
+  both planning Task IDs are absent.
+- Prompt-contract validation fails if Lead or ERB planned-work guardrails and
+  `/start-work` routing are removed or changed to permit execution; it also fails
+  if self-check language claims ERB review or a decision.
+- Manifest and command tests accept only the 23-agent/6-command selected
+  assets/owners and catch the old agent, removed command, prohibited split
+  command, or alias reappearing.
+- Worker, ERB read-only, one-level delegation, Git, destructive-action, and
+  machine-local configuration protections remain enforced.
 - Existing non-plan validator and installer behavior remains covered.
 
 **Validation:** Run the focused unit test file after each contract group, then
 `just validate-opencode`.
 
-### 5. Prove the TODO window and execution transitions
+### 5. Prove start-work, self-check, guardrails, and TODO transitions
 
-**Objective:** Protect the transient sidebar behavior without inventing native
-UI guarantees.
+**Objective:** Protect default execution, plan-only stops, internal self-checking,
+role routing, and transient sidebar behavior without inventing native UI
+guarantees.
 
 **Scope and stable interfaces:** Add focused prompt-contract cases in
-`tests/test_opencode_manager.py` for the Lead and `/execute-plan` definitions.
-Use deterministic plan-step examples and validate the contract text/associations,
-not a simulated OpenCode plugin.
+`tests/test_opencode_manager.py` for `plan-orchestrator`, `/start-work`,
+`/convert-tapestry-plan`, the Lead, and the ERB. Use deterministic plan-step
+examples and validate contract text and behavior associations, not a simulated
+OpenCode plugin.
 
 **Dependencies:** Steps 2 through 4 provide permission, prompts, and test
 helpers.
 
 **Acceptance criteria:**
 
+- New-request, lean-plan, and legacy-plan `/start-work` cases write or select the
+  right lean plan, self-check it, and execute by default; explicit plan-only cases
+  stop before implementation and execution-state updates.
+- Tapestry conversion preserves the source and requires explicit human execution
+  intent before implementing the converted plan.
+- Self-check cases cover closed shape, repository grounding, alignment,
+  sequencing, guardrails, acceptance, verification, and unresolved-decision
+  stops without using ERB review, approval, readiness, or sign-off terminology.
+- Lead and ERB mutation cases fail if either role can execute or implement a plan,
+  if the Lead can write/update one, or if either loses its `/start-work` route.
 - Start shows one current `in_progress` item followed by at most four pending
   items in source order.
 - Transition shows only the latest accepted completed item first, current item
@@ -675,9 +757,10 @@ helpers.
   numbering, length, evidence ownership, or final clear fail with focused
   diagnostics.
 
-**Validation:** Run the TODO prompt-contract cases alone, the complete focused
-manager suite, and `just validate-opencode`. Report that runtime UI behavior was
-not integration-tested unless separate target-machine evidence is supplied.
+**Validation:** Run the start-work/self-check/guardrail/TODO prompt-contract cases
+alone, the complete focused manager suite, and `just validate-opencode`. Report
+that runtime UI behavior was not integration-tested unless separate
+target-machine evidence is supplied.
 
 ### 6. Reconcile and validate the complete workflow
 
@@ -693,16 +776,21 @@ cleanup and confirm `opencode-01` has no change.
 
 **Acceptance criteria:**
 
-- Active docs/definitions agree on the closed shape, direct Lead authority,
-  optional advisory review, six-command plan surface, legacy succession,
-  Tapestry conversion, and transient TODO behavior.
-- No changed workflow file retains the Coordinator or removed lifecycle
-  commands; grandfathered plans and explicitly excluded files remain untouched.
+- Active docs/definitions agree on the closed shape, dedicated Plan Orchestrator,
+  `/start-work` default/plan-only behavior, optional advisory review, legacy
+  succession, retained Tapestry conversion, and transient TODO behavior.
+- No changed workflow file retains active `planning-coordinator` authority or a
+  removed lifecycle command; prohibited create/update/execute aliases are absent,
+  while grandfathered plans and explicitly excluded files remain untouched.
 - Agent/command counts, owners, exact Task edges, plan permissions, MCP/clipboard
   access, Worker restrictions, and root/project-template synchronization match
   this plan.
-- All required checks pass, or the Lead reports the exact failure and stops
-  before rollout.
+- Lead and ERB prompts route planned work to `/start-work`; neither can implement
+  or execute a plan, and ERB advice is never a prerequisite.
+- The final byte comparison for `opencode-01` matches the pre-edit bytes captured
+  before implementation.
+- All required checks pass, or the Plan Orchestrator reports the exact failure
+  and stops before rollout.
 
 **Validation:** Execute Final Verification, inspect the diff for unrelated
 changes and unsupported OpenCode claims, and request optional ERB implementation
@@ -718,18 +806,31 @@ Required groups are:
 
 - **Lean template:** exact allowed title/section labels, numbered checkboxes,
   forbidden frontmatter/lifecycle/history content, and root/template byte sync.
-- **Authority and inventory:** Coordinator removal, 22-agent/8-command manifest,
-  surviving exact IDs, command ownership, one-level Task graph, direct Lead plan
-  edit contract, and unchanged Worker/ERB boundaries.
-- **Permissions:** flat Lead `todowrite: allow`, retained `pbcopy` and all MCP
-  prefixes, plan edit `ask`, plan-path Bash denial, and Worker Git/destructive/
-  plan/delegation denials.
+- **Authority and inventory:** `planning-coordinator` replacement,
+  23-agent/6-command manifest, exact primary `plan-orchestrator` ID, selected
+  command owners, removed-command absence, and one-level Task graph.
+- **Permissions:** Plan Orchestrator broad-ask implementation authority, flat
+  `todowrite: allow`, plan edit `ask`, plan-path Bash denial, and Task access only
+  to Worker; Lead plan edit `deny`, retained `pbcopy` and all MCP prefixes,
+  retained plan-path Bash denial, no planning Task edge, and Worker
+  Git/destructive/plan/delegation denials.
 - **Plan operations:** series validation, max-plus-one with gap non-reuse,
-  exhaustion/collision stops, symlink/containment checks, rereading,
-  conversational lean updates, legacy succession, and lean Tapestry output.
+  exhaustion/collision stops, absent or uncreatable destination-parent handling,
+  symlink/containment checks, rereading, conversational lean updates, legacy
+  succession, and lean Tapestry output.
+- **Start-work behavior:** new request, lean plan, legacy successor, requested
+  conversational changes, default execution, explicit plan-only stop, direct
+  implementation, bounded Worker delegation, integration, validation, and
+  completion reporting.
+- **Self-check semantics:** closed-shape and evidence checks, unresolved-decision
+  stop, and forbidden ERB review/approval/readiness/sign-off descriptions.
 - **Review semantics:** all three advice levels are defined out-of-band; plan and
   implementation reviews remain optional/read-only and emit no readiness,
-  approval, sign-off, persistence, or execution gate.
+  approval, sign-off, persistence, or execution gate; ERB follow-up uses
+  `/start-work` without making review mandatory.
+- **Role guardrails:** mutations fail when the Lead or ERB can implement or
+  execute a plan, the Lead can write/update one, either bypasses the Plan
+  Orchestrator, or the Worker gains plan/sidebar authority.
 - **Execution/TODO behavior:** start, transition, resume, blocked/failure,
   evidence-gated checkbox completion, final completed-only write, and final
   clear, including count/order/status/number/length mutations.
@@ -748,30 +849,41 @@ lean successor only when a legacy plan needs changes or execution; never rewrite
 or execute the predecessor. Newly converted Tapestry sources follow the same
 allocation rules and remain intact after conversion.
 
+The runtime ID changes from `planning-coordinator` to `plan-orchestrator`; no
+alias or forwarding Task edge remains. The old role was a subagent, while the new
+role is a primary selected directly by `/start-work` and
+`/convert-tapestry-plan`. Existing invocations of deleted commands fail by
+design, and users move to `/start-work` rather than compatibility shims.
+
 Roll out agents, commands, manifest, validator/tests, docs, and project-template
 copies as one validated repository change. The linked OpenCode definitions take
 effect after restart. Do not create a lean plan under partially updated runtime
-definitions, and do not modify live configuration during rollout.
+definitions, and do not modify live configuration during rollout. Capture the
+pre-edit bytes of `opencode-01` and verify the same bytes before handoff because
+the untracked file cannot rely on an ordinary Git diff for protection.
 
 If validation fails before restart, recover by reverting only this coordinated
 implementation as one unit; do not restore ceremony through aliases or alter a
-legacy plan. If definitions were already loaded, restore a coherent reviewed
+legacy plan. If definitions were already loaded, restore a coherent validated
 repository state and restart OpenCode again. No database, persisted review
 record, plugin state, credential, or external service needs migration or
 rollback.
 
 ## Documentation Impact
 
-- `AGENTS.md` and `README.md`: replace Coordinator/lifecycle language with direct
-  Lead authoring, lean execution, optional review, and legacy succession.
+- `AGENTS.md` and `README.md`: replace Coordinator/lifecycle and direct-Lead plan
+  language with the dedicated Plan Orchestrator, `/start-work`, optional review,
+  Lead/ERB routing guardrails, and legacy succession.
 - `docs/implementation-plans/{README,TEMPLATE}.md`: become the authoritative
   closed contract and exact starter shape.
 - `docs/engineering-agent-governance.md`: update roles, Task topology, command
-  ownership, review advice, execution, and Lead/Worker/ERB boundaries.
+  ownership, review advice, self-check semantics, execution, and
+  Plan-Orchestrator/Lead/Worker/ERB boundaries.
 - `opencode/project-template/`: mirror portable workflow guidance and keep both
   plan files byte-identical to root copies.
-- Agent and command Markdown: implement direct plan authority, optional advisory
-  review, legacy handling, and the native TODO prompt contract.
+- Agent and command Markdown: implement Plan Orchestrator ownership, Lead/ERB
+  `/start-work` routes, optional advisory review, legacy handling, Tapestry
+  conversion, and the native TODO prompt contract.
 
 `docs/skill-taxonomy.md` and `docs/cross-reference-map.md` require no edit: this
 work changes OpenCode runtime governance, not first-party skill inventory or
@@ -793,27 +905,33 @@ Then:
 
 - re-read root and project-template plan README/template files and confirm the
   validator reports byte equality;
-- inspect the manifest and definition directories for exactly 22 agents and 8
-  commands with no retired file or alias;
+- inspect the manifest and definition directories for exactly 23 agents and 6
+  commands, with `plan-orchestrator` present, `planning-coordinator` absent, and
+  no retired command, split-command replacement, or alias;
 - search changed workflow docs, agents, commands, manager code, and tests for
-  Coordinator and removed-command references; do not rewrite grandfathered plans
-  or explicitly excluded files;
-- inspect Lead/Worker permission ordering and confirm `todowrite`, `pbcopy`, MCP,
-  plan-edit, plan-Bash, Git, destructive, and Task rules match this plan;
-- inspect prompt-contract evidence for every TODO transition and verify no test
-  claims native enforcement of repository-only limits;
-- confirm the implementation's changed-file evidence shows no write to
-  `docs/implementation-plans/plans/opencode/01-agent-definitions-improvement-program.md`,
-  live config, credentials, dependencies, skills, unrelated specialist prompts,
-  audit/regression commands, or the cleanup checklist; and
+  active Coordinator authority and all removed command references; do not
+  rewrite grandfathered plans or explicitly excluded files;
+- inspect Plan-Orchestrator/Lead/ERB/Worker permission ordering and confirm plan
+  edits, plan Bash denial, `todowrite`, `pbcopy`, MCP, Git, destructive, and Task
+  rules match this plan;
+- inspect prompt-contract evidence for every `/start-work` branch, plan-only
+  stop, Tapestry execution opt-in, self-check distinction, Lead/ERB routing
+  guardrail, and TODO transition; verify no test claims native enforcement of
+  repository-only limits;
+- compare the final bytes of
+  `docs/implementation-plans/plans/opencode/01-agent-definitions-improvement-program.md`
+  with the pre-edit capture and confirm the implementation made no write to that
+  file, live config, credentials, dependencies, skills, unrelated specialist
+  prompts, audit/regression commands, or the cleanup checklist; and
 - report any target-machine OpenCode restart or runtime sidebar check as skipped
   unless it was actually observed.
 
 ## Open Decisions
 
-None. The human fixed the lean section set, direct Lead authority, role and
-command removals, optional review model, retained Tapestry conversion, legacy
-successor behavior, and native TODO window contract.
+None. The human fixed the lean section set, dedicated Plan Orchestrator,
+`/start-work` behavior, Lead/ERB routing boundaries, optional review model,
+retained Tapestry conversion, legacy successor behavior, and native TODO window
+contract.
 
 ## ERB Review History
 
@@ -825,7 +943,12 @@ None.
 
 ## Amendments
 
-None.
+### Revision 2 — 2026-07-14
+
+- Recorded the human-selected primary `plan-orchestrator` and unified
+  `/start-work` architecture, moved planned execution and TODO ownership from the
+  Lead, and added Lead/ERB routing guardrails. No ERB review or approval record
+  was added.
 
 ## Execution Record
 
