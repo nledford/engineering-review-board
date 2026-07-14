@@ -1,8 +1,8 @@
 # Agent Skills
 
 This repository is the canonical local source for globally installed agent
-skills. Its `skills/` directory is intended to be symlinked to
-`~/.agents/skills`:
+skills and custom OpenCode agents and commands. Its `skills/` directory is
+intended to be symlinked to `~/.agents/skills`:
 
 ```sh
 just setup
@@ -19,6 +19,10 @@ agent-skills/
       SKILL.md
     test-driven-development/
       SKILL.md
+  opencode/
+    agents/
+    commands/
+    manifest.json
   tools/
   tests/
   docs/
@@ -79,12 +83,64 @@ just list-third-party
 just validate        # validate all skill metadata
 just doctor          # validate skills and verify global install
 just check           # run lint, tests, validation, and verify
+just validate-opencode
+just setup-opencode-dry-run
+just setup-opencode
+just verify-opencode
 ```
 
 Mutating global install commands are intentionally conservative. `just setup`
 is idempotent when `~/.agents/skills` already points to this repository's
 `skills/` directory, but it will not overwrite an existing directory or a
 symlink to another location.
+
+## OpenCode Agents And Commands
+
+Custom OpenCode definitions are tracked under `opencode/agents/` and
+`opencode/commands/`. `opencode/manifest.json` is the reviewed inventory. The
+validator requires every manifest entry to be a direct-child, regular Markdown
+file, rejects unexpected files, and checks that command `agent:` references
+resolve to tracked agents. Command frontmatter uses scalar top-level fields and
+must contain exactly one unquoted, lowercase `agent: agent-name` entry.
+
+The setup workflow manages these two links as one installation:
+
+```text
+~/.config/opencode/agents   -> <repository>/opencode/agents
+~/.config/opencode/commands -> <repository>/opencode/commands
+```
+
+Preview setup before changing the global configuration:
+
+```sh
+just validate-opencode
+just setup-opencode-dry-run
+just setup-opencode
+just verify-opencode
+```
+
+Setup is fail-closed. It will not move, merge, back up, or replace an existing
+file, directory, broken symlink, or symlink to another location. For an initial
+migration, review and import the intended Markdown files first, manually move
+the existing `agents/` and `commands/` directories outside the repository and
+OpenCode discovery tree, and then rerun setup. If either destination is unsafe,
+neither new link is installed.
+
+Treat the linked checkout as live configuration: newly tracked or modified
+agent and command files take effect the next time OpenCode starts. Do not use the
+linked checkout for unreviewed branches. Keep provider credentials, secrets,
+packages, backups, runtime state, and the rest of `~/.config/opencode` outside
+this repository.
+
+On another computer, clone the repository, install the global skills with
+`just setup` when needed, and run the OpenCode setup commands above. The target
+machine must separately provide OpenCode, access to the models named by the
+agents, and any required plugins or tools. Quit and restart OpenCode after setup
+or definition changes because configuration is loaded at startup.
+
+`just uninstall-opencode-dry-run` previews removal. `just uninstall-opencode`
+removes both links only when both still point to this checkout; it never removes
+the repository definitions or restores old directories.
 
 ## Third-Party Updates
 

@@ -2,6 +2,7 @@ set shell := ["sh", "-cu"]
 
 python := "python3"
 manager := "tools/skills_manager.py"
+opencode_manager := "tools/opencode_manager.py"
 
 # Show available commands.
 [group('docs')]
@@ -42,6 +43,41 @@ uninstall:
 [group('bootstrap')]
 uninstall-dry-run:
     @{{python}} {{manager}} uninstall --dry-run
+
+# Validate repository-managed OpenCode agents and commands.
+[group('opencode')]
+validate-opencode:
+    @{{python}} {{opencode_manager}} validate
+
+# Create both global OpenCode symlinks when their destinations are safe.
+[group('opencode')]
+setup-opencode:
+    @{{python}} {{opencode_manager}} setup
+
+# Preview global OpenCode symlink setup without changing files.
+[group('opencode')]
+setup-opencode-dry-run:
+    @{{python}} {{opencode_manager}} setup --dry-run
+
+# Verify repository definitions and both global OpenCode symlinks.
+[group('opencode')]
+verify-opencode:
+    @{{python}} {{opencode_manager}} verify
+
+# Validate and verify the repository-managed OpenCode installation.
+[group('opencode')]
+doctor-opencode:
+    @{{python}} {{opencode_manager}} doctor
+
+# Remove both global OpenCode symlinks only when this repository owns them.
+[group('opencode')]
+uninstall-opencode:
+    @{{python}} {{opencode_manager}} uninstall
+
+# Preview removal of both repository-owned OpenCode symlinks.
+[group('opencode')]
+uninstall-opencode-dry-run:
+    @{{python}} {{opencode_manager}} uninstall --dry-run
 
 # List all discovered skills.
 [group('skills')]
@@ -115,7 +151,7 @@ format:
 
 # Run the full non-mutating quality gate.
 [group('quality')]
-check: lint test validate verify
+check: lint test validate validate-opencode verify
 
 # Remove Python cache files.
 [group('quality')]
