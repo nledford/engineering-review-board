@@ -134,7 +134,8 @@ COMMAND_PROMPT_CONTRACTS = {
         "accept exactly 1 MiB and reject limit-plus-one data.",
     ),
     "convert-tapestry-plan.md": (
-        "This command is plan-only by default. Execute only when the human explicitly asks to execute.",
+        "This conversion is always plan-only and never executes TODOs in the same invocation.",
+        "Execution requires a separate human-chosen `/start-work <destination>` choice.",
         "Acquire complete provisional child-lock ownership before reading the human source locator",
         "Obtain normal runtime approval and use only this exact isolated allowlisted acquisition literal:",
         'python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .',
@@ -143,32 +144,75 @@ COMMAND_PROMPT_CONTRACTS = {
         "Do not use concatenation, redirection, pipes, substitution, or an extra shell operation.",
         "Preserve the source unchanged",
         "create only a metadata-free lean destination",
-        "route any follow-up to `/start-work <destination>`.",
+        "Execution remains a separate human-chosen `/start-work <destination>` choice.",
     ),
     "review-plan.md": (
         "optional, read-only advice only",
         "no readiness, approval, sign-off, persistence, or execution gate.",
-        "Route any follow-up to top-level `/start-work <path>`.",
+        "Advisory corrections cannot create or execute a plan.",
+        "A human may separately request an explicit plan-only update from the top-level Plan Orchestrator;",
+        "`/start-work <path>` is only a separate human-chosen execution choice.",
     ),
     "review-implementation.md": (
         "optional, read-only advice only",
         "no readiness, approval, sign-off, persistence, or execution gate.",
-        "Route any follow-up to top-level `/start-work <path>`.",
+        "Follow-up repair may be direct, explicitly planned through `/create-plan`,",
+        "or separately executed from an existing plan through `/start-work <path>`.",
     ),
 }
 RETAINED_ROUTE_CONTRACTS = {
-    "commands/audit-technical-debt.md": ("Recommend top-level `/start-work`",),
-    "commands/investigate-regression.md": ("return it to top-level `/start-work`.",),
+    "commands/audit-technical-debt.md": (
+        "Return findings for direct Lead remediation when safe.",
+        "When the human wants a durable remediation initiative, recommend top-level `/create-plan`;",
+        "`/start-work <existing-plan-path>` is only a separate human-chosen execution of an existing plan.",
+    ),
+    "commands/investigate-regression.md": (
+        "Return repair guidance for direct Lead implementation when safe.",
+        "When the human wants durable repair planning, recommend top-level `/create-plan`;",
+        "`/start-work <existing-plan-path>` is only a separate human-chosen execution of an existing plan.",
+    ),
     "cleanup/weave-cleanup-checklist.md": (
         "top-level Plan Orchestrator for durable plan writes.",
-        "treats advisory review as an execution gate.",
+        "plan creation has explicit human authorization and uses `/create-plan`;",
+        "`/start-work <existing-plan-path>` is only the separate human-chosen execution route.",
+        "primary Plan Orchestrator alone owns plan and trusted planned-work state mutations.",
+        "ERB advice is non-gating.",
     ),
 }
 RETAINED_ROUTE_FORBIDDEN_TOKENS = {
-    "commands/audit-technical-debt.md": ("/prepare-work",),
-    "commands/investigate-regression.md": ("/revise-plan", "Planning Coordinator"),
-    "cleanup/weave-cleanup-checklist.md": ("/normalize-plan", "Planning Coordinator"),
+    "commands/audit-technical-debt.md": (
+        "Recommend top-level `/start-work` for a remediation initiative.",
+        "/prepare-work",
+    ),
+    "commands/investigate-regression.md": (
+        "return it to top-level `/start-work`.",
+        "/revise-plan",
+        "Planning Coordinator",
+    ),
+    "cleanup/weave-cleanup-checklist.md": (
+        "/normalize-plan",
+        "Planning Coordinator",
+    ),
 }
+AUTOMATIC_PLAN_ROUTE_FORBIDDEN_TOKENS = (
+    "automatically create a plan",
+    "automatically creates a plan",
+    "automatically use a durable plan",
+    "automatically uses a durable plan",
+    "proceed directly only for local, obvious, low-risk work",
+    "use durable planning for",
+    "route every explicit plan request and every request whose classification changes a durable contract",
+    "route all durable-contract classification to `/start-work`",
+    "route durable planned-work persistence to `/start-work`",
+    "return it to top-level `/start-work`",
+    "for a new request, allocate a closed lean plan",
+    "execute by default",
+    "execute todos by default",
+    "execute remaining todos by default",
+    "execute its remaining todos by default",
+    "execute a newly created plan by default",
+    "execute newly created plans by default",
+)
 _PLAN_ORCHESTRATOR_WORKFLOW_HELPER_BASH_RULES = (
     ("*", "deny"),
     ('python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .', "ask"),
@@ -1624,7 +1668,30 @@ class OpenCodeInstallService:
                 continue
             if name == "plan-orchestrator.md":
                 errors.extend(self._validate_plan_orchestrator_prompt_contract(name, prompt))
+        errors.extend(self._validate_automatic_plan_route_tokens(inventory))
         errors.extend(self._validate_command_prompt_contracts(inventory))
+        return errors
+
+    def _validate_automatic_plan_route_tokens(
+        self,
+        inventory: DefinitionInventory,
+    ) -> list[str]:
+        """Reject active definition text that restores automatic plan routing."""
+        errors: list[str] = []
+        for kind in DEFINITION_KINDS:
+            for name in getattr(inventory, kind):
+                try:
+                    prompt = (self.sources[kind] / name).read_text(encoding="utf-8")
+                except (OSError, UnicodeError):
+                    errors.append(f"{kind}: '{name}' automatic plan-route contract is unreadable")
+                    continue
+                normalized = " ".join(prompt.lower().split())
+                for token in AUTOMATIC_PLAN_ROUTE_FORBIDDEN_TOKENS:
+                    if token in normalized:
+                        errors.append(
+                            f"{kind}: '{name}' contains forbidden automatic plan routing"
+                        )
+                        break
         return errors
 
     def _validate_command_prompt_contracts(self, inventory: DefinitionInventory) -> list[str]:

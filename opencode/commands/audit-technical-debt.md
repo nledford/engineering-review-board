@@ -19,8 +19,10 @@ say so explicitly and summarize the evidence examined.
 
 For each finding include priority, severity, confidence, classification, scope, concrete evidence, impact, durable fix, validation, effort, expected benefit, and dependencies.
 
-Do not modify the repository or a durable plan. Recommend top-level
-`/start-work` for a remediation initiative.
+Do not modify the repository or a durable plan. Return findings for direct Lead
+remediation when safe. When the human wants a durable remediation initiative,
+recommend top-level `/create-plan`; `/start-work <existing-plan-path>` is only a
+separate human-chosen execution of an existing plan.
 
 Conclude with:
 

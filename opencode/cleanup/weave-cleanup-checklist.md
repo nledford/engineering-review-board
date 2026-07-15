@@ -27,8 +27,13 @@ Tapestry references that preserve provenance, conversion, or cleanup history.
 
 - Confirm no command bypasses the top-level Plan Orchestrator for durable plan
   writes.
+- Confirm plan creation has explicit human authorization and uses `/create-plan`;
+  `/start-work <existing-plan-path>` is only the separate human-chosen execution
+  route.
+- Confirm the primary Plan Orchestrator alone owns plan and trusted planned-work
+  state mutations.
 - Confirm no command asks the ERB to edit or treats advisory review as an
-  execution gate.
+  execution gate; ERB advice is non-gating.
 - Confirm native agents use valid IDs and no prompt claims delegation or
   persistence without an observed Task or artifact.
 - Report remaining migration/provenance references, skipped checks, and residual

@@ -305,24 +305,27 @@ and never authorizes planning or implementation.
 
 - **Trivial:** implement directly with focused validation.
 - **Bounded:** use a short in-session checklist and bounded work unit.
-- **Complex:** gather evidence, then recommend explicit human-authorized plan
-  creation when durable planning is warranted.
+- **Complex:** gather evidence; implement directly when scope and safety permit,
+  or recommend explicit human-authorized plan creation when durable planning is
+  warranted.
 - **Ambiguous or high-risk:** stop for a human decision before choosing a
   materially different design or destructive action.
 
-Do not author or delegate durable plan/state work. `/start-work` selects the
+Do not author or delegate durable plan/state work. When a human chooses
+execution of an existing plan, `/start-work <existing-plan-path>` selects the
 Plan Orchestrator as a separate primary agent.
 
 ### Classification Detail
 
-Proceed directly only for local, obvious, low-risk work that is easy to
-validate, such as a typo, local rename, or one unambiguous assertion. A bounded
-task is understood, limited, follows established patterns, and has no unresolved
-design choice. Use durable planning for cross-cutting, architectural,
-migration-heavy, security- or concurrency-sensitive, domain-significant,
-frontend-state-heavy, or multi-session work. Do not create a plan merely
-because a task has several steps, or skip one merely because the user asks for
-speed.
+Direct unplanned implementation may proceed whenever scope, safety, and
+validation are adequate, including complex work with no unresolved material
+choice and bounded execution. Cross-cutting, architectural, migration-heavy,
+security- or concurrency-sensitive, domain-significant, frontend-state-heavy, or
+multi-session work may justify recommending durable planning when the human wants
+a durable initiative; complexity alone never requires a plan or `/start-work`.
+Stop for an unresolved material choice or unsafe or unbounded execution. Do not
+recommend a plan merely because a task has several steps, or skip appropriate
+planning merely because the user asks for speed.
 
 ## Planned-Work Boundary
 
@@ -388,7 +391,9 @@ Use only `implementation-worker` for bounded implementation Tasks. Give it one
 objective, owned files/modules, stable interfaces, exclusions, acceptance
 criteria, required validation, and stop conditions. Do not use any other
 implementation subagent; do not overlap worker ownership. Integrate and verify
-the result yourself. Route durable planned-work persistence to `/start-work`.
+the result yourself. Recommend `/create-plan` when a human wants durable
+plan-only creation; `/start-work <existing-plan-path>` remains the separate
+human-chosen execution route.
 
 ## Delegation Discipline and Stop Conditions
 
@@ -402,8 +407,10 @@ is narrow enough to complete directly, or all independent units are assigned.
 
 On Task failure, do not name-guess: re-read the runtime list, choose at most one
 valid replacement when appropriate, or complete the narrow analysis yourself.
-A request needing durable planned work is a routing boundary, not a Task failure
-recovery path: return it to `/start-work`.
+A request that may warrant durable planned work is a routing boundary, not a
+Task failure recovery path: recommend `/create-plan` only if the human wants a
+durable initiative, and never select execution without the human separately
+choosing `/start-work <existing-plan-path>`.
 
 Before delegation establish the exact `agent_id`, objective and concrete
 questions, bounded files/symbols/diff/plan/subsystem, guidance and constraints,

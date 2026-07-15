@@ -7,10 +7,11 @@ subtask: false
 Convert source `$1` into series `$2`; interpret remaining `$ARGUMENTS` as
 instructions. The series must match `[a-z][a-z0-9-]{1,19}`.
 
-This command is plan-only by default. Execute only when the human explicitly
-asks to execute. Acquire complete provisional child-lock ownership before reading
-the human source locator, allocating a destination, or reading source or plan
-state. Obtain normal runtime approval and use only this exact isolated
+This conversion is always plan-only and never executes TODOs in the same
+invocation. Execution requires a separate human-chosen `/start-work <destination>`
+choice. Acquire complete provisional child-lock ownership before reading the human
+source locator, allocating a destination, or reading source or plan state. Obtain
+normal runtime approval and use only this exact isolated
 allowlisted acquisition literal:
 
 ```text
@@ -38,4 +39,5 @@ persist a pointer when needed and release only under the helper's matching-owner
 known-outcome rules. Optional ERB advice is read-only and never an approval,
 readiness, sign-off, persistence, or execution gate. Report source preservation,
 destination identity, revalidation, observed validation, skipped checks, and
-residual risk; route any follow-up to `/start-work <destination>`.
+residual risk. Execution remains a separate human-chosen
+`/start-work <destination>` choice.

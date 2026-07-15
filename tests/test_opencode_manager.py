@@ -2948,6 +2948,35 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 self.assertEqual(parsed.fields["subtask"], "false")
                 assert_contract(command, contract["required"], contract["forbidden"])
 
+        retained_route_contracts = {
+            "audit-technical-debt.md": (
+                "Return findings for direct Lead remediation when safe.",
+                "When the human wants a durable remediation initiative, recommend top-level `/create-plan`;",
+                "`/start-work <existing-plan-path>` is only a separate human-chosen execution of an existing plan.",
+            ),
+            "investigate-regression.md": (
+                "Return repair guidance for direct Lead implementation when safe.",
+                "When the human wants durable repair planning, recommend top-level `/create-plan`;",
+                "`/start-work <existing-plan-path>` is only a separate human-chosen execution of an existing plan.",
+            ),
+            "review-plan.md": (
+                "Advisory corrections cannot create or execute a plan.",
+                "A human may separately request an explicit plan-only update from the top-level Plan Orchestrator;",
+                "`/start-work <path>` is only a separate human-chosen execution choice.",
+            ),
+            "review-implementation.md": (
+                "Follow-up repair may be direct, explicitly planned through `/create-plan`,",
+                "or separately executed from an existing plan through `/start-work <path>`.",
+            ),
+            "convert-tapestry-plan.md": (
+                "This conversion is always plan-only and never executes TODOs in the same invocation.",
+                "Execution requires a separate human-chosen `/start-work <destination>` choice.",
+            ),
+        }
+        for name, required in retained_route_contracts.items():
+            with self.subTest(command=name):
+                assert_contract(command_root / name, required)
+
     def test_checked_in_plan_consultant_topology_is_read_only(self) -> None:
         """Protect the consultant's manifested, read-only Task topology."""
         project_root = Path(__file__).parents[1]
@@ -3015,6 +3044,61 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             for target in targets:
                 with self.subTest(permission=permission, target=target):
                     self.assertEqual(permission_action(permission, target), "deny")
+
+        consultant_mutations = {
+            "root wildcard": (
+                '  "*": deny\n  read:',
+                '  "*": allow\n  read:',
+                "permission wildcard baseline must be deny",
+            ),
+            "trusted-state read": (
+                '    ".start-work/**": deny',
+                '    ".start-work/**": allow',
+                "must allow repository navigation and deny .start-work state",
+            ),
+            "edit": (
+                "  edit: deny",
+                "  edit: ask",
+                "violates core edit ownership",
+            ),
+            "bash": (
+                "  bash: deny",
+                "  bash: ask",
+                "must deny mutation and delegation tools",
+            ),
+            "recursive task topology": (
+                "  task: deny",
+                '  task:\n    "*": deny\n    "plan-consultant": allow',
+                "must deny mutation and delegation tools",
+            ),
+            "TODO": (
+                "  todowrite: deny",
+                "  todowrite: allow",
+                "must not allow todowrite for this role",
+            ),
+            "network": (
+                "  webfetch: deny",
+                "  webfetch: ask",
+                "network permissions must be deny",
+            ),
+        }
+        for label, (old, new, expected_error) in consultant_mutations.items():
+            with self.subTest(mutation=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                consultant_path = repo / "opencode/agents/plan-consultant.md"
+                source = consultant_path.read_text(encoding="utf-8")
+                mutated, count = source.replace(old, new, 1), source.count(old)
+                self.assertGreaterEqual(count, 1)
+                consultant_path.write_text(mutated, encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any(expected_error in error for error in result.errors),
+                    result.errors,
+                )
 
         parents = {name: parse_agent(f"{name}.md") for name in ("engineering-lead", "engineering-review-board")}
         for name, parent in parents.items():
@@ -3094,21 +3178,69 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                         )
                 agent.write_text(original, encoding="utf-8")
 
+            automatic_route_mutations = {
+                "opencode/agents/engineering-lead.md": (
+                    "Complex work automatically creates a plan.",
+                    "agents: 'engineering-lead.md' contains forbidden automatic plan routing",
+                ),
+                "opencode/agents/engineering-lead.md::stale-direct-only": (
+                    "Proceed directly only for local, obvious, low-risk work.",
+                    "agents: 'engineering-lead.md' contains forbidden automatic plan routing",
+                ),
+                "opencode/agents/engineering-lead.md::stale-durable-planning": (
+                    "Use durable planning for cross-cutting work.",
+                    "agents: 'engineering-lead.md' contains forbidden automatic plan routing",
+                ),
+                "opencode/commands/convert-tapestry-plan.md": (
+                    "Execute TODOs by default after conversion.",
+                    "commands: 'convert-tapestry-plan.md' contains forbidden automatic plan routing",
+                ),
+            }
+            for relative_path, (mutation, expected_error) in automatic_route_mutations.items():
+                with self.subTest(route=relative_path, mutation=mutation):
+                    target = repo / relative_path.split("::", 1)[0]
+                    original = target.read_text(encoding="utf-8")
+                    target.write_text(original + f"\n{mutation}\n", encoding="utf-8")
+
+                    result = OpenCodeInstallService(repo, root / "config").validate()
+
+                    self.assertFalse(result.ok)
+                    self.assertIn(expected_error, result.errors)
+                    target.write_text(original, encoding="utf-8")
+
             retained_routes = {
                 "commands/audit-technical-debt.md": {
-                    "required": ("Recommend top-level `/start-work`",),
-                    "forbidden": ("/prepare-work",),
+                    "required": (
+                        "Return findings for direct Lead remediation when safe.",
+                        "When the human wants a durable remediation initiative, recommend top-level `/create-plan`;",
+                        "`/start-work <existing-plan-path>` is only a separate human-chosen execution of an existing plan.",
+                    ),
+                    "forbidden": (
+                        "Recommend top-level `/start-work` for a remediation initiative.",
+                        "/prepare-work",
+                    ),
                     "sentinel": "Treat the argument as either repository-wide scope",
                 },
                 "commands/investigate-regression.md": {
-                    "required": ("return it to top-level `/start-work`.",),
-                    "forbidden": ("/revise-plan", "Planning Coordinator"),
+                    "required": (
+                        "Return repair guidance for direct Lead implementation when safe.",
+                        "When the human wants durable repair planning, recommend top-level `/create-plan`;",
+                        "`/start-work <existing-plan-path>` is only a separate human-chosen execution of an existing plan.",
+                    ),
+                    "forbidden": (
+                        "return it to top-level `/start-work`.",
+                        "/revise-plan",
+                        "Planning Coordinator",
+                    ),
                     "sentinel": "Establish expected behavior, observed behavior",
                 },
                 "cleanup/weave-cleanup-checklist.md": {
                     "required": (
                         "top-level Plan Orchestrator for durable plan writes.",
-                        "treats advisory review as an execution gate.",
+                        "plan creation has explicit human authorization and uses `/create-plan`;",
+                        "`/start-work <existing-plan-path>` is only the separate human-chosen execution route.",
+                        "primary Plan Orchestrator alone owns plan and trusted planned-work state mutations.",
+                        "ERB advice is non-gating.",
                     ),
                     "forbidden": ("/normalize-plan", "Planning Coordinator"),
                     "sentinel": "Use this after native OpenCode agents and commands are installed. Keep legacy",
