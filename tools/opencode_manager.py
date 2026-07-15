@@ -10,7 +10,6 @@ import re
 import stat
 import sys
 from dataclasses import dataclass, field
-from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Callable, Sequence
 
@@ -47,6 +46,55 @@ PLAN_REDIRECTION_DENY_RULE = "*docs/implementation-plans*"
 STATE_PATH_EDIT_RULE = ".start-work/**"
 STATE_REDIRECTION_DENY_RULE = "*.start-work*"
 RUNTIME_HELPERS = ("workflow-tools/start_work_state.py",)
+CANONICAL_AGENTS = (
+    "accessibility-critic.md",
+    "adversarial-reviewer.md",
+    "api-design-critic.md",
+    "architecture-strategy-critic.md",
+    "change-verifier.md",
+    "database-engineering-critic.md",
+    "design-critic.md",
+    "distributed-systems-concurrency-critic.md",
+    "documentation-critic.md",
+    "domain-model-critic.md",
+    "engineering-lead.md",
+    "engineering-review-board.md",
+    "frontend-architecture-interaction-critic.md",
+    "implementation-worker.md",
+    "internationalization-localization-critic.md",
+    "performance-critic.md",
+    "plan-orchestrator.md",
+    "prompt-critic.md",
+    "release-readiness-reviewer.md",
+    "security-critic.md",
+    "technical-debt-auditor.md",
+    "technical-researcher.md",
+    "testing-critic.md",
+)
+ACTIVE_WORKFLOW_FIXED_FILES = (
+    ".gitignore",
+    "AGENTS.md",
+    "README.md",
+    "docs/engineering-agent-governance.md",
+    "docs/implementation-plans/README.md",
+    "docs/implementation-plans/TEMPLATE.md",
+    "opencode/manifest.json",
+)
+RETIRED_COMMAND_ID_TOKENS = (
+    "planning-coordinator",
+    "prepare-work",
+    "record-plan-review",
+    "revise-plan",
+    "approve-plan",
+    "normalize-plan",
+    "execute-plan",
+)
+RETIRED_LIFECYCLE_PHRASES = (
+    "Ready With Revisions",
+    "Not Ready",
+    "Approve With Follow-ups",
+    "Request Changes",
+)
 CANONICAL_COMMAND_OWNERS = {
     "audit-technical-debt.md": "engineering-review-board",
     "convert-tapestry-plan.md": "plan-orchestrator",
@@ -110,7 +158,7 @@ RETAINED_ROUTE_FORBIDDEN_TOKENS = {
     "commands/investigate-regression.md": ("/revise-plan", "Planning Coordinator"),
     "cleanup/weave-cleanup-checklist.md": ("/normalize-plan", "Planning Coordinator"),
 }
-_PLAN_ORCHESTRATOR_BASH_RULES = (
+_PLAN_ORCHESTRATOR_WORKFLOW_HELPER_BASH_RULES = (
     ("*", "deny"),
     ('python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .', "ask"),
     ('python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" finalize --repo-root . --owner-token * --plan-path *', "ask"),
@@ -121,12 +169,107 @@ _PLAN_ORCHESTRATOR_BASH_RULES = (
     ('python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" release-final --repo-root . --owner-token * --completed-execution true --completed-plan-only false --outcomes-known true --no-child-can-mutate true', "ask"),
     ('python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" release-final --repo-root . --owner-token * --completed-execution false --completed-plan-only true --outcomes-known true --no-child-can-mutate true', "ask"),
     ('python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" recover-stale --repo-root . --prior-human-confirmation true', "ask"),
-    (PLAN_REDIRECTION_DENY_RULE, "deny"),
-    (STATE_REDIRECTION_DENY_RULE, "deny"),
 )
-PLAN_ORCHESTRATOR_BASH_RULES = tuple(
+PLAN_ORCHESTRATOR_WORKFLOW_HELPER_BASH_RULES = tuple(
     (rule.replace('"', r'\"'), action)
-    for rule, action in _PLAN_ORCHESTRATOR_BASH_RULES
+    for rule, action in _PLAN_ORCHESTRATOR_WORKFLOW_HELPER_BASH_RULES
+)
+CANONICAL_PLAN_STAGING_ASK_RULE = (
+    "git add -- docs/implementation-plans/plans/*/*.md"
+)
+PLAN_ORCHESTRATOR_GIT_BASH_RULES = (
+    ("git status", "allow"),
+    ("git status --short", "allow"),
+    ("git diff", "allow"),
+    ("git diff --cached", "allow"),
+    ("git diff HEAD", "allow"),
+    ("git diff HEAD^ HEAD", "allow"),
+    ("git diff --check", "allow"),
+    ("git diff --stat", "allow"),
+    ("git show HEAD", "allow"),
+    ("git show HEAD^", "allow"),
+    ("git log", "allow"),
+    ("git log --oneline -10", "allow"),
+    ("git rev-parse HEAD", "allow"),
+    ("git branch --show-current", "allow"),
+    ("git ls-files", "allow"),
+    ("git config --get core.hooksPath", "allow"),
+    ("git config --get commit.gpgsign", "allow"),
+    ("git config --get gpg.format", "allow"),
+    ("git add *", "deny"),
+    ("git add -- *", "ask"),
+    ("git add --", "deny"),
+    ("git add -- .", "deny"),
+    ("git add -- :*", "deny"),
+    ("git add -- /*", "deny"),
+    ("git add -- ../*", "deny"),
+    ("git add -- */../*", "deny"),
+    ("git add -- *..*", "deny"),
+    ("git add -- ~*", "deny"),
+    ("git commit *", "ask"),
+    ("git commit", "allow"),
+    ("git commit *--amend*", "deny"),
+    ("git commit *--fixup*", "deny"),
+    ("git commit *--squash*", "deny"),
+    ("git commit *--all*", "deny"),
+    ("git commit -a*", "deny"),
+    ("git commit * -a*", "deny"),
+    ("git commit *--no-verify*", "deny"),
+    ("git commit -n*", "deny"),
+    ("git commit * -n*", "deny"),
+    ("git commit *--no-gpg-sign*", "deny"),
+    ("git commit *--allow-empty*", "deny"),
+    ("git commit *--interactive*", "deny"),
+    ("git commit -i*", "deny"),
+    ("git commit * -i*", "deny"),
+    ("git commit *--patch*", "deny"),
+    ("git commit -p*", "deny"),
+    ("git commit * -p*", "deny"),
+    ("git commit *--include*", "deny"),
+    ("git commit -o*", "deny"),
+    ("git commit * -o*", "deny"),
+    ("git commit *--only*", "deny"),
+    ("git commit *--pathspec-from-file*", "deny"),
+    ("git commit *--pathspec-file-nul*", "deny"),
+    ("git commit *--no-post-rewrite*", "deny"),
+    (PLAN_REDIRECTION_DENY_RULE, "deny"),
+    (CANONICAL_PLAN_STAGING_ASK_RULE, "ask"),
+    ("git add -- docs/implementation-plans/plans/*/*/*", "deny"),
+    ("git add -- *[*", "deny"),
+    ("git add -- *{*", "deny"),
+    (STATE_REDIRECTION_DENY_RULE, "deny"),
+    ("git *>*", "deny"),
+    ("git *<*", "deny"),
+    ("git *|*", "deny"),
+    ("git *&*", "deny"),
+    ("git *;*", "deny"),
+    ("git *$(*", "deny"),
+    ("git *$*", "deny"),
+    ("git *`*", "deny"),
+)
+PLAN_ORCHESTRATOR_BASH_RULES = (
+    PLAN_ORCHESTRATOR_WORKFLOW_HELPER_BASH_RULES + PLAN_ORCHESTRATOR_GIT_BASH_RULES
+)
+PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS = (
+    "explicit current human request",
+    "explicit bounded plan TODO",
+    "`git-commit`",
+    "`security-review` and `security-review-evidence`",
+    "freshly reconcile pointer,",
+    "exact verified repository-relative paths",
+    "never interpolate human or plan",
+    "Re-check the staged",
+    "observe the resulting commit and worktree",
+    "Never amend, bypass hooks or signing",
+    "Retain the lock and staged state",
+    "Worker remains forbidden to stage or commit.",
+    "full OpenCode restart before this authority exists",
+    "fresh trusted `git status`/worktree evidence",
+    "Separately enumerate each repository-relative path",
+    "quote each path as one literal shell word",
+    "Never use `*`, `?`, bracket expressions, braces, pathspec magic, `.` shorthand, traversal, substitution, or any other expansion syntax.",
+    "Runtime approval is an additional human check, not proof the path is safe.",
+    "Stop if a dirty path cannot be represented literally under the command policy.",
 )
 KNOWN_PERMISSION_TOOLS = frozenset(
     {
@@ -164,6 +307,9 @@ SAFE_EXACT_GIT_BASH_ALLOWS = frozenset(
         "git branch --show-current",
         "git show",
         "git ls-files",
+        "git config --get core.hooksPath",
+        "git config --get commit.gpgsign",
+        "git config --get gpg.format",
         "pwd",
         'python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .',
     }
@@ -388,7 +534,24 @@ LEAN_PLAN_TEMPLATE = """# <Title>
 """
 
 
-def resolve_v118_permission_action(
+def opencode_wildcard_match(value: str, pattern: str) -> bool:
+    """Match the OpenCode 1.18.1 simple wildcard language."""
+    normalized_value = value.replace("\\", "/")
+    normalized_pattern = pattern.replace("\\", "/")
+    optional_trailing_argument = normalized_pattern.endswith(" *")
+    if optional_trailing_argument:
+        normalized_pattern = normalized_pattern[:-2]
+    escaped_pattern = "".join(
+        ".*" if character == "*" else "." if character == "?" else re.escape(character)
+        for character in normalized_pattern
+    )
+    if optional_trailing_argument:
+        escaped_pattern += "( .*)?"
+    flags = re.DOTALL | (re.IGNORECASE if os.name == "nt" else 0)
+    return re.fullmatch(escaped_pattern, normalized_value, flags=flags) is not None
+
+
+def resolve_opencode_permission_action(
     rules: tuple[tuple[str, str], ...],
     command: str,
     *,
@@ -396,8 +559,7 @@ def resolve_v118_permission_action(
 ) -> str:
     action = baseline
     for pattern, candidate in rules:
-        optional_suffix_match = pattern.endswith(" *") and command == pattern[:-2]
-        if optional_suffix_match or fnmatchcase(command, pattern):
+        if opencode_wildcard_match(command, pattern):
             action = candidate
     return action
 
@@ -484,6 +646,8 @@ class OpenCodeInstallService:
             errors.extend(self._validate_task_delegation(agent_metadata))
             errors.extend(self._validate_command_agents(inventory, agent_metadata))
             errors.extend(self._validate_prompt_contracts(inventory))
+        if self._has_canonical_active_workflow_inventory(inventory):
+            errors.extend(self._validate_retired_lifecycle_tokens(inventory))
 
         if errors:
             return OperationResult(errors=errors)
@@ -681,6 +845,60 @@ class OpenCodeInstallService:
             support_files=values["support_files"],
             runtime_helpers=values["runtime_helpers"],
         ), []
+
+    @staticmethod
+    def _has_canonical_active_workflow_inventory(inventory: DefinitionInventory) -> bool:
+        return (
+            inventory.agents == CANONICAL_AGENTS
+            and inventory.commands == CANONICAL_COMMANDS
+            and inventory.support_files == REQUIRED_SUPPORT_FILES
+            and inventory.runtime_helpers == RUNTIME_HELPERS
+        )
+
+    def _validate_retired_lifecycle_tokens(
+        self, inventory: DefinitionInventory
+    ) -> list[str]:
+        relative_paths = (
+            *ACTIVE_WORKFLOW_FIXED_FILES,
+            *(f"opencode/agents/{name}" for name in inventory.agents),
+            *(f"opencode/commands/{name}" for name in inventory.commands),
+            *(f"opencode/{name}" for name in inventory.support_files),
+        )
+        errors: list[str] = []
+        for relative_path in relative_paths:
+            text = self._read_active_workflow_inventory_text(relative_path)
+            if text is None:
+                errors.append(
+                    f"active workflow inventory '{relative_path}' is missing or is not a regular UTF-8 file"
+                )
+                continue
+            for token in RETIRED_COMMAND_ID_TOKENS:
+                if re.search(
+                    rf"(?<![A-Za-z0-9_-]){re.escape(token)}(?![A-Za-z0-9_-])",
+                    text,
+                ):
+                    errors.append(
+                        f"active workflow inventory '{relative_path}' contains retired lifecycle token '{token}'"
+                    )
+            for token in RETIRED_LIFECYCLE_PHRASES:
+                if token in text:
+                    errors.append(
+                        f"active workflow inventory '{relative_path}' contains retired lifecycle token '{token}'"
+                    )
+        return errors
+
+    def _read_active_workflow_inventory_text(self, relative_path: str) -> str | None:
+        path = self.repo_root
+        try:
+            for part in Path(relative_path).parts:
+                path /= part
+                if path.is_symlink():
+                    return None
+            if not path.is_file():
+                return None
+            return path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            return None
 
     def _validate_support_files(self, support_files: tuple[str, ...]) -> list[str]:
         if support_files != REQUIRED_SUPPORT_FILES:
@@ -1046,6 +1264,7 @@ class OpenCodeInstallService:
                 if (
                     action == "allow"
                     and rule not in SAFE_EXACT_GIT_BASH_ALLOWS
+                    and not (agent_id == "plan-orchestrator" and rule == "git commit")
                     and not (
                         agent_id == "engineering-lead"
                         and (rule, action) in ENGINEERING_LEAD_GIT_BASH_RULES
@@ -1056,10 +1275,22 @@ class OpenCodeInstallService:
                     )
                     break
 
-        if agent_id == "plan-orchestrator" and bash != PLAN_ORCHESTRATOR_BASH_RULES:
-            errors.append(
-                f"agents: '{name}' must preserve canonical workflow-helper permissions"
-            )
+        if agent_id == "plan-orchestrator":
+            helper_count = len(PLAN_ORCHESTRATOR_WORKFLOW_HELPER_BASH_RULES)
+            if (
+                not isinstance(bash, tuple)
+                or bash[:helper_count] != PLAN_ORCHESTRATOR_WORKFLOW_HELPER_BASH_RULES
+            ):
+                errors.append(
+                    f"agents: '{name}' must preserve canonical workflow-helper permissions"
+                )
+            if (
+                not isinstance(bash, tuple)
+                or bash[helper_count:] != PLAN_ORCHESTRATOR_GIT_BASH_RULES
+            ):
+                errors.append(
+                    f"agents: '{name}' must preserve canonical Git permissions"
+                )
 
         if agent_id == "engineering-lead":
             git_rules = (
@@ -1091,7 +1322,7 @@ class OpenCodeInstallService:
                     f"agents: '{name}' has a noncanonical wildcard rule that can override git permissions"
                 )
             if isinstance(bash, tuple) and any(
-                resolve_v118_permission_action(bash, command, baseline="ask")
+                resolve_opencode_permission_action(bash, command, baseline="ask")
                 != expected
                 for command, expected in ENGINEERING_LEAD_GIT_EFFECTIVE_ACTIONS
             ):
@@ -1158,7 +1389,7 @@ class OpenCodeInstallService:
             errors.append(f"agents: '{name}' violates core edit ownership")
 
         bash = permissions.get("bash")
-        if agent_id in ROOT_ASK_AGENT_IDS | {"plan-orchestrator"}:
+        if agent_id in ROOT_ASK_AGENT_IDS:
             required_suffix = ((PLAN_REDIRECTION_DENY_RULE, "deny"), (STATE_REDIRECTION_DENY_RULE, "deny"))
             if agent_id == "engineering-lead":
                 required_suffix += ENGINEERING_LEAD_POST_PLAN_BASH_RULES
@@ -1388,6 +1619,7 @@ class OpenCodeInstallService:
             "For plan-only work, persist a pointer when needed, then release only after all mutation outcomes are known and no child can mutate;",
             "Default execution reconciles the pointer, worktree, plan checkboxes, and TODO state before each at-least-once step.",
             "Before every mutable phase, freshly reload the pointer, plan, and worktree evidence while holding the lock; never rely on stale evidence.",
+            *PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
         )
         normalized = " ".join(prompt.split())
         if LEAN_PLAN_TEMPLATE not in prompt or not all(token in normalized for token in required):

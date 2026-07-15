@@ -22,8 +22,74 @@ permission:
     "python3 -I \"$HOME/.config/opencode/workflow-tools/start_work_state.py\" release-final --repo-root . --owner-token * --completed-execution true --completed-plan-only false --outcomes-known true --no-child-can-mutate true": ask
     "python3 -I \"$HOME/.config/opencode/workflow-tools/start_work_state.py\" release-final --repo-root . --owner-token * --completed-execution false --completed-plan-only true --outcomes-known true --no-child-can-mutate true": ask
     "python3 -I \"$HOME/.config/opencode/workflow-tools/start_work_state.py\" recover-stale --repo-root . --prior-human-confirmation true": ask
+    "git status": allow
+    "git status --short": allow
+    "git diff": allow
+    "git diff --cached": allow
+    "git diff HEAD": allow
+    "git diff HEAD^ HEAD": allow
+    "git diff --check": allow
+    "git diff --stat": allow
+    "git show HEAD": allow
+    "git show HEAD^": allow
+    "git log": allow
+    "git log --oneline -10": allow
+    "git rev-parse HEAD": allow
+    "git branch --show-current": allow
+    "git ls-files": allow
+    "git config --get core.hooksPath": allow
+    "git config --get commit.gpgsign": allow
+    "git config --get gpg.format": allow
+    "git add *": deny
+    "git add -- *": ask
+    "git add --": deny
+    "git add -- .": deny
+    "git add -- :*": deny
+    "git add -- /*": deny
+    "git add -- ../*": deny
+    "git add -- */../*": deny
+    "git add -- *..*": deny
+    "git add -- ~*": deny
+    "git commit *": ask
+    "git commit": allow
+    "git commit *--amend*": deny
+    "git commit *--fixup*": deny
+    "git commit *--squash*": deny
+    "git commit *--all*": deny
+    "git commit -a*": deny
+    "git commit * -a*": deny
+    "git commit *--no-verify*": deny
+    "git commit -n*": deny
+    "git commit * -n*": deny
+    "git commit *--no-gpg-sign*": deny
+    "git commit *--allow-empty*": deny
+    "git commit *--interactive*": deny
+    "git commit -i*": deny
+    "git commit * -i*": deny
+    "git commit *--patch*": deny
+    "git commit -p*": deny
+    "git commit * -p*": deny
+    "git commit *--include*": deny
+    "git commit -o*": deny
+    "git commit * -o*": deny
+    "git commit *--only*": deny
+    "git commit *--pathspec-from-file*": deny
+    "git commit *--pathspec-file-nul*": deny
+    "git commit *--no-post-rewrite*": deny
     "*docs/implementation-plans*": deny
+    "git add -- docs/implementation-plans/plans/*/*.md": ask
+    "git add -- docs/implementation-plans/plans/*/*/*": deny
+    "git add -- *[*": deny
+    "git add -- *{*": deny
     "*.start-work*": deny
+    "git *>*": deny
+    "git *<*": deny
+    "git *|*": deny
+    "git *&*": deny
+    "git *;*": deny
+    "git *$(*": deny
+    "git *$*": deny
+    "git *`*": deny
   task:
     "*": deny
     "implementation-worker": allow
@@ -82,9 +148,10 @@ implementation mutation and while no child can mutate. Stale recovery requires
 prior explicit human confirmation that no Plan Orchestrator, Worker, child, or
 planned mutator remains.
 
-After acquisition, use only these checked-in operation literals: `finalize`,
-`read-pointer`, `write-pointer`, `clear-pointer`, `release-provisional`,
-`release-final`, and `recover-stale`. Keep the installed helper path exactly
+For workflow-helper invocations after acquisition, use only these checked-in
+operation literals: `finalize`, `read-pointer`, `write-pointer`,
+`clear-pointer`, `release-provisional`, `release-final`, and `recover-stale`.
+Keep the installed helper path exactly
 quoted and `--repo-root .` literal. Validate every owner token, plan path, and
 contract hash against the helper grammar before placing each as exactly one argv
 element. Boolean assertions are fixed literals. Never interpolate human or
@@ -218,6 +285,36 @@ lifecycle authority. Stop for a material contract/design change, unsafe path,
 lock corruption, untrusted evidence that cannot be verified, allocation
 collision/exhaustion, unavailable approved helper, or an unbounded/flaky
 validation design.
+
+## Human-Authorized Commit Surface
+
+Commit authority applies only after an explicit current human request or an
+explicit bounded plan TODO. Load `git-commit`; load `security-review` and
+`security-review-evidence` for signing trust, hooks, secrets, or other Git trust
+boundaries. While retaining the planned-work lock, freshly reconcile pointer,
+plan, status, unstaged diff, staged diff, recent history, and effective
+hook/signing policy before committing.
+
+Derive staged paths from fresh trusted worktree evidence; use `git add --` with
+only exact verified repository-relative paths; never interpolate human or plan
+text into a Git shell command. A canonical plan path is eligible only after you
+independently validate it as the exact active contained plan. Re-check the staged
+diff before each commit and observe the resulting commit and worktree before
+advancing a checkbox.
+
+Before every approval-gated `git add --`, derive paths only from fresh trusted
+`git status`/worktree evidence. Separately enumerate each repository-relative
+path and quote each path as one literal shell word. Never use `*`, `?`, bracket
+expressions, braces, pathspec magic, `.` shorthand, traversal, substitution, or
+any other expansion syntax. Runtime approval is an additional human check, not
+proof the path is safe. Stop if a dirty path cannot be represented literally
+under the command policy.
+
+Never amend, bypass hooks or signing, fetch, push, or mutate branches, refs,
+history, worktrees, or remotes. Retain the lock and staged state on failure or
+uncertainty and report it precisely. Worker remains forbidden to stage or commit.
+OpenCode definition changes require a full OpenCode restart before this authority
+exists; the running session retains its already-loaded permissions.
 
 ## Completion Report
 

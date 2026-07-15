@@ -6,11 +6,18 @@ import shutil
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from fnmatch import fnmatchcase
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.opencode_manager import COMMAND_PROMPT_CONTRACTS, OpenCodeInstallService, main
+from tools.opencode_manager import (
+    COMMAND_PROMPT_CONTRACTS,
+    PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
+    PLAN_ORCHESTRATOR_GIT_BASH_RULES,
+    OpenCodeInstallService,
+    main,
+    opencode_wildcard_match,
+    resolve_opencode_permission_action,
+)
 
 
 SUPPORT_FILES = (
@@ -21,6 +28,40 @@ SUPPORT_FILES = (
     "project-template/docs/implementation-plans/TEMPLATE.md",
 )
 RUNTIME_HELPERS = ("workflow-tools/start_work_state.py",)
+ACTIVE_WORKFLOW_FIXED_FILES = (
+    ".gitignore",
+    "AGENTS.md",
+    "README.md",
+    "docs/engineering-agent-governance.md",
+    "docs/implementation-plans/README.md",
+    "docs/implementation-plans/TEMPLATE.md",
+    "opencode/manifest.json",
+)
+RETIRED_COMMAND_ID_TOKENS = (
+    "planning-coordinator",
+    "prepare-work",
+    "record-plan-review",
+    "revise-plan",
+    "approve-plan",
+    "normalize-plan",
+    "execute-plan",
+)
+STALE_LIFECYCLE_MUTATIONS = (
+    (".gitignore", "planning-coordinator"),
+    ("AGENTS.md", "prepare-work"),
+    ("README.md", "record-plan-review"),
+    ("docs/engineering-agent-governance.md", "revise-plan"),
+    ("docs/implementation-plans/README.md", "approve-plan"),
+    ("docs/implementation-plans/TEMPLATE.md", "normalize-plan"),
+    ("opencode/manifest.json", "execute-plan"),
+    ("opencode/agents/engineering-lead.md", "Ready With Revisions"),
+    ("opencode/commands/start-work.md", "Not Ready"),
+    ("opencode/cleanup/weave-cleanup-checklist.md", "Approve With Follow-ups"),
+    (
+        "opencode/project-template/AGENTS-plan-workflow-snippet.md",
+        "Request Changes",
+    ),
+)
 
 LEAD_GIT_RULES = (
     ("git branch *", "ask"),
@@ -195,15 +236,10 @@ def render_lead_permissions(
     )
 
 
-def resolve_v118_action(
+def resolve_opencode_action(
     rules: tuple[tuple[str, str], ...], command: str, *, baseline: str = "ask"
 ) -> str:
-    action = baseline
-    for pattern, candidate in rules:
-        optional_suffix_match = pattern.endswith(" *") and command == pattern[:-2]
-        if optional_suffix_match or fnmatchcase(command, pattern):
-            action = candidate
-    return action
+    return resolve_opencode_permission_action(rules, command, baseline=baseline)
 
 
 def write_support_files(repo: Path) -> None:
@@ -362,6 +398,31 @@ def create_plan_orchestrator_repo(root: Path) -> tuple[Path, Path]:
     definition = repo / "opencode" / "agents" / "plan-orchestrator.md"
     definition.write_text(plan_orchestrator_source(), encoding="utf-8")
     return repo, definition
+
+
+def create_canonical_active_workflow_repo(root: Path) -> Path:
+    project_root = Path(__file__).parents[1]
+    repo = root / "repo"
+    manifest_path = project_root / "opencode" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    for relative_path in ACTIVE_WORKFLOW_FIXED_FILES:
+        source = project_root / relative_path
+        destination = repo / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+
+    for kind in ("agents", "commands", "support_files", "runtime_helpers"):
+        source_root = project_root / "opencode"
+        destination_root = repo / "opencode"
+        for name in manifest[kind]:
+            relative_path = Path(kind) / name if kind in ("agents", "commands") else Path(name)
+            source = source_root / relative_path
+            destination = destination_root / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+
+    return repo
 
 
 class OpenCodeInstallServiceTests(unittest.TestCase):
@@ -856,7 +917,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
 
         for command, expected in cases.items():
             with self.subTest(command=command):
-                self.assertEqual(expected, resolve_v118_action(LEAD_GIT_RULES, command))
+                self.assertEqual(expected, resolve_opencode_action(LEAD_GIT_RULES, command))
 
     def test_validate_requires_exact_lead_git_rule_matrix(self) -> None:
         mutations = {
@@ -924,6 +985,135 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 self.assertFalse(result.ok)
                 self.assertTrue(
                     any("override git permissions" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_opencode_wildcard_match_uses_only_star_and_question_mark(self) -> None:
+        cases = (
+            ("git status", "git status *", True),
+            ("git status --short", "git status *", True),
+            ("git status --short", "git status", False),
+            ("src/file.py", "src/*.py", True),
+            ("src/file.py", "src/fil?.py", True),
+            ("src/a.py", "src/[a-z].py", False),
+            ("src/[a-z].py", "src/[a-z].py", True),
+            ("src/0.py", "src/[0-9].py", False),
+            ("src/[0-9].py", "src/[0-9].py", True),
+            ("src/{a,b}.py", "src/{a,b}.py", True),
+            ("src/a.py", "src/{a,b}.py", False),
+            ("src/file.py", "src\\file.py", True),
+        )
+        for value, pattern, expected in cases:
+            with self.subTest(value=value, pattern=pattern):
+                self.assertEqual(expected, opencode_wildcard_match(value, pattern))
+
+    def test_plan_orchestrator_git_rules_resolve_to_commit_safety_actions(self) -> None:
+        cases = {
+            "git status": "allow",
+            "git status --short": "allow",
+            "git diff": "allow",
+            "git diff --cached": "allow",
+            "git diff HEAD": "allow",
+            "git diff HEAD^ HEAD": "allow",
+            "git diff --check": "allow",
+            "git diff --stat": "allow",
+            "git show HEAD": "allow",
+            "git show HEAD^": "allow",
+            "git log": "allow",
+            "git log --oneline -10": "allow",
+            "git rev-parse HEAD": "allow",
+            "git branch --show-current": "allow",
+            "git ls-files": "allow",
+            "git config --get core.hooksPath": "allow",
+            "git config --get commit.gpgsign": "allow",
+            "git config --get gpg.format": "allow",
+            "git add -- AGENTS.md": "ask",
+            "git add -- src/changed.py": "ask",
+            "git add -- docs/implementation-plans/plans/work/01-example.md": "ask",
+            "git add -- docs/implementation-plans/plans/opencode/03-complete-plan-workflow-migration.md": "ask",
+            "git commit": "allow",
+            "git commit -m 'approved message'": "ask",
+            "git add src/changed.py": "deny",
+            "git add -- .": "deny",
+            "git add -- :/": "deny",
+            "git add -- :(top)src/changed.py": "deny",
+            "git add -- ../outside": "deny",
+            "git add -- /tmp/outside": "deny",
+            "git add -- .start-work/resume.json": "deny",
+            "git add -- docs/implementation-plans/plans/work/deep/01-example.md": "deny",
+            "git diff > docs/implementation-plans/plans/work/01-example.md": "deny",
+            "git commit --amend": "deny",
+            "git commit --no-verify -m message": "deny",
+            "git commit --no-gpg-sign -m message": "deny",
+            "git commit --allow-empty -m message": "deny",
+            "git commit -a -m message": "deny",
+            "git commit -am message": "deny",
+            "git commit --interactive": "deny",
+            "git commit --pathspec-from-file=paths.txt": "deny",
+            "git commit --pathspec-from-file paths.txt": "deny",
+            "git commit --pathspec-from-file=paths.txt --pathspec-file-nul": "deny",
+            "git commit --pathspec-file-nul": "deny",
+            "git commit --only src/changed.py": "deny",
+            "git fetch origin": "deny",
+            "git push origin main": "deny",
+            "git rebase HEAD^": "deny",
+            "git update-ref refs/heads/main HEAD": "deny",
+            "git status | tee status.txt": "deny",
+            "git add -- src/changed.py && git commit": "deny",
+            "git add -- $(git status --short)": "deny",
+            "git add -- $PATH": "deny",
+            "git add -- `git status --short`": "deny",
+            "git add -- src/*.py": "ask",
+            "git add -- src/file?.py": "ask",
+            "git add -- src/[ab].py": "deny",
+            "git add -- src/{a,b}.py": "deny",
+            "git add -- docs/implementation-plans/plans/work/01-*.md": "ask",
+        }
+
+        for command, expected in cases.items():
+            with self.subTest(command=command):
+                self.assertEqual(
+                    expected,
+                    resolve_opencode_action(PLAN_ORCHESTRATOR_GIT_BASH_RULES, command, baseline="deny"),
+                )
+
+    def test_validate_requires_exact_plan_orchestrator_git_rule_matrix(self) -> None:
+        source = plan_orchestrator_source()
+        mutations = {
+            "missing inspection": source.replace('    "git status": allow\n', "", 1),
+            "downgraded inspection": source.replace(
+                '    "git diff --cached": allow\n',
+                '    "git diff --cached": ask\n',
+                1,
+            ),
+            "broad git allow": source.replace(
+                '    "*docs/implementation-plans*": deny\n',
+                '    "git *": allow\n    "*docs/implementation-plans*": deny\n',
+                1,
+            ),
+            "reordered plan exception": source.replace(
+                '    "*docs/implementation-plans*": deny\n'
+                '    "git add -- docs/implementation-plans/plans/*/*.md": ask\n',
+                '    "git add -- docs/implementation-plans/plans/*/*.md": ask\n'
+                '    "*docs/implementation-plans*": deny\n',
+                1,
+            ),
+            "later weakening": source.replace(
+                '    "git *`*": deny\n',
+                '    "git *`*": deny\n    "git *": ask\n',
+                1,
+            ),
+        }
+        for label, mutation in mutations.items():
+            with self.subTest(case=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo, definition = create_plan_orchestrator_repo(root)
+                definition.write_text(mutation, encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertTrue(
+                    any("canonical Git permissions" in error for error in result.errors),
                     result.errors,
                 )
 
@@ -2486,6 +2676,152 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                         result.errors,
                     )
 
+    def test_validate_requires_plan_orchestrator_commit_safety_prompt_contract(self) -> None:
+        source = plan_orchestrator_source()
+        for requirement in PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS:
+            with self.subTest(requirement=requirement), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo, definition = create_plan_orchestrator_repo(root)
+                mutation, replacements = re.subn(
+                    r"\s+".join(re.escape(token) for token in requirement.split()),
+                    "missing commit-safety requirement",
+                    source,
+                    count=1,
+                )
+                self.assertEqual(1, replacements)
+                definition.write_text(
+                    mutation,
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertTrue(
+                    any("prompt contract is incomplete" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_validate_rejects_each_retired_lifecycle_token_in_active_inventory(self) -> None:
+        for relative_path, token in STALE_LIFECYCLE_MUTATIONS:
+            with self.subTest(relative_path=relative_path, token=token), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                target = repo / relative_path
+
+                baseline = OpenCodeInstallService(repo, root / "config").validate()
+                self.assertTrue(baseline.ok, baseline.errors)
+
+                original = target.read_text(encoding="utf-8")
+                if relative_path == "opencode/manifest.json":
+                    target.write_text(
+                        original.replace(
+                            '  "agents": [',
+                            f'  "agents": ["{token}.md"],\n  "agents": [',
+                            1,
+                        ),
+                        encoding="utf-8",
+                    )
+                else:
+                    target.write_text(original + f"\n{token}\n", encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertIn(
+                    f"active workflow inventory '{relative_path}' contains retired lifecycle token '{token}'",
+                    result.errors,
+                )
+
+    def test_validate_ignores_retired_command_id_substrings_in_larger_identifiers(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            ignored = "\n".join(
+                f"unrelated-{token}-variant" for token in RETIRED_COMMAND_ID_TOKENS
+            )
+            gitignore = repo / ".gitignore"
+            gitignore.write_text(
+                gitignore.read_text(encoding="utf-8") + f"\n{ignored}\n",
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertTrue(result.ok, result.errors)
+
+    def test_validate_matches_retired_command_ids_in_supported_text_forms(self) -> None:
+        for text in (
+            "prepare-work",
+            "/prepare-work",
+            "prepare-work.md",
+            "opencode/commands/prepare-work.md",
+        ):
+            with self.subTest(text=text), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                gitignore = repo / ".gitignore"
+                gitignore.write_text(
+                    gitignore.read_text(encoding="utf-8") + f"\n{text}\n",
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertIn(
+                    "active workflow inventory '.gitignore' contains retired lifecycle token 'prepare-work'",
+                    result.errors,
+                )
+
+    def test_validate_fails_closed_when_active_inventory_text_is_missing_or_unreadable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            active_file = repo / "AGENTS.md"
+            active_file.unlink()
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertIn(
+                "active workflow inventory 'AGENTS.md' is missing or is not a regular UTF-8 file",
+                result.errors,
+            )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            active_file = repo / "AGENTS.md"
+            active_file.write_bytes(b"\xff")
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertIn(
+                "active workflow inventory 'AGENTS.md' is missing or is not a regular UTF-8 file",
+                result.errors,
+            )
+
+    def test_validate_excludes_non_active_workflow_files_from_stale_lifecycle_scan(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            stale_text = "\n".join(token for _, token in STALE_LIFECYCLE_MUTATIONS)
+            excluded_files = (
+                "docs/implementation-plans/plans/current/02-active-work.md",
+                "docs/implementation-plans/plans/legacy/01-immutable-legacy.md",
+                "tests/stale-lifecycle.md",
+                "test-fixtures/stale-lifecycle.md",
+                ".weave/history/stale-lifecycle.md",
+                "generated/stale-lifecycle.md",
+                "unmanifested/stale-lifecycle.md",
+            )
+            for relative_path in excluded_files:
+                path = repo / relative_path
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(stale_text, encoding="utf-8")
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertTrue(result.ok, result.errors)
+
     def test_checked_in_command_inventory_owners_and_static_contracts(self) -> None:
         """Validate checked-in text; this does not assert runtime OpenCode behavior."""
         project_root = Path(__file__).parents[1]
@@ -2523,15 +2859,9 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
 
     def test_checked_in_command_contract_validator_rejects_route_drift(self) -> None:
         """Exercise only checked-in prompt contracts, not agent execution or UI behavior."""
-        project_root = Path(__file__).parents[1]
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            repo = root / "repo"
-            shutil.copytree(project_root / "opencode", repo / "opencode")
-            shutil.copytree(
-                project_root / "docs/implementation-plans",
-                repo / "docs/implementation-plans",
-            )
+            repo = create_canonical_active_workflow_repo(root)
 
             self.assertTrue(OpenCodeInstallService(repo, root / "config").validate().ok)
 
