@@ -3,12 +3,12 @@ plan_id: opencode-02
 series: opencode
 sequence: 2
 title: Simplify the OpenCode Plan Workflow
-status: draft
+status: approved
 revision: 6
-review_decision: pending
-reviewed_at:
-approved_at:
-approved_revision:
+review_decision: ready
+reviewed_at: 2026-07-15T05:00:00-04:00
+approved_at: 2026-07-15T05:10:00-04:00
+approved_revision: 6
 depends_on: []
 baseline_commit: 9bd28e3a15c237e1fb4cf6e1996da36b687db5e8
 execution_owner: plan-orchestrator
@@ -2476,9 +2476,27 @@ reviewed_at: 2026-07-14T22:40:00-04:00
 findings: Required revisions R5-1 through R5-3 in this Board record.
 next_command: /record-plan-review docs/implementation-plans/plans/opencode/02-simplify-plan-workflow.md
 
+plan_path: docs/implementation-plans/plans/opencode/02-simplify-plan-workflow.md
+plan_id: opencode-02
+revision: 6
+baseline_commit: 9bd28e3a15c237e1fb4cf6e1996da36b687db5e8
+decision: ready
+reviewed_at: 2026-07-15T05:00:00-04:00
+findings: none
+next_command: /record-plan-review docs/implementation-plans/plans/opencode/02-simplify-plan-workflow.md
+
 ## Approval History
 
-None.
+### Approval — 2026-07-15T05:10:00-04:00
+
+plan_path: docs/implementation-plans/plans/opencode/02-simplify-plan-workflow.md
+plan_id: opencode-02
+revision: 6
+baseline_commit: 9bd28e3a15c237e1fb4cf6e1996da36b687db5e8
+approved_at: 2026-07-15T05:10:00-04:00
+approved_revision: 6
+authorized_by: explicit-human-/approve-plan
+reviewed_at: 2026-07-15T05:00:00-04:00
 
 ## Amendments
 
