@@ -63,7 +63,7 @@ Complete and execute the remaining OpenCode planned-work workflow migration.
 3. [x] Run final focused, repository-wide, and configured-install verification and resolve scoped failures.
 4. [x] Add narrow Plan Orchestrator commit-only Git authority with validator and test coverage.
 5. [x] Restart OpenCode and recover the retained lock after explicit no-mutator confirmation.
-6. [ ] Create atomic logical commits for every verified dirty file.
+6. [x] Create atomic logical commits for every verified dirty file.
 
 ## Verification
 
