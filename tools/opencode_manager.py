@@ -256,6 +256,20 @@ CANONICAL_PROMPT_SECTION_CONTRACTS = {
         ),
     ),
 }
+BOARD_PLAN_REVIEW_PROMPT_CONTRACT = (
+    "## Plan Reviews",
+    (
+        "contained canonical path and layout",
+        "canonical template's exact title and ordered headings",
+        "fixed Context labels and numbered TODO and Verification checklist grammar",
+        "Do not require frontmatter, lifecycle status, revision, dependency fields, history, provenance, approvals, review records, or an `Open Decisions` section.",
+        "Do not infer dependencies from filename order.",
+    ),
+    (
+        "verify canonical path and identity, status, revision",
+        "`depends_on` remains authoritative",
+    ),
+)
 ACTIVE_WORKFLOW_FIXED_FILES = (
     ".gitignore",
     "AGENTS.md",
@@ -2339,6 +2353,27 @@ class OpenCodeInstallService:
                 section = self._single_markdown_section(prompt, heading)
                 if section is None or not all(token in section for token in required):
                     errors.append(f"agents: '{name}' prompt contract is incomplete")
+        board_name = "engineering-review-board.md"
+        if board_name in inventory.agents:
+            try:
+                prompt = (self.sources["agents"] / board_name).read_text(
+                    encoding="utf-8"
+                )
+            except (OSError, UnicodeError):
+                errors.append(
+                    f"agents: '{board_name}' Board plan-review prompt contract is unreadable"
+                )
+            else:
+                heading, required, forbidden = BOARD_PLAN_REVIEW_PROMPT_CONTRACT
+                section = self._single_markdown_section(prompt, heading)
+                if (
+                    section is None
+                    or not all(token in section for token in required)
+                    or any(token in section for token in forbidden)
+                ):
+                    errors.append(
+                        f"agents: '{board_name}' Board plan-review prompt contract is incomplete"
+                    )
         if self._has_canonical_active_workflow_inventory(inventory):
             for name in CANONICAL_AGENT_TOPOLOGY.agent_filenames:
                 try:

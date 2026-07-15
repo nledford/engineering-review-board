@@ -3466,6 +3466,63 @@ class CanonicalPromptSectionTests(unittest.TestCase):
                 for phrase in removed_restatements[name]:
                     self.assertNotIn(phrase, prompt)
 
+    def test_checked_in_board_plan_reviews_match_closed_lean_contract(self) -> None:
+        project_root = Path(__file__).parents[1]
+        prompt = (
+            project_root / "opencode/agents/engineering-review-board.md"
+        ).read_text(encoding="utf-8")
+        section = OpenCodeInstallService._single_markdown_section(
+            prompt, "## Plan Reviews"
+        )
+
+        self.assertIsNotNone(section)
+        assert section is not None
+        for required in (
+            "contained canonical path and layout",
+            "canonical template's exact title and ordered headings",
+            "fixed Context labels and numbered TODO and Verification checklist grammar",
+            "Do not require frontmatter, lifecycle status, revision, dependency fields, history, provenance, approvals, review records, or an `Open Decisions` section.",
+            "Do not infer dependencies from filename order.",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, section)
+        for stale_requirement in (
+            "verify canonical path and identity, status, revision",
+            "`depends_on` remains authoritative",
+        ):
+            with self.subTest(stale_requirement=stale_requirement):
+                self.assertNotIn(stale_requirement, section)
+
+    def test_validate_rejects_board_plan_review_contract_drift(self) -> None:
+        mutations = (
+            (
+                "missing lean review criterion",
+                "contained canonical path and layout",
+                "synthetic removed criterion",
+            ),
+            (
+                "restored legacy dependency field",
+                "Do not infer",
+                "`depends_on` remains authoritative; do not infer",
+            ),
+        )
+        for label, old, new in mutations:
+            with self.subTest(mutation=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode/agents/engineering-review-board.md"
+                prompt = definition.read_text(encoding="utf-8")
+                self.assertIn(old, prompt)
+                definition.write_text(prompt.replace(old, new, 1), encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("Board plan-review prompt contract" in error for error in result.errors),
+                    result.errors,
+                )
+
     def test_validate_requires_unique_canonical_prompt_sections(self) -> None:
         for name, (heading, semantics) in CANONICAL_PROMPT_SECTION_CONTRACTS.items():
             with self.subTest(agent=name, mutation="section-locality"), tempfile.TemporaryDirectory() as temp_dir:

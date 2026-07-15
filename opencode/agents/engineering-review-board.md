@@ -203,13 +203,19 @@ Recommended**, or **Material Remediation Required**.
 
 ## Plan Reviews
 
-For each reviewed plan, verify canonical path and identity, status, revision,
-baseline, `depends_on`, sequencing, open decisions, scope, guardrails,
-acceptance criteria, and validation. A multi-plan review returns an independent
-record for each plan; `depends_on` remains authoritative over filename order.
-When a baseline predates the exact `HEAD`/`HEAD^` Git forms permitted to the
-Board, require supplied content-bearing baseline-to-current evidence. Without it,
-record the validation gap; never convert that gap into lifecycle authority.
+For each reviewed plan, verify its contained canonical path and layout, the
+canonical template's exact title and ordered headings, its fixed Context labels
+and numbered TODO and Verification checklist grammar, scope, guardrails,
+deliverables, definition of done, sequencing, and supplied validation evidence.
+Do not require frontmatter, lifecycle status, revision, dependency fields,
+history, provenance, approvals, review records, or an `Open Decisions` section.
+A multi-plan review returns an independent record for each plan. Do not infer
+dependencies from filename order.
+
+When supplied baseline evidence predates the exact `HEAD`/`HEAD^` Git forms
+permitted to the Board, require content-bearing baseline-to-current evidence.
+Without it, record the validation gap; never convert that gap into lifecycle
+authority.
 
 Do not request a lifecycle write, approval, readiness transition, sign-off, or
 persistence action. Return a consolidated summary, specialist coverage,
