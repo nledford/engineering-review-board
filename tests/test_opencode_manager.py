@@ -10,10 +10,19 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tools.opencode_manager import (
+    CANONICAL_AGENT_TOPOLOGY,
+    CANONICAL_PERMISSION_PROFILES,
+    CANONICAL_PROMPT_SECTION_CONTRACTS,
     COMMAND_PROMPT_CONTRACTS,
     HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS,
     PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
     PLAN_ORCHESTRATOR_GIT_BASH_RULES,
+    SANITIZED_EVIDENCE_INVARIANT,
+    STANDARD_CRITIC_AGENT_IDS,
+    STANDARD_CRITIC_REQUIRED_HEADINGS,
+    STANDARD_CRITIC_REQUIRED_SEMANTICS,
+    STANDARD_CRITIC_STAGE_REVIEWER_IDS,
+    TECHNICAL_RESEARCHER_EXTERNAL_EGRESS_INVARIANT,
     OpenCodeInstallService,
     main,
     opencode_wildcard_match,
@@ -3290,16 +3299,9 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 command.write_text(original, encoding="utf-8")
 
             agent_tokens = {
-                "engineering-lead.md": (
-                    "Only explicit human authorization controls plan creation.",
-                    "route authorized creation to top-level `/create-plan`.",
-                    "recommend top-level `/consult-plan`",
-                    "reason, trade-off, and proposed scope",
-                ),
-                "engineering-review-board.md": (
-                    "recommend top-level `/consult-plan`",
-                    "The human's decision to require, decline, or override planning advice controls the route.",
-                ),
+                name: semantics
+                for name, (_, semantics) in CANONICAL_PROMPT_SECTION_CONTRACTS.items()
+            } | {
                 "plan-orchestrator.md": (
                     "The lifecycle distinguishes read-only consultation, explicit plan-only creation, and execution.",
                     "It must not execute newly created plans automatically.",
@@ -3439,6 +3441,603 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 any("review-plan.md' must use canonical primary owner" in error for error in result.errors),
                 result.errors,
             )
+
+
+class CanonicalPromptSectionTests(unittest.TestCase):
+    def test_checked_in_lead_and_board_canonical_sections_are_unique_and_consolidated(self) -> None:
+        project_root = Path(__file__).parents[1]
+        removed_restatements = {
+            "engineering-lead.md": (
+                "Do not author or delegate durable plan/state work.",
+                "Recommend `/create-plan` when a human wants durable",
+                "Do not use Task as a substitute for the top-level `/start-work` boundary.",
+            ),
+            "engineering-review-board.md": (
+                "## Operating Rules",
+                "## Runtime Selection and Failure Recovery",
+                "Each Task must set `subagent_type` to the exact registered ID.",
+            ),
+        }
+
+        for name, (heading, _) in CANONICAL_PROMPT_SECTION_CONTRACTS.items():
+            with self.subTest(agent=name):
+                prompt = (project_root / "opencode" / "agents" / name).read_text(encoding="utf-8")
+                self.assertEqual(1, sum(line.strip() == heading for line in prompt.splitlines()))
+                for phrase in removed_restatements[name]:
+                    self.assertNotIn(phrase, prompt)
+
+    def test_validate_requires_unique_canonical_prompt_sections(self) -> None:
+        for name, (heading, semantics) in CANONICAL_PROMPT_SECTION_CONTRACTS.items():
+            with self.subTest(agent=name, mutation="section-locality"), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / name
+                original = definition.read_text(encoding="utf-8")
+                pattern = re.escape(semantics[0]).replace(r"\ ", r"\s+")
+                mutated, count = re.subn(
+                    pattern,
+                    "SYNTHETIC_STATIC_CONTRACT_MARKER",
+                    original,
+                    count=1,
+                )
+                self.assertEqual(1, count, semantics[0])
+                definition.write_text(
+                    mutated
+                    + f"\n## Unrelated Section\n\n{semantics[0]}\n",
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any(f"agents: '{name}' prompt contract is incomplete" in error for error in result.errors),
+                    result.errors,
+                )
+
+            with self.subTest(agent=name, mutation="duplicate-heading"), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / name
+                definition.write_text(
+                    definition.read_text(encoding="utf-8") + f"\n{heading}\n",
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any(f"agents: '{name}' prompt contract is incomplete" in error for error in result.errors),
+                    result.errors,
+                )
+
+
+class CanonicalAgentTopologyTests(unittest.TestCase):
+    def test_standard_critic_membership_is_derived_from_topology(self) -> None:
+        review_specialists = {
+            policy.agent_id
+            for policy in CANONICAL_AGENT_TOPOLOGY.agents
+            if policy.permission_profile == "review-specialist"
+        }
+
+        self.assertTrue(STANDARD_CRITIC_STAGE_REVIEWER_IDS <= review_specialists)
+        self.assertEqual(
+            review_specialists - STANDARD_CRITIC_STAGE_REVIEWER_IDS,
+            STANDARD_CRITIC_AGENT_IDS,
+        )
+        self.assertEqual(15, len(STANDARD_CRITIC_AGENT_IDS))
+
+    def test_checked_in_standard_critics_preserve_common_prompt_contract(self) -> None:
+        project_root = Path(__file__).parents[1]
+
+        for agent_id in STANDARD_CRITIC_AGENT_IDS:
+            with self.subTest(agent_id=agent_id):
+                prompt = (
+                    project_root / "opencode" / "agents" / f"{agent_id}.md"
+                ).read_text(encoding="utf-8")
+                normalized = " ".join(prompt.split())
+                for heading in STANDARD_CRITIC_REQUIRED_HEADINGS:
+                    self.assertIn(heading, prompt)
+                for semantic in STANDARD_CRITIC_REQUIRED_SEMANTICS:
+                    self.assertIn(semantic, normalized)
+
+    def test_validate_rejects_standard_critic_common_contract_drift(self) -> None:
+        mutations = (
+            ("heading", "## Output", "## Response"),
+            ("semantic", "Repository evidence first", "Synthetic evidence order"),
+        )
+        for label, old, new in mutations:
+            with self.subTest(mutation=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / "accessibility-critic.md"
+                prompt = definition.read_text(encoding="utf-8")
+                self.assertIn(old, prompt)
+                definition.write_text(prompt.replace(old, new, 1), encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("standard critic prompt contract" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_checked_in_agents_contain_sanitized_evidence_contracts(self) -> None:
+        """Static prompt-contract validation only; it does not prove runtime model redaction."""
+        project_root = Path(__file__).parents[1]
+
+        for policy in CANONICAL_AGENT_TOPOLOGY.agents:
+            with self.subTest(agent_id=policy.agent_id):
+                prompt = (
+                    project_root / "opencode" / "agents" / f"{policy.agent_id}.md"
+                ).read_text(encoding="utf-8")
+                self.assertEqual(
+                    1,
+                    " ".join(prompt.split()).count(SANITIZED_EVIDENCE_INVARIANT),
+                )
+
+        researcher_prompt = (
+            project_root / "opencode" / "agents" / "technical-researcher.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(
+            1,
+            " ".join(researcher_prompt.split()).count(
+                TECHNICAL_RESEARCHER_EXTERNAL_EGRESS_INVARIANT
+            ),
+        )
+
+    def test_validate_rejects_missing_sanitized_evidence_contract_per_profile(self) -> None:
+        """Static prompt-contract validation only; it does not prove runtime model redaction."""
+        representatives = {
+            "engineering-lead": "engineering-lead.md",
+            "engineering-review-board": "engineering-review-board.md",
+            "implementation-worker": "implementation-worker.md",
+            "plan-orchestrator": "plan-orchestrator.md",
+            "technical-researcher": "technical-researcher.md",
+            "review-specialist": "accessibility-critic.md",
+        }
+        for profile, name in representatives.items():
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / name
+                prompt = definition.read_text(encoding="utf-8")
+                definition.write_text(
+                    prompt.replace(
+                        SANITIZED_EVIDENCE_INVARIANT,
+                        "SYNTHETIC_STATIC_CONTRACT_MARKER",
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("sanitized-evidence prompt contract" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_validate_rejects_missing_researcher_external_egress_contract(self) -> None:
+        """Static prompt-contract validation only; it does not prove runtime model redaction."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            researcher = repo / "opencode" / "agents" / "technical-researcher.md"
+            researcher.write_text(
+                researcher.read_text(encoding="utf-8").replace(
+                    TECHNICAL_RESEARCHER_EXTERNAL_EGRESS_INVARIANT,
+                    "SYNTHETIC_STATIC_CONTRACT_MARKER",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any("external-egress prompt contract" in error for error in result.errors),
+                result.errors,
+            )
+
+    def test_checked_in_agent_identities_modes_task_edges_and_command_owners_match_topology(self) -> None:
+        project_root = Path(__file__).parents[1]
+        service = OpenCodeInstallService(project_root, project_root / "config")
+        inventory, errors = service._load_inventory()
+
+        self.assertEqual([], errors)
+        assert inventory is not None
+        self.assertEqual(CANONICAL_AGENT_TOPOLOGY.agent_filenames, inventory.agents)
+        self.assertEqual(CANONICAL_AGENT_TOPOLOGY.command_filenames, inventory.commands)
+        self.assertEqual(23, len(CANONICAL_AGENT_TOPOLOGY.agents))
+
+        metadata = service._agent_metadata(inventory)
+        expected_agents = {
+            policy.agent_id: (policy.mode, policy.task_targets)
+            for policy in CANONICAL_AGENT_TOPOLOGY.agents
+        }
+        self.assertEqual(
+            expected_agents,
+            {
+                agent_id: (
+                    mode,
+                    tuple(target for target, _ in task_rules if target != "*"),
+                )
+                for agent_id, (mode, task_rules) in metadata.items()
+            },
+        )
+        self.assertEqual(
+            {
+                "engineering-lead": "engineering-lead",
+                "engineering-review-board": "engineering-review-board",
+                "plan-orchestrator": "plan-orchestrator",
+                "implementation-worker": "implementation-worker",
+                "technical-researcher": "technical-researcher",
+            },
+            {
+                policy.agent_id: policy.permission_profile
+                for policy in CANONICAL_AGENT_TOPOLOGY.agents
+                if policy.permission_profile != "review-specialist"
+            },
+        )
+
+        command_owners = {}
+        for name in inventory.commands:
+            parsed, parse_errors = service._parse_frontmatter(
+                "commands",
+                name,
+                (project_root / "opencode" / "commands" / name).read_text(encoding="utf-8"),
+            )
+            self.assertEqual([], parse_errors)
+            assert parsed is not None
+            command_owners[name] = parsed.fields["agent"]
+        self.assertEqual(CANONICAL_AGENT_TOPOLOGY.command_owners, command_owners)
+
+    def test_validate_fails_closed_for_canonical_agent_identity_drift(self) -> None:
+        mutations = ("add", "remove", "rename")
+        for mutation in mutations:
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                manifest_path = repo / "opencode" / "manifest.json"
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+                if mutation == "add":
+                    name = "substitute-critic.md"
+                    manifest["agents"].append(name)
+                    manifest["agents"].sort()
+                    shutil.copy2(
+                        repo / "opencode" / "agents" / "accessibility-critic.md",
+                        repo / "opencode" / "agents" / name,
+                    )
+                else:
+                    original = "accessibility-critic.md"
+                    if mutation == "remove":
+                        manifest["agents"].remove(original)
+                        (repo / "opencode" / "agents" / original).unlink()
+                    else:
+                        replacement = "accessibility-reviewer.md"
+                        manifest["agents"].remove(original)
+                        manifest["agents"].append(replacement)
+                        manifest["agents"].sort()
+                        (repo / "opencode" / "agents" / original).rename(
+                            repo / "opencode" / "agents" / replacement
+                        )
+
+                manifest_path.write_text(
+                    json.dumps(manifest, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("canonical active workflow agent topology" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_validate_rejects_canonical_mode_and_task_graph_drift(self) -> None:
+        mutations = (
+            (
+                "mode flip",
+                "opencode/agents/accessibility-critic.md",
+                "mode: subagent",
+                "mode: primary",
+                "canonical mode",
+            ),
+            (
+                "removed Lead edge",
+                "opencode/agents/engineering-lead.md",
+                '    "implementation-worker": allow\n',
+                "",
+                "canonical Task graph",
+            ),
+            (
+                "added Lead edge",
+                "opencode/agents/engineering-lead.md",
+                '    "prompt-critic": allow\n',
+                '    "prompt-critic": allow\n    "release-readiness-reviewer": allow\n',
+                "canonical Task graph",
+            ),
+            (
+                "removed ERB edge",
+                "opencode/agents/engineering-review-board.md",
+                '    "design-critic": allow\n',
+                "",
+                "canonical Task graph",
+            ),
+            (
+                "ERB-to-Worker edge",
+                "opencode/agents/engineering-review-board.md",
+                '    "technical-researcher": allow\n',
+                '    "technical-researcher": allow\n    "implementation-worker": allow\n',
+                "canonical Task graph",
+            ),
+            (
+                "removed Plan Orchestrator edge",
+                "opencode/agents/plan-orchestrator.md",
+                '    "implementation-worker": allow\n',
+                "",
+                "canonical Task graph",
+            ),
+            (
+                "subagent Task edge",
+                "opencode/agents/accessibility-critic.md",
+                '  task: deny\n',
+                '  task:\n    "*": deny\n    "implementation-worker": allow\n',
+                "canonical Task graph",
+            ),
+        )
+        for label, relative_path, old, new, expected in mutations:
+            with self.subTest(mutation=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / relative_path
+                original = definition.read_text(encoding="utf-8")
+                self.assertIn(old, original)
+                definition.write_text(original.replace(old, new, 1), encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(any(expected in error for error in result.errors), result.errors)
+
+    def test_validate_rejects_canonical_command_owner_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            command = repo / "opencode" / "commands" / "review-plan.md"
+            command.write_text(
+                command.read_text(encoding="utf-8").replace(
+                    "agent: engineering-review-board",
+                    "agent: plan-orchestrator",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any("review-plan.md' must use canonical primary owner" in error for error in result.errors),
+                result.errors,
+            )
+
+    def test_checked_in_permission_profiles_match_assignments_and_isolate_trusted_state(self) -> None:
+        project_root = Path(__file__).parents[1]
+        expected_profile_names = {
+            policy.permission_profile for policy in CANONICAL_AGENT_TOPOLOGY.agents
+        }
+        self.assertEqual(expected_profile_names, set(CANONICAL_PERMISSION_PROFILES))
+
+        specialist_permissions = None
+        for policy in CANONICAL_AGENT_TOPOLOGY.agents:
+            parsed, errors = OpenCodeInstallService._parse_frontmatter(
+                "agents",
+                f"{policy.agent_id}.md",
+                (project_root / "opencode" / "agents" / f"{policy.agent_id}.md").read_text(
+                    encoding="utf-8"
+                ),
+            )
+            self.assertEqual([], errors)
+            assert parsed is not None
+            self.assertEqual(
+                CANONICAL_PERMISSION_PROFILES[policy.permission_profile].permissions,
+                parsed.permissions,
+                policy.agent_id,
+            )
+            for tool in ("read", "glob", "grep", "list", "lsp"):
+                rules = parsed.permissions[tool]
+                self.assertIsInstance(rules, tuple)
+                assert isinstance(rules, tuple)
+                self.assertEqual("allow", resolve_opencode_action(rules, "src/example.py", baseline="deny"))
+                self.assertEqual(
+                    "deny",
+                    resolve_opencode_action(rules, ".start-work/resume.json", baseline="deny"),
+                )
+            if policy.permission_profile == "review-specialist":
+                if specialist_permissions is None:
+                    specialist_permissions = parsed.permissions
+                else:
+                    self.assertEqual(specialist_permissions, parsed.permissions)
+
+    def test_checked_in_worker_git_permissions_resolve_to_effective_actions(self) -> None:
+        project_root = Path(__file__).parents[1]
+        worker, errors = OpenCodeInstallService._parse_frontmatter(
+            "agents",
+            "implementation-worker.md",
+            (project_root / "opencode/agents/implementation-worker.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+        self.assertEqual([], errors)
+        assert worker is not None
+        bash = worker.permissions["bash"]
+        self.assertIsInstance(bash, tuple)
+        assert isinstance(bash, tuple)
+
+        cases = (
+            ("bare status", "git status", "allow"),
+            ("status with arguments", "git status --short", "ask"),
+            ("bare diff", "git diff", "allow"),
+            ("diff with arguments", "git diff --cached", "ask"),
+            ("bare log", "git log", "allow"),
+            ("log with arguments", "git log --oneline -10", "ask"),
+            ("bare show", "git show", "allow"),
+            ("show with arguments", "git show HEAD", "ask"),
+            ("branch inspection", "git branch --show-current", "allow"),
+            ("staging", "git add -- src/example.py", "deny"),
+            ("commit", "git commit", "deny"),
+            ("push", "git push origin main", "deny"),
+            ("destructive reset", "git reset --hard HEAD", "deny"),
+            ("destructive clean", "git clean -fd", "deny"),
+            ("state redirection", "git diff > .start-work/resume.json", "deny"),
+            (
+                "workflow helper",
+                'python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" '
+                "acquire --repo-root .",
+                "deny",
+            ),
+        )
+        for label, command, expected in cases:
+            with self.subTest(action=label, command=command):
+                self.assertEqual(expected, resolve_opencode_action(bash, command))
+
+    def test_validate_rejects_permission_profile_and_trusted_state_navigation_drift(self) -> None:
+        mutations = (
+            (
+                "profile drift",
+                "opencode/agents/accessibility-critic.md",
+                "  question: allow\n",
+                "  question: deny\n",
+                "permission profile",
+            ),
+            (
+                "missing state deny",
+                "opencode/agents/engineering-review-board.md",
+                '  read:\n    "*": allow\n    ".start-work/**": deny\n',
+                '  read:\n    "*": allow\n',
+                "trusted-state navigation isolation",
+            ),
+            (
+                "later state override",
+                "opencode/agents/technical-researcher.md",
+                '    ".start-work/**": deny\n  glob:',
+                '    ".start-work/**": deny\n    ".start-work/*": allow\n  glob:',
+                "trusted-state navigation isolation",
+            ),
+        )
+        for label, relative_path, old, new, expected in mutations:
+            with self.subTest(mutation=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / relative_path
+                original = definition.read_text(encoding="utf-8")
+                self.assertIn(old, original)
+                definition.write_text(original.replace(old, new, 1), encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(any(expected in error for error in result.errors), result.errors)
+
+    def test_validate_rejects_incomplete_profile_shapes_without_raising(self) -> None:
+        mutations = (
+            (
+                "missing navigation permission",
+                "opencode/agents/technical-researcher.md",
+                '  read:\n    "*": allow\n    ".start-work/**": deny\n',
+                "",
+                "trusted-state navigation isolation",
+            ),
+            (
+                "scalar Bash permission",
+                "opencode/agents/accessibility-critic.md",
+                '  bash:\n    "*": deny\n    "git status": allow\n    "git status --short": allow\n'
+                '    "git diff": allow\n    "git diff --cached": allow\n'
+                '    "git diff --check": allow\n    "git log --oneline -10": allow\n'
+                '    "git branch --show-current": allow\n',
+                "  bash: deny\n",
+                "canonical Bash rule map",
+            ),
+        )
+        for label, relative_path, old, new, expected in mutations:
+            with self.subTest(mutation=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / relative_path
+                original = definition.read_text(encoding="utf-8")
+                self.assertIn(old, original)
+                definition.write_text(original.replace(old, new, 1), encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(any(expected in error for error in result.errors), result.errors)
+
+    def test_validate_preserves_plan_orchestrator_workflow_helper_exclusivity(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            lead = repo / "opencode" / "agents" / "engineering-lead.md"
+            original = lead.read_text(encoding="utf-8")
+            lead.write_text(
+                original.replace(
+                    '    "*start_work_state.py*": deny\n',
+                    '    "*start_work_state.py*": ask\n',
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any("workflow-helper exclusivity" in error for error in result.errors),
+                result.errors,
+            )
+
+    def test_validate_rejects_each_later_worker_deny_weakening(self) -> None:
+        mutations = (
+            ("git add*", "ask"),
+            ("git commit*", "ask"),
+            ("git push*", "ask"),
+            ("git reset*", "ask"),
+            ("git clean*", "ask"),
+            ("rm*", "ask"),
+            ("sudo*", "ask"),
+            ("*plans/*", "ask"),
+            ("*.erb/plans/*", "ask"),
+            ("*.start-work/*", "ask"),
+            ("*state.py*", "ask"),
+        )
+        for pattern, action in mutations:
+            with self.subTest(pattern=pattern), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                worker = repo / "opencode" / "agents" / "implementation-worker.md"
+                worker.write_text(
+                    worker.read_text(encoding="utf-8").replace(
+                        '    "*start_work_state.py*": deny\n',
+                        f'    "*start_work_state.py*": deny\n    "{pattern}": {action}\n',
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("complete Worker deny surface" in error for error in result.errors),
+                    result.errors,
+                )
 
 
 if __name__ == "__main__":
