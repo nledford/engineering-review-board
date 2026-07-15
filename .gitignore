@@ -19,3 +19,4 @@ __pycache__/
 # Local trusted plan-orchestration state.
 /.start-work/resume.json
 /.start-work/lock/
+/.erb
