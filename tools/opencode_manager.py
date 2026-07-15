@@ -64,6 +64,7 @@ CANONICAL_AGENTS = (
     "implementation-worker.md",
     "internationalization-localization-critic.md",
     "performance-critic.md",
+    "plan-consultant.md",
     "plan-orchestrator.md",
     "prompt-critic.md",
     "release-readiness-reviewer.md",
@@ -99,6 +100,7 @@ RETIRED_LIFECYCLE_PHRASES = (
 CANONICAL_COMMAND_OWNERS = {
     "audit-technical-debt.md": "engineering-review-board",
     "convert-tapestry-plan.md": "plan-orchestrator",
+    "create-plan.md": "plan-orchestrator",
     "investigate-regression.md": "engineering-review-board",
     "review-implementation.md": "engineering-review-board",
     "review-plan.md": "engineering-review-board",
@@ -106,21 +108,29 @@ CANONICAL_COMMAND_OWNERS = {
 }
 CANONICAL_COMMANDS = tuple(sorted(CANONICAL_COMMAND_OWNERS))
 COMMAND_PROMPT_CONTRACTS = {
+    "create-plan.md": (
+        "invocation is explicit human authorization",
+        "creates and persists a plan only",
+        "does not execute TODOs.",
+        "acquire complete provisional child-lock ownership before reading the request, allocation, pointer, plan, or worktree state",
+        'python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .',
+        "release with a known plan-only outcome",
+    ),
     "start-work.md": (
-        "Handle `/start-work [<request-or-plan-path>] [instructions]`",
-        "obtain normal runtime approval and acquire complete provisional child-lock ownership first",
+        "Use syntax `/start-work [<plan-path>] [instructions]`",
+        "acquire complete provisional child-lock ownership before reading a locator, pointer, or worktree state",
         'python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .',
         "The acquisition operation and `--repo-root .` are allowlisted literals.",
-        "Do not read a locator, pointer, source, plan, allocation, or repository execution state before that ownership is complete.",
+        "`/start-work` accepts only an explicit existing canonical lean plan path or validated no-argument resume pointer.",
+        "It rejects free-form new requests and immutable legacy inputs.",
+        "It does not create, succeed, convert, or conversationally update plans.",
         "Never put human input into a helper-launch shell string",
         "Do not use concatenation, redirection, pipes, substitution, or an extra shell operation.",
         "Display the resolved canonical path and its checked and unchecked numbered TODOs",
         "explicit human confirmation before any plan, sidebar, delegation, or implementation mutation.",
-        "For a new request, allocate a closed lean plan",
-        "execute by default. Plan-only behavior requires an explicit human request.",
-        "For an explicit lean path, validate and reconcile the plan",
-        "For an immutable legacy canonical plan, preserve the source, allocate a max-plus-one lean successor",
-        "For conversational updates to an identified lean plan",
+        "With an explicit path, validate the existing canonical lean plan and reconcile",
+        "Direct human-authorized plan creation to `/create-plan`",
+        "direct legacy conversion to `/convert-tapestry-plan`.",
         "accept exactly 1 MiB and reject limit-plus-one data.",
     ),
     "convert-tapestry-plan.md": (
@@ -1172,6 +1182,8 @@ class OpenCodeInstallService:
             return errors
         if fields["mode"] not in {"primary", "subagent"}:
             errors.append(f"agents: '{name}' has invalid mode")
+        if agent_id == "plan-consultant" and fields["mode"] != "subagent":
+            errors.append(f"agents: '{name}' must be a read-only subagent")
         if not MODEL_VALUE_RE.fullmatch(fields["model"] or ""):
             errors.append(f"agents: '{name}' has invalid model")
         if fields["reasoningEffort"] not in REASONING_EFFORTS:
@@ -1358,6 +1370,27 @@ class OpenCodeInstallService:
             errors.append(
                 f"agents: '{name}' must allow every configured MCP tool pattern"
             )
+        if agent_id == "plan-consultant":
+            required_denials = (
+                "edit",
+                "bash",
+                "task",
+                "todowrite",
+                "webfetch",
+                "websearch",
+                "question",
+            )
+            if any(permissions.get(tool) != "deny" for tool in required_denials):
+                errors.append(f"agents: '{name}' must deny mutation and delegation tools")
+            expected_navigation = (("*", "allow"), (STATE_PATH_EDIT_RULE, "deny"))
+            for tool in ("read", "glob", "grep", "list", "lsp"):
+                if permissions.get(tool) != expected_navigation:
+                    errors.append(
+                        f"agents: '{name}' must allow repository navigation and deny .start-work state"
+                    )
+                    break
+            if permissions.get("skill") != (("*", "allow"),):
+                errors.append(f"agents: '{name}' must allow skill loading only")
         return errors
 
     @staticmethod
@@ -1478,6 +1511,15 @@ class OpenCodeInstallService:
             actual = tuple(target for target, _ in agent_metadata[agent_id][1] if target != "*")
             if actual != expected:
                 errors.append(f"agents: '{agent_id}.md' violates the approved Task graph")
+        if "plan-consultant" in agent_metadata:
+            for agent_id in ("engineering-lead", "engineering-review-board"):
+                if agent_id not in agent_metadata:
+                    continue
+                edges = tuple(target for target, _ in agent_metadata[agent_id][1] if target != "*")
+                if "plan-consultant" not in edges:
+                    errors.append(
+                        f"agents: '{agent_id}.md' must allow the read-only plan-consultant edge"
+                    )
         if "engineering-lead" in agent_metadata:
             lead_edges = tuple(target for target, _ in agent_metadata["engineering-lead"][1] if target != "*")
             if "plan-orchestrator" in lead_edges or "planning-coordinator" in lead_edges:
@@ -1530,14 +1572,34 @@ class OpenCodeInstallService:
             ),
             "engineering-lead.md": (
                 "Never write durable plans or `.start-work/**` state",
-                "top-level `/start-work`",
-                "even when the request does not use plan vocabulary.",
-                "route all durable-contract classification to `/start-work`.",
+                "Prefer direct unplanned implementation when safe.",
+                "Complexity may justify recommending a plan but never automatically creates one or invokes `/start-work`.",
+                "Only explicit human authorization controls plan creation.",
+                "route authorized creation to top-level `/create-plan`.",
+                "Use `/start-work <existing-plan-path>` only for human-chosen execution of an existing plan.",
                 "unplanned-session TODOs",
+                "read-only `plan-consultant` advice",
+                "mutation-capable Plan Orchestrator",
             ),
             "engineering-review-board.md": (
                 "top-level, read-only review orchestrator",
                 "advisory evidence only",
+                "read-only `plan-consultant` advice",
+                "mutation-capable Plan Orchestrator",
+                "may provide or obtain read-only planning advice and recommend planning",
+                "cannot create, authorize, or automatically initiate a plan or `/start-work`.",
+            ),
+            "plan-consultant.md": (
+                "bounded implementation decomposition",
+                "dependencies",
+                "risks",
+                "acceptance criteria",
+                "validation advice",
+                "must not create a plan",
+                "invoke `/start-work`",
+                "authorize or begin implementation",
+                "mutate a durable artifact",
+                "delegate",
             ),
             "implementation-worker.md": (
                 "Engineering Lead or Plan Orchestrator",
@@ -1598,11 +1660,15 @@ class OpenCodeInstallService:
         required = (
             "Do not add frontmatter or any other heading, section, lifecycle field, history, provenance, review record, approval field, status, dependency field, or metadata.",
             "For no-path work, display the resolved path and checkbox state, then obtain explicit human confirmation before mutation.",
-            "For a new request, allocate and self-check the closed lean shape, then execute by default unless the human explicitly requests plan-only work.",
-            "For an explicit valid lean path, validate and reconcile it, then execute its remaining TODOs by default; it does not inherit the no-path confirmation gate.",
-            "For an explicit legacy canonical plan, preserve the input, allocate a lean successor without provenance metadata, and execute it by default unless the human explicitly requests plan-only work.",
-            "`/convert-tapestry-plan` remains explicit and plan-only by default; execute only when the human also asks to execute.",
-            "Conversational updates to a lean plan execute remaining TODOs by default unless the human explicitly requests plan-only work.",
+            "The lifecycle distinguishes read-only consultation, explicit plan-only creation, and execution.",
+            "It must not execute newly created plans automatically.",
+            "Read-only consultation performs no acquisition, mutation, delegation, implementation, or commit.",
+            "`/create-plan` or an equally explicit current top-level human creation request may create a plan only after trusted acquisition.",
+            "Conversational plan creation or update requires equally explicit current human authorization, remains plan-only, and never triggers automatic execution.",
+            "`/start-work` accepts only an explicit existing valid canonical lean plan path or a validated no-argument resume pointer.",
+            "`/start-work` rejects free-form requests and immutable legacy inputs rather than creating a plan or successor.",
+            "Legacy conversion remains at `/convert-tapestry-plan`.",
+            "`/convert-tapestry-plan` remains explicit and plan-only by default; execute only when the human separately chooses `/start-work <destination>`.",
             "Replace the whole native TODO list on every update. Keep at most five entries and zero or one `in_progress` entry.",
             "Start in original plan-step order, retain original step numbers, and use summaries of at most 30 characters excluding the step-number prefix.",
             "On a transition, order entries as most-recent completed, then current, then pending.",
@@ -1612,13 +1678,13 @@ class OpenCodeInstallService:
             "Do not clear TODOs on failure, uncertainty, or partial reconciliation.",
             "Your self-check is not independent review, ERB evidence, approval, readiness, or sign-off.",
             "ERB output is optional independent advisory evidence, not a prerequisite or lifecycle authority.",
-            "or equivalent ordinary conversation",
+            "or equally explicit current top-level human plan-creation or update request",
             "Only a read-only explanation with no mutation is exempt from acquisition.",
             "Parse locators and read pointer, source, allocation, plan, worktree, and execution evidence only after complete provisional child-lock ownership.",
             "On uncertain outcomes or any mutation retain the lock;",
             "Before pointer persistence, require the repository-owned helper to verify a regular non-symlinked `.gitignore`",
             "For plan-only work, persist a pointer when needed, then release only after all mutation outcomes are known and no child can mutate;",
-            "Default execution reconciles the pointer, worktree, plan checkboxes, and TODO state before each at-least-once step.",
+            "Execution reconciles the pointer, worktree, plan checkboxes, and TODO state before each at-least-once step.",
             "Before every mutable phase, freshly reload the pointer, plan, and worktree evidence while holding the lock; never rely on stale evidence.",
             *PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
         )

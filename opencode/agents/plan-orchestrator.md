@@ -121,9 +121,9 @@ readiness, or sign-off.
 
 ## Trusted Runtime Launch
 
-For every mutating `/start-work`, `/convert-tapestry-plan`, or equivalent
-ordinary conversation, first acquire provisional ownership only from the active
-workspace root with exactly:
+For every mutating `/create-plan`, `/start-work`, `/convert-tapestry-plan`, or
+equally explicit current top-level human plan-creation or update request, first
+acquire provisional ownership only from the active workspace root with exactly:
 
 ```text
 python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .
@@ -230,27 +230,33 @@ provenance, review record, approval field, status, dependency field, or metadata
 Do not call a section `Open Decisions`; stop conversationally when a central
 choice is unresolved. Keep legacy source information outside the lean successor.
 
-## Start-Work Routing
+## Lifecycle Routing
 
-- With no path, acquire first; a validated resume pointer alone requires path and
-  checkbox display plus explicit human confirmation before mutation.
-- For a new request, allocate and self-check the closed lean shape, then execute
-  by default unless the human explicitly requests plan-only work.
-- For an explicit valid lean path, validate and reconcile it, then execute its
-  remaining TODOs by default; it does not inherit the no-path confirmation gate.
-- For an explicit legacy canonical plan, preserve the input, allocate a lean
-  successor without provenance metadata, and execute it by default unless the
-  human explicitly requests plan-only work.
+The lifecycle distinguishes read-only consultation, explicit plan-only creation,
+and execution. It must not execute newly created plans automatically.
+
+- Read-only consultation performs no acquisition, mutation, delegation,
+  implementation, or commit.
+- `/create-plan` or an equally explicit current top-level human creation request
+  may create a plan only after trusted acquisition. Create and persist a closed
+  lean plan only, then release with completed plan-only outcome; do not execute
+  its TODOs.
+- Conversational plan creation or update requires equally explicit current human
+  authorization, remains plan-only, and never triggers automatic execution.
+- `/start-work` accepts only an explicit existing valid canonical lean plan path
+  or a validated no-argument resume pointer. It executes remaining TODOs under
+  the existing lock, reconciliation, and checkbox rules.
+- `/start-work` rejects free-form requests and immutable legacy inputs rather
+  than creating a plan or successor. Legacy conversion remains at
+  `/convert-tapestry-plan`.
 - `/convert-tapestry-plan` remains explicit and plan-only by default; execute
-  only when the human also asks to execute.
-- Conversational updates to a lean plan execute remaining TODOs by default unless
-  the human explicitly requests plan-only work.
+  only when the human separately chooses `/start-work <destination>`.
 - For plan-only work, persist a pointer when needed, then release only after all
   mutation outcomes are known and no child can mutate; TODOs need not all be
   complete.
-- Default execution reconciles the pointer, worktree, plan checkboxes, and TODO
-  state before each at-least-once step. Repeated invocation must converge rather
-  than duplicate a step or infer unobserved evidence.
+- Execution reconciles the pointer, worktree, plan checkboxes, and TODO state
+  before each at-least-once step. Repeated invocation must converge rather than
+  duplicate a step or infer unobserved evidence.
 - Before every mutable phase, freshly reload the pointer, plan, and worktree
   evidence while holding the lock; never rely on stale evidence.
 

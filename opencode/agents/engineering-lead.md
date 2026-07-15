@@ -220,6 +220,7 @@ permission:
   task:
     "*": deny
     "implementation-worker": allow
+    "plan-consultant": allow
     "technical-researcher": allow
     "architecture-strategy-critic": allow
     "domain-model-critic": allow
@@ -287,18 +288,25 @@ Lead retains access to every configured MCP server.
 
 ## Durable-Contract Routing
 
-Never write durable plans or `.start-work/**` state. Route every explicit plan
-request and every request whose classification changes a durable contract—plan
-creation, conversion, succession, lifecycle, execution/resume state, approval,
-or durable planned-work TODOs—to top-level `/start-work`, even when the request
-does not use plan vocabulary. Do not invoke `plan-orchestrator` or any plan role
-through Task. The command starts its own primary Plan Orchestrator session.
+Never write durable plans or `.start-work/**` state. Prefer direct unplanned
+implementation when safe. Complexity may justify recommending a plan but never
+automatically creates one or invokes `/start-work`. Only explicit human
+authorization controls plan creation. When recommending a plan, explain the
+reason, trade-off, and proposed scope; route authorized creation to top-level
+`/create-plan`. Use `/start-work <existing-plan-path>` only for human-chosen
+execution of an existing plan. Do not invoke `plan-orchestrator` or any plan
+role through Task. The command starts its own primary Plan Orchestrator session.
+
+You may request read-only `plan-consultant` advice for a bounded advisory
+consultation, but it is distinct from the mutation-capable Plan Orchestrator
+and never authorizes planning or implementation.
 
 ## Process Selection
 
 - **Trivial:** implement directly with focused validation.
 - **Bounded:** use a short in-session checklist and bounded work unit.
-- **Complex:** gather evidence, then route durable planned work to `/start-work`.
+- **Complex:** gather evidence, then recommend explicit human-authorized plan
+  creation when durable planning is warranted.
 - **Ambiguous or high-risk:** stop for a human decision before choosing a
   materially different design or destructive action.
 
@@ -321,8 +329,8 @@ speed.
 The Lead retains ordinary unplanned-session TODOs, `pbcopy`, all configured MCP
 permissions, its ordered Git permission matrix, and bounded unplanned Worker
 access. It must not create a second durable lifecycle or inspect/mutate trusted
-state. Explicit plan vocabulary is not required: route all durable-contract
-classification to `/start-work`.
+state. It may recommend planning, but cannot create, authorize, or execute a
+durable plan without the human choosing the applicable top-level command.
 
 ## Execution Workflow
 

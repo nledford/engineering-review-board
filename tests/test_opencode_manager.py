@@ -2829,6 +2829,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         expected_commands = (
             "audit-technical-debt.md",
             "convert-tapestry-plan.md",
+            "create-plan.md",
             "investigate-regression.md",
             "review-implementation.md",
             "review-plan.md",
@@ -2837,13 +2838,14 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         expected_owners = {
             "audit-technical-debt.md": "engineering-review-board",
             "convert-tapestry-plan.md": "plan-orchestrator",
+            "create-plan.md": "plan-orchestrator",
             "investigate-regression.md": "engineering-review-board",
             "review-implementation.md": "engineering-review-board",
             "review-plan.md": "engineering-review-board",
             "start-work.md": "plan-orchestrator",
         }
 
-        self.assertEqual(len(manifest["agents"]), 23)
+        self.assertEqual(len(manifest["agents"]), 24)
         self.assertEqual(tuple(manifest["commands"]), expected_commands)
         self.assertEqual(tuple(manifest["runtime_helpers"]), RUNTIME_HELPERS)
         command_root = project_root / "opencode/commands"
@@ -2856,6 +2858,176 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             assert parsed is not None
             self.assertEqual(parsed.fields["agent"], owner)
             self.assertEqual(parsed.fields["subtask"], "false")
+
+    def test_checked_in_plan_creation_and_execution_routes_are_human_controlled(self) -> None:
+        """Keep durable planning explicit and planned execution separate from creation."""
+        project_root = Path(__file__).parents[1]
+        agent_root = project_root / "opencode/agents"
+        command_root = project_root / "opencode/commands"
+
+        def normalized_text(path: Path) -> str:
+            return re.sub(r"\s+", " ", path.read_text(encoding="utf-8")).strip()
+
+        def assert_contract(path: Path, required: tuple[str, ...], forbidden: tuple[str, ...] = ()) -> None:
+            text = normalized_text(path)
+            for phrase in required:
+                with self.subTest(path=path.name, phrase=phrase):
+                    self.assertIn(phrase, text)
+            for phrase in forbidden:
+                with self.subTest(path=path.name, obsolete_phrase=phrase):
+                    self.assertNotIn(phrase, text)
+
+        assert_contract(
+            agent_root / "engineering-lead.md",
+            (
+                "Prefer direct unplanned implementation when safe.",
+                "Complexity may justify recommending a plan but never automatically creates one or invokes `/start-work`.",
+                "Only explicit human authorization controls plan creation.",
+            ),
+            (
+                "Route every explicit plan request and every request whose classification changes a durable contract",
+                "even when the request does not use plan vocabulary.",
+                "route all durable-contract classification to `/start-work`.",
+            ),
+        )
+        assert_contract(
+            agent_root / "engineering-review-board.md",
+            (
+                "may provide or obtain read-only planning advice and recommend planning",
+                "cannot create, authorize, or automatically initiate a plan or `/start-work`.",
+            ),
+        )
+        assert_contract(
+            agent_root / "plan-orchestrator.md",
+            (
+                "distinguishes read-only consultation, explicit plan-only creation, and execution.",
+                "must not execute newly created plans automatically.",
+            ),
+            (
+                "For a new request, allocate and self-check the closed lean shape, then execute by default",
+                "For an explicit valid lean path, validate and reconcile it, then execute its remaining TODOs by default",
+                "For an explicit legacy canonical plan, preserve the input, allocate a lean successor",
+                "Conversational updates to a lean plan execute remaining TODOs by default",
+            ),
+        )
+
+        command_contracts = {
+            "create-plan.md": {
+                "required": (
+                    "invocation is explicit human authorization",
+                    "creates and persists a plan only",
+                    "does not execute TODOs.",
+                ),
+                "forbidden": (),
+            },
+            "start-work.md": {
+                "required": (
+                    "accepts only an explicit existing canonical lean plan path or validated no-argument resume pointer",
+                    "rejects free-form new requests and immutable legacy inputs",
+                    "does not create, succeed, convert, or conversationally update plans.",
+                ),
+                "forbidden": (
+                    "Handle `/start-work [<request-or-plan-path>] [instructions]`",
+                    "For a new request, allocate a closed lean plan",
+                    "execute by default",
+                    "For an immutable legacy canonical plan",
+                    "For conversational updates to an identified lean plan",
+                ),
+            },
+        }
+        for name, contract in command_contracts.items():
+            with self.subTest(command=name):
+                command = command_root / name
+                self.assertTrue(command.is_file(), name)
+                parsed, errors = OpenCodeInstallService._parse_frontmatter(
+                    "commands", name, command.read_text(encoding="utf-8")
+                )
+                self.assertEqual(errors, [])
+                assert parsed is not None
+                self.assertEqual(parsed.fields["agent"], "plan-orchestrator")
+                self.assertEqual(parsed.fields["subtask"], "false")
+                assert_contract(command, contract["required"], contract["forbidden"])
+
+    def test_checked_in_plan_consultant_topology_is_read_only(self) -> None:
+        """Protect the consultant's manifested, read-only Task topology."""
+        project_root = Path(__file__).parents[1]
+        manifest = json.loads((project_root / "opencode/manifest.json").read_text(encoding="utf-8"))
+        consultant_name = "plan-consultant.md"
+        self.assertIn(consultant_name, manifest["agents"])
+
+        agent_root = project_root / "opencode/agents"
+
+        def parse_agent(name: str):
+            path = agent_root / name
+            self.assertTrue(path.is_file(), name)
+            parsed, errors = OpenCodeInstallService._parse_frontmatter(
+                "agents", name, path.read_text(encoding="utf-8")
+            )
+            self.assertEqual(errors, [])
+            assert parsed is not None
+            return parsed
+
+        consultant = parse_agent(consultant_name)
+        self.assertEqual(consultant.fields["mode"], "subagent")
+        self.assertEqual(consultant.permissions["*"], "deny")
+
+        def permission_action(permission: str, target: str) -> str:
+            value = consultant.permissions[permission]
+            if isinstance(value, tuple):
+                return resolve_opencode_action(value, target, baseline="deny")
+            return value
+
+        for permission in (
+            "edit",
+            "bash",
+            "task",
+            "todowrite",
+            "webfetch",
+            "websearch",
+            "question",
+        ):
+            with self.subTest(permission=permission):
+                value = consultant.permissions[permission]
+                if isinstance(value, tuple):
+                    self.assertIn(("*", "deny"), value)
+                    self.assertTrue(all(action == "deny" for _, action in value))
+                else:
+                    self.assertEqual(value, "deny")
+
+        for permission in ("read", "glob", "grep", "list", "lsp"):
+            with self.subTest(permission=permission, target="ordinary-source"):
+                self.assertEqual(permission_action(permission, "opencode/manifest.json"), "allow")
+            with self.subTest(permission=permission, target="planned-work-state"):
+                self.assertEqual(permission_action(permission, ".start-work/resume.json"), "deny")
+        self.assertEqual(permission_action("skill", "test-driven-development"), "allow")
+
+        for permission, targets in {
+            "edit": (
+                "docs/implementation-plans/plans/opencode/01-contract.md",
+                ".start-work/resume.json",
+            ),
+            "bash": (
+                "git add -- opencode/manifest.json",
+                "git commit",
+            ),
+            "task": ("implementation-worker",),
+        }.items():
+            for target in targets:
+                with self.subTest(permission=permission, target=target):
+                    self.assertEqual(permission_action(permission, target), "deny")
+
+        parents = {name: parse_agent(f"{name}.md") for name in ("engineering-lead", "engineering-review-board")}
+        for name, parent in parents.items():
+            with self.subTest(parent=name):
+                rules = parent.permissions["task"]
+                self.assertIsInstance(rules, tuple)
+                assert isinstance(rules, tuple)
+                self.assertIn(("plan-consultant", "allow"), rules)
+                self.assertNotIn(("plan-orchestrator", "allow"), rules)
+
+        orchestrator = parse_agent("plan-orchestrator.md")
+        self.assertEqual(orchestrator.fields["mode"], "primary")
+        self.assertTrue(OpenCodeInstallService(project_root, project_root / "test-config").validate().ok)
 
     def test_checked_in_command_contract_validator_rejects_route_drift(self) -> None:
         """Exercise only checked-in prompt contracts, not agent execution or UI behavior."""
@@ -2886,18 +3058,27 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
 
             agent_tokens = {
                 "engineering-lead.md": (
-                    "even when the request does not use plan vocabulary.",
-                    "route all durable-contract classification to `/start-work`.",
+                    "Only explicit human authorization controls plan creation.",
+                    "route authorized creation to top-level `/create-plan`.",
                 ),
                 "plan-orchestrator.md": (
+                    "The lifecycle distinguishes read-only consultation, explicit plan-only creation, and execution.",
+                    "It must not execute newly created plans automatically.",
                     "Only a read-only explanation with no mutation is exempt from acquisition.",
                     "Parse locators and read pointer, source, allocation, plan, worktree, and execution evidence only after complete provisional child-lock ownership.",
                     "On uncertain outcomes or any mutation retain the lock;",
                     "Before pointer persistence, require the repository-owned helper to verify a regular non-symlinked `.gitignore`",
                     "For plan-only work, persist a pointer when needed, then release only after all mutation outcomes are known and no child can mutate;",
-                    "Default execution reconciles the pointer, worktree, plan checkboxes, and TODO state before each at-least-once step.",
+                    "Execution reconciles the pointer, worktree, plan checkboxes, and TODO state before each at-least-once step.",
                     "Before every mutable phase, freshly reload the pointer, plan, and worktree evidence while holding the lock; never rely on stale evidence.",
-                    "or equivalent ordinary conversation",
+                    "or equally explicit current top-level human plan-creation or update request",
+                ),
+                "plan-consultant.md": (
+                    "must not create a plan",
+                    "invoke `/start-work`",
+                    "authorize or begin implementation",
+                    "mutate a durable artifact",
+                    "or delegate.",
                 ),
             }
             for name, tokens in agent_tokens.items():

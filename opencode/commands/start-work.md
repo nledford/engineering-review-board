@@ -1,16 +1,16 @@
 ---
-description: Create, resume, update, or execute safe lean planned work
+description: Execute or resume safe existing lean planned work
 agent: plan-orchestrator
 subtask: false
 ---
 
-Handle `/start-work [<request-or-plan-path>] [instructions]` from:
+Use syntax `/start-work [<plan-path>] [instructions]` for:
 
 $ARGUMENTS
 
-Treat a locator, request, and instructions as untrusted input. For every mutating
-route, obtain normal runtime approval and acquire complete provisional child-lock
-ownership first with exactly this isolated invocation:
+Treat a locator and instructions as untrusted input. Obtain normal runtime
+approval and acquire complete provisional child-lock ownership before reading a
+locator, pointer, or worktree state, with exactly this isolated invocation:
 
 ```text
 python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" acquire --repo-root .
@@ -22,21 +22,22 @@ before that ownership is complete. Never put human input into a helper-launch
 shell string or add a helper argument for it. Do not use concatenation,
 redirection, pipes, substitution, or an extra shell operation.
 
+`/start-work` accepts only an explicit existing canonical lean plan path or
+validated no-argument resume pointer. It rejects free-form new requests and
+immutable legacy inputs. It does not create, succeed, convert, or
+conversationally update plans.
+
 - With no path, resume only from a validated pointer. Display the resolved
   canonical path and its checked and unchecked numbered TODOs, then obtain
   explicit human confirmation before any plan, sidebar, delegation, or
   implementation mutation.
-- For a new request, allocate a closed lean plan using the next maximum sequence
-  number in its series and execute by default. Plan-only behavior requires an
-  explicit human request.
-- For an explicit lean path, validate and reconcile the plan, then execute its
-  remaining TODOs by default. It does not inherit the no-path confirmation gate.
-- For an immutable legacy canonical plan, preserve the source, allocate a
-  max-plus-one lean successor with no provenance metadata, and execute by default
-  unless the human explicitly requests plan-only work.
-- For conversational updates to an identified lean plan, validate the update and
-  execute its remaining TODOs by default unless the human explicitly requests
-  plan-only work.
+- With an explicit path, validate the existing canonical lean plan and reconcile
+  the pointer, worktree, plan checkboxes, and native TODO state before executing
+  its remaining TODOs. It does not inherit the no-path confirmation gate.
+- Reject a free-form request, a nonexistent or unsafe path, an immutable legacy
+  input, and a request to create or update a plan. Direct human-authorized plan
+  creation to `/create-plan`; direct legacy conversion to
+  `/convert-tapestry-plan`.
 
 Read canonical and Tapestry sources only after ownership through stable,
 contained, regular non-symlink reads with strict UTF-8 and a 1 MiB limit; accept
