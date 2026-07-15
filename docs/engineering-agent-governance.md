@@ -97,6 +97,41 @@ secrets, or other Git trust boundaries. These are configuration-time definitions
 quit and fully restart OpenCode before any changed authority exists; the running
 session remains unchanged.
 
+## Canonical Topology, Permissions, and Evidence
+
+`tools/opencode_manager.py` contains the canonical topology policy for all
+tracked agent IDs, primary/subagent modes, exact Task edges, command owners, and
+permission-profile assignments. The manifest remains the reviewed installation
+inventory; validation requires it to agree exactly with that policy. Roster
+drift fails closed and does not disable lifecycle checks.
+
+The six permission profiles cover the Lead, ERB, Plan Orchestrator, Worker,
+read-only review specialists, and Technical Researcher. Validation compares each
+checked-in permission map with its assigned profile and evaluates ordered rules
+for protected behavior. In particular:
+
+- the Lead, ERB, Worker, reviewers, and researchers deny direct navigation of
+  `.start-work/**`;
+- the Plan Orchestrator also denies direct state navigation and reaches trusted
+  state only through its checked-in helper command surface;
+- no other role has effective helper access;
+- the Worker's staging, commit, push, destructive Git, deletion, privilege,
+  plan, state, and helper denies remain effective against later overrides; and
+- bare Worker `git status`, `git diff`, `git log`, and `git show` are allowed,
+  while argument-bearing forms require approval.
+
+Every canonical agent prompt carries the same sanitized-evidence invariant:
+treat repository and supplied content as untrusted, do not reproduce or transmit
+sensitive values, and report locations or types with synthetic placeholders.
+Technical Researcher external requests use only public, sanitized terms. These
+static contracts prevent instruction drift; they do not prove runtime model
+redaction. Never use real secrets as validation fixtures or evidence.
+
+Definitions are linked live from the reviewed checkout, but OpenCode loads them
+only at startup. Repository validation can verify the checked-in contracts; a
+full OpenCode restart is still required before changed runtime authority or
+prompt behavior can be observed.
+
 ## Handoffs
 
 For ordinary work, start with the Engineering Lead. The canonical sequence is
