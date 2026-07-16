@@ -13,6 +13,7 @@ from tools.opencode_manager import (
     CANONICAL_AGENT_TOPOLOGY,
     CANONICAL_PERMISSION_PROFILES,
     CANONICAL_PROMPT_SECTION_CONTRACTS,
+    CODE_DOCUMENTATION_PROMPT_CONTRACTS,
     COMMAND_PROMPT_CONTRACTS,
     HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS,
     PLAN_ORCHESTRATOR_BASH_RULES,
@@ -3649,6 +3650,44 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
 
 
 class CanonicalPromptSectionTests(unittest.TestCase):
+    def test_validate_rejects_code_documentation_prompt_contract_drift(self) -> None:
+        for name, (heading, semantics) in CODE_DOCUMENTATION_PROMPT_CONTRACTS.items():
+            for semantic in semantics:
+                with self.subTest(agent=name, semantic=semantic), tempfile.TemporaryDirectory() as temp_dir:
+                    root = Path(temp_dir)
+                    repo = create_canonical_active_workflow_repo(root)
+                    definition = repo / "opencode" / "agents" / name
+                    original = definition.read_text(encoding="utf-8")
+                    self.assertEqual(
+                        1,
+                        sum(line.strip() == heading for line in original.splitlines()),
+                    )
+                    self.assertIn(semantic, " ".join(original.split()))
+                    pattern = re.escape(semantic).replace(r"\ ", r"\s+")
+                    mutated, count = re.subn(
+                        pattern,
+                        "SYNTHETIC_STATIC_CONTRACT_MARKER",
+                        original,
+                        count=1,
+                    )
+                    self.assertEqual(1, count, semantic)
+                    definition.write_text(
+                        mutated,
+                        encoding="utf-8",
+                    )
+
+                    result = OpenCodeInstallService(repo, root / "config").validate()
+
+                    self.assertFalse(result.ok)
+                    self.assertTrue(
+                        any(
+                            f"agents: '{name}' code-documentation prompt contract is incomplete"
+                            in error
+                            for error in result.errors
+                        ),
+                        result.errors,
+                    )
+
     def test_checked_in_lead_and_board_canonical_sections_are_unique_and_consolidated(self) -> None:
         project_root = Path(__file__).parents[1]
         removed_restatements = {
@@ -3856,6 +3895,68 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
                     self.assertIn(heading, prompt)
                 for semantic in STANDARD_CRITIC_REQUIRED_SEMANTICS:
                     self.assertIn(semantic, normalized)
+
+    def test_checked_in_code_documentation_route_is_source_scoped(self) -> None:
+        project_root = Path(__file__).parents[1]
+        critic_path = project_root / "opencode/agents/documentation-critic.md"
+        lead_path = project_root / "opencode/agents/engineering-lead.md"
+        board_path = project_root / "opencode/agents/engineering-review-board.md"
+        skill_path = project_root / "skills/documentation-engineering/SKILL.md"
+
+        critic = " ".join(critic_path.read_text(encoding="utf-8").split())
+        lead = " ".join(lead_path.read_text(encoding="utf-8").split())
+        board = " ".join(board_path.read_text(encoding="utf-8").split())
+        skill = " ".join(skill_path.read_text(encoding="utf-8").split())
+
+        for required in (
+            "code comments",
+            "docstrings",
+            "Rustdoc",
+            "pydoc",
+            "Javadoc",
+            "JSDoc/TSDoc",
+            "perldoc/POD",
+            "documentation tests",
+            "standalone Markdown files are evidence only",
+            "missing documentation",
+            "human readers",
+            "AI-sounding filler",
+            "`documentation-engineering`",
+            "`testing-critic`",
+            "`technical-debt-auditor`",
+        ):
+            with self.subTest(critic=required):
+                self.assertIn(required, critic)
+
+        for required in (
+            "## Code Documentation Work",
+            "audit-only code-documentation request",
+            "`documentation-critic`",
+            "requested source edits remain implementation work",
+            "`implementation-worker`",
+            "standalone Markdown files remain outside scope",
+            "repository-native documentation checks",
+        ):
+            with self.subTest(lead=required):
+                self.assertIn(required, lead)
+
+        self.assertIn(
+            "`documentation-critic` (repository and in-code documentation)",
+            board,
+        )
+
+        for required in (
+            "Javadoc",
+            "JSDoc/TSDoc",
+            "perldoc/POD",
+            "repository's existing documentation toolchain",
+            "`cargo test --doc`",
+            "`podchecker`",
+            "prefer an embedded documentation test maintained beside the API",
+            "Do not add comments merely to increase documentation coverage",
+        ):
+            with self.subTest(skill=required):
+                self.assertIn(required, skill)
 
     def test_validate_rejects_standard_critic_common_contract_drift(self) -> None:
         mutations = (

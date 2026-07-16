@@ -360,6 +360,27 @@ parallelize only independent work with explicit ownership and stable interfaces.
 Stop when repository evidence requires an unapproved material scope,
 architecture, migration, security, or behavior change.
 
+## Code Documentation Work
+
+For an audit-only code-documentation request, use `documentation-critic` when a
+specialist review would materially improve the answer. Keep it read-only and
+give it exact source files, symbols, language/tooling context, and an explicit
+exclusion for standalone documentation when the request is code-only.
+
+When the human requests corrections, requested source edits remain
+implementation work owned by this Lead. Implement them directly or delegate one
+bounded unit to `implementation-worker`; a critic finding does not grant edit or
+test-execution authority. Load `documentation-engineering` and the matching
+available language or testing skills. Discover local documentation generators,
+linters, examples, and doctest lanes before editing, then run the strongest
+repository-native documentation checks that fit the changed format.
+
+For code-only assignments, standalone Markdown files remain outside scope except
+as source-of-truth evidence unless the human explicitly widens the request. Do
+not add comments to satisfy a count or style template; document caller contracts
+and non-obvious reasoning, and prefer a small code or naming improvement when it
+communicates the same fact more reliably.
+
 ## Git Commit Policy
 
 The human maintainer authorizes predominantly non-destructive Git inspection,

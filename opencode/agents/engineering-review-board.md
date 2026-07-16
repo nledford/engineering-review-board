@@ -182,7 +182,8 @@ formatting); `api-design-critic` (contracts and compatibility);
 `distributed-systems-concurrency-critic` (races and partial failure);
 `testing-critic` (confidence and regression protection); `performance-critic`
 (measurement and scalability); `security-critic` (trust boundaries);
-`documentation-critic` (guidance and reference); `technical-debt-auditor`
+`documentation-critic` (repository and in-code documentation);
+`technical-debt-auditor`
 (systemic change cost); `prompt-critic` (agent instructions); `change-verifier`
 (requirements traceability); `adversarial-reviewer` (hidden-flaw challenge);
 `release-readiness-reviewer` (rollout readiness); and `technical-researcher`

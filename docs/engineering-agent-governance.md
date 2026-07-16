@@ -33,6 +33,16 @@ contextual independence matters.
 | [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, plus focused validation and an evidence report. It is the only implementation subagent. | Edit durable plans; read or mutate `.start-work/**`; invoke the trusted planned-work helper; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
 | Review and research specialists | Bounded, decision-relevant analysis for the Lead or ERB using exact runtime-visible IDs. | Implement changes, simulate the ERB, approve plans, or treat advisory output as final authority. |
 
+For audit-only work on code comments, docstrings, embedded API documentation,
+examples, or documentation tests, the Lead or ERB may assign exact source scope
+to `documentation-critic`. A code-only assignment treats standalone Markdown as
+source-of-truth evidence, not as a review or edit target. The critic remains
+read-only and names observed or unrun repository-native documentation checks.
+When the human requests corrections, the Lead implements them directly or uses
+one bounded `implementation-worker` unit and runs the applicable language or
+documentation validation. Skills provide procedure and never transfer that
+authority to the critic.
+
 The Lead may directly implement complex work when scope, safety, and validation
 are adequate, and retains its MCP, clipboard, Git, and transient unplanned-TODO
 authority. Complexity may justify a planning recommendation but never creates a

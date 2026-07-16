@@ -256,6 +256,35 @@ CANONICAL_PROMPT_SECTION_CONTRACTS = {
         ),
     ),
 }
+CODE_DOCUMENTATION_PROMPT_CONTRACTS = {
+    "documentation-critic.md": (
+        "## Boundary",
+        (
+            "In-code documentation: code comments, docstrings, Rustdoc, pydoc and Python docstrings, Javadoc, JSDoc/TSDoc, perldoc/POD",
+            "missing documentation, and documentation tests",
+            "When the assignment is code-only, standalone Markdown files are evidence only",
+            "do not implement corrections",
+        ),
+    ),
+    "engineering-lead.md": (
+        "## Code Documentation Work",
+        (
+            "For an audit-only code-documentation request, use `documentation-critic`",
+            "requested source edits remain implementation work owned by this Lead",
+            "delegate one bounded unit to `implementation-worker`",
+            "a critic finding does not grant edit or test-execution authority",
+            "standalone Markdown files remain outside scope",
+            "repository-native documentation checks",
+            "Do not add comments to satisfy a count or style template",
+        ),
+    ),
+    "engineering-review-board.md": (
+        "## Registered Specialist Roster",
+        (
+            "`documentation-critic` (repository and in-code documentation)",
+        ),
+    ),
+}
 PRIMARY_AGENT_TURN_SHARED_PROMPT_REQUIREMENTS = (
     "Authority follows the primary agent selected for the current user turn.",
     "Earlier assistant turns from another primary agent are attributed context, not this agent's identity or permission boundary.",
@@ -2433,6 +2462,20 @@ class OpenCodeInstallService:
                 section = self._single_markdown_section(prompt, heading)
                 if section is None or not all(token in section for token in required):
                     errors.append(f"agents: '{name}' prompt contract is incomplete")
+        if set(CODE_DOCUMENTATION_PROMPT_CONTRACTS).issubset(inventory.agents):
+            for name, (heading, required) in CODE_DOCUMENTATION_PROMPT_CONTRACTS.items():
+                try:
+                    prompt = (self.sources["agents"] / name).read_text(encoding="utf-8")
+                except (OSError, UnicodeError):
+                    errors.append(
+                        f"agents: '{name}' code-documentation prompt contract is unreadable"
+                    )
+                    continue
+                section = self._single_markdown_section(prompt, heading)
+                if section is None or not all(token in section for token in required):
+                    errors.append(
+                        f"agents: '{name}' code-documentation prompt contract is incomplete"
+                    )
         if set(PRIMARY_AGENT_TURN_PROMPT_CONTRACTS).issubset(inventory.agents):
             for name, (heading, required) in PRIMARY_AGENT_TURN_PROMPT_CONTRACTS.items():
                 try:
