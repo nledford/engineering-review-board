@@ -11,6 +11,7 @@ import secrets
 import stat
 import sys
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path, PurePosixPath
 from typing import Callable, NoReturn, Sequence
 
@@ -68,8 +69,28 @@ SENSITIVE_LOCAL_SEGMENT_RE = re.compile(
 )
 
 
+class ErrorCode(str, Enum):
+    """Stable sanitized outcomes for the workflow-helper CLI boundary."""
+
+    ACTIVE_PLAN_CONFLICT = "active-plan-conflict"
+    IGNORE_RULES_INVALID = "ignore-rules-invalid"
+    LOCK_HELD = "lock-held"
+    OPERATION_INVALID = "operation-invalid"
+    PLAN_CONTRACT_DRIFT = "plan-contract-drift"
+    PLAN_INVALID = "plan-invalid"
+    PLAN_UNREGISTERED = "plan-unregistered"
+    STATE_INVALID = "state-invalid"
+    STATE_VERSION_UNSUPPORTED = "state-version-unsupported"
+
+
 class StateError(RuntimeError):
-    """Raised when local state is unsafe, corrupt, or owned by another caller."""
+    """Carry internal diagnostics and one safe external outcome code."""
+
+    def __init__(
+        self, message: str, *, code: ErrorCode = ErrorCode.STATE_INVALID
+    ) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True)
@@ -103,8 +124,10 @@ class ResumeState:
     plans: tuple[PlanContract, ...]
 
 
-def _error(message: str) -> StateError:
-    return StateError(message)
+def _error(
+    message: str, code: ErrorCode = ErrorCode.STATE_INVALID
+) -> StateError:
+    return StateError(message, code=code)
 
 
 def _lstat(path: Path) -> os.stat_result:
@@ -187,7 +210,13 @@ def _strict_json(data: bytes, *, limit: int = MAX_BYTES) -> dict[str, object]:
 
     try:
         value = json.loads(decoded, object_pairs_hook=pairs)
-    except (json.JSONDecodeError, TypeError, StateError) as exc:
+    except (
+        json.JSONDecodeError,
+        TypeError,
+        ValueError,
+        RecursionError,
+        StateError,
+    ) as exc:
         if isinstance(exc, StateError):
             raise
         raise _error("state JSON is malformed") from exc
@@ -469,12 +498,12 @@ def acquire_provisional(
     state = _state_root(root, create=True)
     entries = _state_entries(state)
     if LOCK_NAME in entries:
-        raise _error("a child lock is already held")
+        raise _error("a child lock is already held", ErrorCode.LOCK_HELD)
     lock = state / LOCK_NAME
     try:
         lock.mkdir(mode=0o700)
     except FileExistsError as exc:
-        raise _error("a child lock is already held") from exc
+        raise _error("a child lock is already held", ErrorCode.LOCK_HELD) from exc
     token = token_factory(32)
     if not isinstance(token, str) or not TOKEN_RE.fullmatch(token):
         raise _error("token factory returned an invalid token")
@@ -637,12 +666,17 @@ def _plan_contract_from_value(value: object) -> PlanContract:
 
 def _resume_state_from_bytes(data: bytes) -> ResumeState:
     value = _strict_json(data, limit=MAX_STATE_BYTES)
+    version = value.get("version")
+    if type(version) is int and version != 2:
+        raise _error(
+            "resume state version is unsupported",
+            ErrorCode.STATE_VERSION_UNSUPPORTED,
+        )
     if set(value) != {"version", "active_plan_path", "plans"}:
         raise _error("resume state has unsupported fields")
-    version = value["version"]
     active_plan_path = value["active_plan_path"]
     plans = value["plans"]
-    if type(version) is not int or version != 2 or not isinstance(plans, list):
+    if type(version) is not int or not isinstance(plans, list):
         raise _error("resume state is invalid")
     contracts = tuple(_plan_contract_from_value(plan) for plan in plans)
     paths = tuple(contract.plan_path for contract in contracts)
@@ -768,18 +802,20 @@ def _validate_registration_layout(
 
 def _verify_ignore(root: Path) -> None:
     ignore = root / ".gitignore"
-    content = _read_regular_bytes(ignore)
     try:
+        content = _read_regular_bytes(ignore)
         lines = content.decode("utf-8", "strict").splitlines()
-    except UnicodeDecodeError as exc:
-        raise _error("ignore file is not strict UTF-8") from exc
+    except (StateError, UnicodeDecodeError) as exc:
+        raise _error(
+            "ignore file is invalid", ErrorCode.IGNORE_RULES_INVALID
+        ) from exc
     exact = {"/.start-work/resume.json", "/.start-work/lock/"}
     if sum(line == "/.start-work/resume.json" for line in lines) != 1:
-        raise _error("ignore rules are unsafe")
+        raise _error("ignore rules are unsafe", ErrorCode.IGNORE_RULES_INVALID)
     if sum(line == "/.start-work/lock/" for line in lines) != 1:
-        raise _error("ignore rules are unsafe")
+        raise _error("ignore rules are unsafe", ErrorCode.IGNORE_RULES_INVALID)
     if any(".start-work" in line and line not in exact for line in lines):
-        raise _error("ignore rules are unsafe")
+        raise _error("ignore rules are unsafe", ErrorCode.IGNORE_RULES_INVALID)
 
 
 def register_plan_contracts(
@@ -829,12 +865,18 @@ def _validate_progress_transition(
     if not secrets.compare_digest(
         previous.contract_sha256, current.contract_sha256
     ):
-        raise _error("plan content changed after contract registration")
+        raise _error(
+            "plan content changed after contract registration",
+            ErrorCode.PLAN_CONTRACT_DRIFT,
+        )
     if (
         len(previous.todo_progress) != len(current.todo_progress)
         or len(previous.verification_progress) != len(current.verification_progress)
     ):
-        raise _error("plan checklist shape changed after contract registration")
+        raise _error(
+            "plan checklist shape changed after contract registration",
+            ErrorCode.PLAN_CONTRACT_DRIFT,
+        )
     if any(
         old == "1" and new != "1"
         for old, new in zip(previous.todo_progress, current.todo_progress)
@@ -844,12 +886,99 @@ def _validate_progress_transition(
             previous.verification_progress, current.verification_progress
         )
     ):
-        raise _error("plan checkboxes may only advance from unchecked to checked")
+        raise _error(
+            "plan checkboxes may only advance from unchecked to checked",
+            ErrorCode.PLAN_CONTRACT_DRIFT,
+        )
     verification_advanced = (
         previous.verification_progress != current.verification_progress
     )
     if verification_advanced and "0" in previous.todo_progress:
-        raise _error("verification cannot begin before every TODO is persisted complete")
+        raise _error(
+            "verification cannot begin before every TODO is persisted complete",
+            ErrorCode.PLAN_CONTRACT_DRIFT,
+        )
+
+
+def _execution_transition(
+    root: Path, canonical: str
+) -> tuple[ResumeState, PlanContract]:
+    """Validate one registered execution transition without mutating state."""
+    _verify_ignore(root)
+    state_root = _state_root(root, create=False)
+    if RESUME_NAME not in _state_entries(state_root):
+        raise _error(
+            "plan must be registered by explicit plan creation before execution",
+            ErrorCode.PLAN_UNREGISTERED,
+        )
+    resume_state = _read_resume_state(root)
+    if resume_state.active_plan_path not in {None, canonical}:
+        raise _error(
+            "another registered plan is active", ErrorCode.ACTIVE_PLAN_CONFLICT
+        )
+    previous = next(
+        (
+            contract
+            for contract in resume_state.plans
+            if contract.plan_path == canonical
+        ),
+        None,
+    )
+    if previous is None:
+        raise _error(
+            "plan must be registered by explicit plan creation before execution",
+            ErrorCode.PLAN_UNREGISTERED,
+        )
+    current = _plan_contract(root, canonical)
+    _validate_progress_transition(previous, current)
+    return resume_state, current
+
+
+def _discard_failed_begin_lock(root: Path, owner_token: str) -> None:
+    """Remove only the matching lock owned by a failed pre-execution phase."""
+    release_provisional(
+        root,
+        owner_token,
+        known_clean=True,
+        mutation_occurred=False,
+        child_can_mutate=False,
+    )
+
+
+def begin_execution(
+    repo_root: Path, owner_token: str, plan_path: str | None
+) -> tuple[OwnerMetadata, ResumePointer, bool]:
+    """Preflight execution under provisional ownership and clean known failures."""
+    root = _repo_root(repo_root)
+    _, provisional = _matching_owner(root, owner_token)
+    if provisional.plan_paths:
+        raise _error(
+            "execution preflight requires provisional ownership",
+            ErrorCode.LOCK_HELD,
+        )
+    try:
+        if plan_path is None:
+            _verify_ignore(root)
+            pointer = read_resume_pointer(root, owner_token)
+            return provisional, pointer, True
+
+        try:
+            canonical = _canonical_plan_path(plan_path)
+        except StateError as exc:
+            raise _error("execution plan path is invalid", ErrorCode.PLAN_INVALID) from exc
+        _execution_transition(root, canonical)
+        owner = finalize_owner(root, owner_token, canonical)
+        pointer = write_resume_pointer(root, owner_token, canonical)
+        return owner, pointer, False
+    except StateError:
+        try:
+            _discard_failed_begin_lock(root, owner_token)
+        except (OSError, StateError) as cleanup_error:
+            raise _error(
+                "failed execution preflight retained its lock",
+                ErrorCode.LOCK_HELD,
+            ) from cleanup_error
+        raise
 
 
 def write_resume_pointer(repo_root: Path, owner_token: str, plan_path: str) -> ResumePointer:
@@ -859,18 +988,7 @@ def write_resume_pointer(repo_root: Path, owner_token: str, plan_path: str) -> R
     _, owner = _matching_owner(root, owner_token)
     if owner.plan_paths != (canonical,):
         raise _error("resume pointer must match the finalized owner plan")
-    _verify_ignore(root)
-    resume_state = _read_resume_state(root)
-    if resume_state.active_plan_path not in {None, canonical}:
-        raise _error("another registered plan is active")
-    previous = next(
-        (contract for contract in resume_state.plans if contract.plan_path == canonical),
-        None,
-    )
-    if previous is None:
-        raise _error("plan must be registered by explicit plan creation before execution")
-    current = _plan_contract(root, canonical)
-    _validate_progress_transition(previous, current)
+    resume_state, current = _execution_transition(root, canonical)
     updated = tuple(
         current if contract.plan_path == canonical else contract
         for contract in resume_state.plans
@@ -954,6 +1072,7 @@ def recover_stale_lock(repo_root: Path, *, prior_human_confirmation: bool) -> No
 
 OPERATIONS = (
     "acquire",
+    "begin-execution",
     "finalize",
     "register-plans",
     "read-pointer",
@@ -969,18 +1088,18 @@ class _SanitizedArgumentParser(argparse.ArgumentParser):
     """Reject malformed runtime argv without reflecting caller-controlled text."""
 
     def error(self, message: str) -> NoReturn:
-        raise _error("operation arguments are invalid")
+        raise _error("operation arguments are invalid", ErrorCode.OPERATION_INVALID)
 
 
 def _assert_true(value: str | None) -> bool:
     if value != "true":
-        raise _error("required assertion is invalid")
+        raise _error("required assertion is invalid", ErrorCode.OPERATION_INVALID)
     return True
 
 
 def _assert_bool(value: str | None) -> bool:
     if value not in {"true", "false"}:
-        raise _error("required assertion is invalid")
+        raise _error("required assertion is invalid", ErrorCode.OPERATION_INVALID)
     return value == "true"
 
 
@@ -1018,26 +1137,29 @@ def _cli_parser() -> argparse.ArgumentParser:
 
 def _require_token(value: str | None) -> str:
     if not isinstance(value, str) or not TOKEN_RE.fullmatch(value):
-        raise _error("owner token is invalid")
+        raise _error("owner token is invalid", ErrorCode.OPERATION_INVALID)
     return value
 
 
 def _require_plan(value: str | None) -> str:
     if not isinstance(value, str):
-        raise _error("plan path is invalid")
-    return _canonical_plan_path(value)
+        raise _error("plan path is invalid", ErrorCode.OPERATION_INVALID)
+    try:
+        return _canonical_plan_path(value)
+    except StateError as exc:
+        raise _error("plan path is invalid", ErrorCode.OPERATION_INVALID) from exc
 
 
 def _require_hash(value: str | None) -> str:
     if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
-        raise _error("contract hash is invalid")
+        raise _error("contract hash is invalid", ErrorCode.OPERATION_INVALID)
     return value
 
 
 def _only_fields(arguments: argparse.Namespace, *allowed: str) -> None:
     ignored = {"operation", "repo_root", *allowed}
     if any(value is not None for name, value in vars(arguments).items() if name not in ignored):
-        raise _error("operation arguments are invalid")
+        raise _error("operation arguments are invalid", ErrorCode.OPERATION_INVALID)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1046,7 +1168,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         arguments = parser.parse_args(argv)
         if arguments.repo_root != ".":
-            raise _error("runtime repository root must be the literal dot argument")
+            raise _error(
+                "runtime repository root must be the literal dot argument",
+                ErrorCode.OPERATION_INVALID,
+            )
         cwd = Path.cwd()
         if cwd.is_symlink() or cwd.resolve(strict=True) != cwd.absolute():
             raise _error("runtime workspace root is aliased")
@@ -1054,6 +1179,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         if operation == "acquire":
             _only_fields(arguments)
             _json_output(acquire_provisional(cwd))
+        elif operation == "begin-execution":
+            _only_fields(arguments, "owner_token", "plan_path")
+            owner, pointer, requires_confirmation = begin_execution(
+                cwd,
+                _require_token(arguments.owner_token),
+                arguments.plan_path,
+            )
+            _json_output(
+                {
+                    "owner_token": owner.owner_token,
+                    "plan_paths": list(owner.plan_paths),
+                    "pointer": pointer.__dict__,
+                    "requires_confirmation": requires_confirmation,
+                }
+            )
         elif operation == "finalize":
             _only_fields(arguments, "owner_token", "plan_path")
             finalize_owner(cwd, _require_token(arguments.owner_token), _require_plan(arguments.plan_path))
@@ -1107,8 +1247,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             _only_fields(arguments, "prior_human_confirmation")
             recover_stale_lock(cwd, prior_human_confirmation=_assert_true(arguments.prior_human_confirmation))
-    except (StateError, SystemExit):
-        print("start-work state error", file=sys.stderr)
+    except StateError as exc:
+        print(
+            json.dumps(
+                {"error": exc.code.value}, separators=(",", ":"), sort_keys=True
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    except SystemExit:
+        print('{"error":"operation-invalid"}', file=sys.stderr)
+        return 1
+    except (OSError, UnicodeError, ValueError):
+        print('{"error":"state-invalid"}', file=sys.stderr)
         return 1
     return 0
 

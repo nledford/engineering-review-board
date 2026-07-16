@@ -743,6 +743,319 @@ class StartWorkStateTests(unittest.TestCase):
         bad = subprocess.run([*command[:-1], ".."], cwd=self.root, capture_output=True, text=True, timeout=5, check=False)
         self.assertNotEqual(bad.returncode, 0)
 
+    def test_cli_reports_lock_held_with_a_sanitized_stable_code(self) -> None:
+        self.acquire()
+
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "lock-held"})
+        self.assertNotIn(TOKEN, errors)
+        self.assertNotIn(str(self.root), errors)
+
+    def test_begin_execution_releases_its_lock_after_unregistered_plan_failure(self) -> None:
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+
+        code, output, errors = self.invoke_cli(
+            "begin-execution",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+            "--plan-path",
+            PLAN,
+        )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "plan-unregistered"})
+        self.assertNotIn(token, errors)
+        self.assertNotIn(PLAN, errors)
+        self.assertFalse((self.root / ".start-work/lock").exists())
+        self.assertEqual(self.invoke_cli("acquire", "--repo-root", ".")[0], 0)
+
+    def test_begin_execution_rejects_plan_path_without_reflecting_it(self) -> None:
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+        hostile_path = "../../private/secret;$(id).md"
+
+        code, output, errors = self.invoke_cli(
+            "begin-execution",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+            "--plan-path",
+            hostile_path,
+        )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "plan-invalid"})
+        self.assertNotIn(hostile_path, errors)
+        self.assertNotIn(token, errors)
+        self.assertFalse((self.root / ".start-work/lock").exists())
+
+    def test_begin_execution_activates_a_registered_contract(self) -> None:
+        self.acquire()
+        state.finalize_owner(self.root, TOKEN, PLAN)
+        state.register_plan_contracts(self.root, TOKEN)
+        state.release_final(
+            self.root,
+            TOKEN,
+            completed_execution=False,
+            completed_plan_only=True,
+            outcomes_known=True,
+            child_can_mutate=False,
+        )
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+
+        code, output, errors = self.invoke_cli(
+            "begin-execution",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+            "--plan-path",
+            PLAN,
+        )
+
+        self.assertEqual((code, errors), (0, ""))
+        result = json.loads(output)
+        self.assertEqual(result["owner_token"], token)
+        self.assertEqual(result["plan_paths"], [PLAN])
+        self.assertEqual(result["pointer"]["plan_path"], PLAN)
+        self.assertFalse(result["requires_confirmation"])
+        self.assertEqual(state.read_resume_pointer(self.root, token).plan_path, PLAN)
+
+    def test_begin_execution_previews_resume_under_provisional_ownership(self) -> None:
+        self.acquire()
+        state.finalize_owner(self.root, TOKEN, PLAN)
+        state.register_plan_contracts(self.root, TOKEN)
+        state.write_resume_pointer(self.root, TOKEN, PLAN)
+        state.recover_stale_lock(self.root, prior_human_confirmation=True)
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+
+        code, output, errors = self.invoke_cli(
+            "begin-execution",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+        )
+
+        self.assertEqual((code, errors), (0, ""))
+        result = json.loads(output)
+        self.assertEqual(result["owner_token"], token)
+        self.assertEqual(result["plan_paths"], [])
+        self.assertEqual(result["pointer"]["plan_path"], PLAN)
+        self.assertTrue(result["requires_confirmation"])
+        state.release_provisional(
+            self.root,
+            token,
+            known_clean=True,
+            mutation_occurred=False,
+            child_can_mutate=False,
+        )
+
+    def test_begin_execution_reports_unsupported_state_and_releases_lock(self) -> None:
+        state_root = self.root / ".start-work"
+        state_root.mkdir()
+        (state_root / "resume.json").write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "plan_path": PLAN,
+                    "contract_sha256": "0" * 64,
+                }
+            ),
+            encoding="utf-8",
+        )
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+
+        code, output, errors = self.invoke_cli(
+            "begin-execution",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+        )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(
+            json.loads(errors), {"error": "state-version-unsupported"}
+        )
+        self.assertFalse((state_root / "lock").exists())
+
+    def test_begin_execution_reports_invalid_ignore_rules_and_releases_lock(self) -> None:
+        self.acquire()
+        state.finalize_owner(self.root, TOKEN, PLAN)
+        state.register_plan_contracts(self.root, TOKEN)
+        state.release_final(
+            self.root,
+            TOKEN,
+            completed_execution=False,
+            completed_plan_only=True,
+            outcomes_known=True,
+            child_can_mutate=False,
+        )
+        (self.root / ".gitignore").write_text("", encoding="utf-8")
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+
+        code, output, errors = self.invoke_cli(
+            "begin-execution",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+            "--plan-path",
+            PLAN,
+        )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "ignore-rules-invalid"})
+        self.assertFalse((self.root / ".start-work/lock").exists())
+
+    def test_begin_execution_retains_lock_when_safe_cleanup_is_uncertain(self) -> None:
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+        internal_detail = "cleanup failed at /private/sensitive"
+
+        with patch.object(
+            state,
+            "_discard_failed_begin_lock",
+            side_effect=OSError(internal_detail),
+        ):
+            code, output, errors = self.invoke_cli(
+                "begin-execution",
+                "--repo-root",
+                ".",
+                "--owner-token",
+                token,
+                "--plan-path",
+                PLAN,
+            )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "lock-held"})
+        self.assertNotIn(internal_detail, errors)
+        self.assertTrue((self.root / ".start-work/lock").is_dir())
+
+    def test_begin_execution_retains_a_lock_finalized_before_failure(self) -> None:
+        self.acquire()
+        state.finalize_owner(self.root, TOKEN, PLAN)
+        state.register_plan_contracts(self.root, TOKEN)
+        state.release_final(
+            self.root,
+            TOKEN,
+            completed_execution=False,
+            completed_plan_only=True,
+            outcomes_known=True,
+            child_can_mutate=False,
+        )
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+
+        with patch.object(
+            state,
+            "write_resume_pointer",
+            side_effect=state.StateError("synthetic post-finalization failure"),
+        ):
+            code, output, errors = self.invoke_cli(
+                "begin-execution",
+                "--repo-root",
+                ".",
+                "--owner-token",
+                token,
+                "--plan-path",
+                PLAN,
+            )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "lock-held"})
+        owner = state._matching_owner(state._repo_root(self.root), token)[1]
+        self.assertEqual(owner.plan_paths, (PLAN,))
+
+    def test_begin_execution_reports_active_plan_conflict_and_releases_lock(self) -> None:
+        self.acquire()
+        state.finalize_owner(self.root, TOKEN, PLAN)
+        state.register_plan_contracts(self.root, TOKEN)
+        state.write_resume_pointer(self.root, TOKEN, PLAN)
+        state.recover_stale_lock(self.root, prior_human_confirmation=True)
+        other_plan = ".erb/plans/other.md"
+        (self.root / other_plan).write_text(plan_text(title="Other"), encoding="utf-8")
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+
+        code, output, errors = self.invoke_cli(
+            "begin-execution",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+            "--plan-path",
+            other_plan,
+        )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "active-plan-conflict"})
+        self.assertFalse((self.root / ".start-work/lock").exists())
+
+    def test_post_begin_contract_drift_retains_the_execution_lock(self) -> None:
+        self.acquire()
+        state.finalize_owner(self.root, TOKEN, PLAN)
+        state.register_plan_contracts(self.root, TOKEN)
+        state.release_final(
+            self.root,
+            TOKEN,
+            completed_execution=False,
+            completed_plan_only=True,
+            outcomes_known=True,
+            child_can_mutate=False,
+        )
+        code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+        self.assertEqual((code, errors), (0, ""))
+        token = json.loads(output)["owner_token"]
+        self.assertEqual(
+            self.invoke_cli(
+                "begin-execution",
+                "--repo-root",
+                ".",
+                "--owner-token",
+                token,
+                "--plan-path",
+                PLAN,
+            )[0],
+            0,
+        )
+        (self.root / PLAN).write_text(plan_text(title="Changed"), encoding="utf-8")
+
+        code, output, errors = self.invoke_cli(
+            "write-pointer",
+            "--repo-root",
+            ".",
+            "--owner-token",
+            token,
+            "--plan-path",
+            PLAN,
+        )
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "plan-contract-drift"})
+        self.assertTrue((self.root / ".start-work/lock").is_dir())
+
     def test_cli_closed_transitions_and_token_handoff(self) -> None:
         code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
         self.assertEqual((code, errors), (0, ""))
@@ -819,25 +1132,67 @@ class StartWorkStateTests(unittest.TestCase):
         state_dir.mkdir()
         (state_dir / "resume.json").write_text(json.dumps({"version": 1, "plan_path": PLAN, "contract_sha256": "a" * 64}), encoding="utf-8")
         cases = (
-            ("acquire", "--repo-root", "./"),
-            ("acquire", "--repo-root", ".", "--owner-token", TOKEN),
-            ("read-pointer", "--repo-root", ".", "--owner-token", TOKEN),
-            ("finalize", "--repo-root", ".", "--owner-token", "not-a-token", "--plan-path", PLAN),
-            ("release-final", "--repo-root", ".", "--owner-token", TOKEN, "--completed-execution", "maybe"),
+            (("acquire", "--repo-root", "./"), "operation-invalid"),
+            (
+                ("acquire", "--repo-root", ".", "--owner-token", TOKEN),
+                "operation-invalid",
+            ),
+            (
+                ("read-pointer", "--repo-root", ".", "--owner-token", TOKEN),
+                "state-invalid",
+            ),
+            (
+                (
+                    "finalize",
+                    "--repo-root",
+                    ".",
+                    "--owner-token",
+                    "not-a-token",
+                    "--plan-path",
+                    PLAN,
+                ),
+                "operation-invalid",
+            ),
+            (
+                (
+                    "release-final",
+                    "--repo-root",
+                    ".",
+                    "--owner-token",
+                    TOKEN,
+                    "--completed-execution",
+                    "maybe",
+                ),
+                "operation-invalid",
+            ),
         )
-        for arguments in cases:
+        for arguments, expected_error in cases:
             code, output, errors = self.invoke_cli(*arguments)
             self.assertEqual((code, output), (1, ""))
-            self.assertEqual(errors, "start-work state error\n")
+            self.assertEqual(json.loads(errors), {"error": expected_error})
             self.assertNotIn(str(self.root), errors)
 
     def test_cli_unknown_arguments_are_not_reflected(self) -> None:
         hostile = "$(cat /private/secret);--path=/tmp/hostile"
         code, output, errors = self.invoke_cli("acquire", "--repo-root", ".", "--unknown", hostile)
-        self.assertEqual((code, output, errors), (1, "", "start-work state error\n"))
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "operation-invalid"})
         self.assertNotIn(hostile, output)
         self.assertNotIn(hostile, errors)
         self.assertNotIn("/private/secret", errors)
+
+    def test_cli_sanitizes_unexpected_filesystem_failures(self) -> None:
+        internal_detail = "filesystem failed at /private/sensitive"
+        with patch.object(
+            state,
+            "acquire_provisional",
+            side_effect=OSError(internal_detail),
+        ):
+            code, output, errors = self.invoke_cli("acquire", "--repo-root", ".")
+
+        self.assertEqual((code, output), (1, ""))
+        self.assertEqual(json.loads(errors), {"error": "state-invalid"})
+        self.assertNotIn(internal_detail, errors)
 
     def test_pointer_limit_bool_versions_and_full_plan_grammar(self) -> None:
         self.acquire()
