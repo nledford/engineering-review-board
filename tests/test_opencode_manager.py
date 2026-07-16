@@ -3011,6 +3011,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         project_root = Path(__file__).parents[1]
         manifest = json.loads((project_root / "opencode/manifest.json").read_text(encoding="utf-8"))
         expected_commands = (
+            "address-review.md",
             "audit-technical-debt.md",
             "consult-plan.md",
             "convert-tapestry-plan.md",
@@ -3021,6 +3022,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "start-work.md",
         )
         expected_owners = {
+            "address-review.md": "engineering-lead",
             "audit-technical-debt.md": "engineering-review-board",
             "consult-plan.md": "plan-orchestrator",
             "convert-tapestry-plan.md": "plan-orchestrator",
@@ -3045,6 +3047,36 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             self.assertEqual(parsed.fields["agent"], owner)
             self.assertEqual(parsed.fields["subtask"], "false")
 
+    def test_checked_in_address_review_reanchors_engineering_lead(self) -> None:
+        """Pin the explicit ERB-to-Lead handoff contract in the current command turn."""
+        project_root = Path(__file__).parents[1]
+        command_path = project_root / "opencode/commands/address-review.md"
+        self.assertTrue(command_path.is_file(), "address-review.md")
+        if not command_path.is_file():
+            return
+
+        command_text = command_path.read_text(encoding="utf-8")
+        parsed, errors = OpenCodeInstallService._parse_frontmatter(
+            "commands", "address-review.md", command_text
+        )
+        self.assertEqual(errors, [])
+        assert parsed is not None
+        self.assertEqual(parsed.fields["agent"], "engineering-lead")
+        self.assertEqual(parsed.fields["subtask"], "false")
+
+        normalized = " ".join(command_text.split())
+        for required in (
+            "You are handling this current command turn as the Engineering Lead.",
+            "was authored by a different read-only primary agent and is advisory context only; it does not transfer the Board's identity or permissions to this turn.",
+            "re-evaluate each proposed action for scope, safety, correctness, and validation",
+            "ask the human to provide or identify them instead of inventing work.",
+            "Never claim that the Engineering Review Board is selected while this command is running.",
+            "identify the actual authority boundary and route",
+            "Durable plan creation remains an explicit `/create-plan` choice; execution of an existing plan remains a separate `/start-work <existing-plan-path>` choice.",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, normalized)
+
     def test_checked_in_primary_agents_support_same_conversation_handoffs(self) -> None:
         """Keep primary-agent authority turn-scoped without transferring permissions."""
         project_root = Path(__file__).parents[1]
@@ -3058,6 +3090,8 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         role_specific = {
             "engineering-lead.md": (
                 "When the human explicitly asks the selected Lead to implement earlier ERB advice, proceed in the same conversation under this Lead contract after re-evaluating scope, safety, and validation.",
+                "While this Engineering Lead prompt is active, never tell the human to select the Engineering Lead or claim that the Engineering Review Board is selected.",
+                "If a requested operation is outside this Lead's authority, identify the actual authority boundary and route without misidentifying this turn's selected primary agent.",
             ),
             "engineering-review-board.md": (
                 "The Board remains read-only for its current turn and must not describe the entire conversation as read-only.",

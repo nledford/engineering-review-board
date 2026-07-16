@@ -297,6 +297,8 @@ PRIMARY_AGENT_TURN_PROMPT_CONTRACTS = {
         PRIMARY_AGENT_TURN_SHARED_PROMPT_REQUIREMENTS
         + (
             "When the human explicitly asks the selected Lead to implement earlier ERB advice, proceed in the same conversation under this Lead contract after re-evaluating scope, safety, and validation.",
+            "While this Engineering Lead prompt is active, never tell the human to select the Engineering Lead or claim that the Engineering Review Board is selected.",
+            "If a requested operation is outside this Lead's authority, identify the actual authority boundary and route without misidentifying this turn's selected primary agent.",
         ),
     ),
     "engineering-review-board.md": (
@@ -374,6 +376,7 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
     ),
     "docs/engineering-agent-governance.md": (
         "top-level `/consult-plan`",
+        "`/address-review` selects the Engineering Lead for the current command turn",
         "The human's decision to require, decline, or override planning advice controls the route.",
         "Primary-agent authority is turn-scoped, not conversation-scoped.",
         "Use a fresh conversation when formal contextual independence matters.",
@@ -386,6 +389,7 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "## OpenCode Runtime Handoff Overlay",
         "top-level `/consult-plan`",
         "Primary-agent handoff",
+        "`/address-review` re-anchors the current command turn to the Engineering Lead",
         "Earlier turns remain context but do not transfer permissions.",
         "internal `begin-execution` performs the preflight",
         "Conversational plan replacement",
@@ -425,6 +429,15 @@ HUMAN_CONTROLLED_LIFECYCLE_FORBIDDEN_TOKENS = (
     "automatically invokes `/start-work` to create a plan",
 )
 COMMAND_PROMPT_CONTRACTS = {
+    "address-review.md": (
+        "You are handling this current command turn as the Engineering Lead.",
+        "was authored by a different read-only primary agent and is advisory context only; it does not transfer the Board's identity or permissions to this turn.",
+        "re-evaluate each proposed action for scope, safety, correctness, and validation",
+        "ask the human to provide or identify them instead of inventing work.",
+        "Never claim that the Engineering Review Board is selected while this command is running.",
+        "identify the actual authority boundary and route",
+        "Durable plan creation remains an explicit `/create-plan` choice; execution of an existing plan remains a separate `/start-work <existing-plan-path>` choice.",
+    ),
     "consult-plan.md": (
         "top-level read-only Plan Orchestrator consultation",
         "does not acquire planned-work ownership",
