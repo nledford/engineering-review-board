@@ -40,6 +40,7 @@ remain authoritative.
 
 | Route | Handoff |
 | --- | --- |
+| Primary-agent handoff | Authority follows the primary agent selected for the current user turn. Earlier turns remain context but do not transfer permissions. Top-level primary roles may hand off in the same conversation: an explicit current Lead request may implement earlier ERB advice, while the ERB remains read-only when selected. Use a fresh conversation when formal contextual independence matters. |
 | Direct delivery | The Engineering Lead may implement directly whenever scope, safety, and validation are adequate. Complexity may justify recommending planning, never automatic plan creation or `/start-work`. |
 | Read-only consultation | The Engineering Lead or ERB may recommend top-level `/consult-plan` with the reason, trade-off, and proposed scope. The separate primary Plan Orchestrator provides non-mutating advice without acquiring or inspecting `.start-work/**`, creating a plan, delegating, authorizing, or executing work. The human controls the route. |
 | Explicit plan creation | A human explicitly chooses top-level `/create-plan`; the Plan Orchestrator creates and registers one `.erb/plans/<slug>.md` plan or, only for genuinely separately managed work, a `.erb/plans/<subject>/<NN>-<slug>.md` series. Creation is plan-only. |

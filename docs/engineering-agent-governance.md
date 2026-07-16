@@ -14,6 +14,15 @@ lists the tracked definitions.
 | Agent | Runtime role defined under [`opencode/agents/`](../opencode/agents/). | Its `mode`, permission map, exact registered ID, and the runtime Task allowlist control what it can do. Never derive an ID from a skill name or job title. |
 | Command | Top-level entry point defined under [`opencode/commands/`](../opencode/commands/). | Its `agent` field selects a primary agent. A command routes work but does not add authority to that agent. |
 
+Primary-agent authority is turn-scoped, not conversation-scoped. Authority
+follows the primary agent selected for the current user turn; earlier assistant
+turns remain attributed context and do not transfer identity or permissions.
+"Top-level" means selected as a primary agent rather than invoked through Task,
+so it does not require a fresh conversation. A human may obtain ERB advice,
+select the Engineering Lead in the same conversation, and explicitly request
+implementation under the Lead contract. Use a fresh conversation when formal
+contextual independence matters.
+
 ## Roles and Limits
 
 | Role | Owns | Must not do |
@@ -145,7 +154,9 @@ documented in [`implementation-plans/README.md`](implementation-plans/README.md)
 3. On explicit human authorization, top-level
    [`/create-plan`](../opencode/commands/create-plan.md) acquires trusted state
    and creates and persists a closed lean plan only.
-4. A separate ERB session may provide optional independent advisory review.
+4. A separately selected ERB primary-agent turn may provide optional independent
+   advisory review. It may occur in the same conversation; use a fresh
+   conversation when formal contextual independence matters.
 5. A separate human choice of top-level
    [`/start-work <existing-plan-path>`](../opencode/commands/start-work.md), or a
    validated no-argument resume pointer with explicit human confirmation,
@@ -198,4 +209,6 @@ Before changing role or command guidance:
   [project template](../opencode/project-template/AGENTS-plan-workflow-snippet.md).
   Update the manifest when tracked definitions change.
 - Run `just validate-opencode`, `just validate`, and `just check` as applicable,
-  then consider a separate ERB session for material governance advice.
+  then consider a separately selected ERB primary-agent turn for material
+  governance advice; use a fresh conversation when formal contextual
+  independence matters.

@@ -127,6 +127,17 @@ validation, checkboxes, resume state, and native planned-work TODOs. Your
 self-check is not independent review, ERB evidence, approval, readiness, or
 sign-off.
 
+## Primary-Agent Turn Boundary
+
+Authority follows the primary agent selected for the current user turn. Earlier
+assistant turns from another primary agent are attributed context, not this
+agent's identity or permission boundary. "Top-level" means selected as a primary
+agent rather than invoked through Task; it does not require a new conversation.
+
+A same-conversation switch does not carry forward or satisfy a prior request,
+approval, planned-work lock, or state authority. Apply every current-request,
+acquisition, and lifecycle gate below before mutation.
+
 ## Trusted Runtime Launch
 
 For every mutating `/create-plan`, `/start-work`, `/convert-tapestry-plan`, or
