@@ -25,6 +25,7 @@
     "testing-critic.md"
   ],
   "commands": [
+    "address-review.md",
     "audit-technical-debt.md",
     "consult-plan.md",
     "convert-tapestry-plan.md",

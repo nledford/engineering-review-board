@@ -23,6 +23,13 @@ select the Engineering Lead in the same conversation, and explicitly request
 implementation under the Lead contract. Use a fresh conversation when formal
 contextual independence matters.
 
+For this explicit ERB-to-Lead implementation handoff, `/address-review` selects
+the Engineering Lead for the current command turn and identifies prior Board
+output as read-only advisory context from a different primary agent. The
+command does not widen Lead authority: it requires fresh repository evidence
+and re-evaluation, and routes durable plan creation or existing-plan execution
+through the human-controlled Plan Orchestrator commands.
+
 ## Roles and Limits
 
 | Role | Owns | Must not do |
@@ -214,6 +221,7 @@ are authoritative for primary ownership.
 
 | Command | Primary agent | Job |
 | --- | --- | --- |
+| [`/address-review`](../opencode/commands/address-review.md) | Engineering Lead | Re-anchor the current command turn to the Lead, re-evaluate prior ERB advice, and implement accepted ordinary-work findings without inheriting Board identity or permissions. |
 | [`/consult-plan`](../opencode/commands/consult-plan.md) | Plan Orchestrator | Provide top-level read-only planning advice without acquiring state, creating a plan, or authorizing work. |
 | [`/create-plan`](../opencode/commands/create-plan.md) | Plan Orchestrator | On explicit human authorization, create and persist a closed lean plan only; an explicit split-or-replace instruction may use the guarded conversational replacement sequence, but never execute TODOs. |
 | [`/start-work`](../opencode/commands/start-work.md) | Plan Orchestrator | Execute or resume only an existing valid canonical lean plan; reject free-form creation and plan-update requests. |

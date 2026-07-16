@@ -169,6 +169,7 @@ CANONICAL_AGENT_TOPOLOGY = CanonicalAgentTopology(
         CanonicalAgentPolicy("testing-critic", "subagent", (), "review-specialist"),
     ),
     commands=(
+        CanonicalCommandPolicy("address-review.md", "engineering-lead"),
         CanonicalCommandPolicy("audit-technical-debt.md", "engineering-review-board"),
         CanonicalCommandPolicy("consult-plan.md", "plan-orchestrator"),
         CanonicalCommandPolicy("convert-tapestry-plan.md", "plan-orchestrator"),
