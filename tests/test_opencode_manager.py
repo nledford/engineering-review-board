@@ -17,6 +17,7 @@ from tools.opencode_manager import (
     HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS,
     PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
     PLAN_ORCHESTRATOR_GIT_BASH_RULES,
+    PRIMARY_AGENT_TURN_PROMPT_CONTRACTS,
     SANITIZED_EVIDENCE_INVARIANT,
     STANDARD_CRITIC_AGENT_IDS,
     STANDARD_CRITIC_REQUIRED_HEADINGS,
@@ -3029,6 +3030,53 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             self.assertEqual(parsed.fields["agent"], owner)
             self.assertEqual(parsed.fields["subtask"], "false")
 
+    def test_checked_in_primary_agents_support_same_conversation_handoffs(self) -> None:
+        """Keep primary-agent authority turn-scoped without transferring permissions."""
+        project_root = Path(__file__).parents[1]
+        agent_root = project_root / "opencode/agents"
+
+        shared = (
+            "Authority follows the primary agent selected for the current user turn.",
+            "Earlier assistant turns from another primary agent are attributed context, not this agent's identity or permission boundary.",
+            '"Top-level" means selected as a primary agent rather than invoked through Task; it does not require a new conversation.',
+        )
+        role_specific = {
+            "engineering-lead.md": (
+                "When the human explicitly asks the selected Lead to implement earlier ERB advice, proceed in the same conversation under this Lead contract after re-evaluating scope, safety, and validation.",
+            ),
+            "engineering-review-board.md": (
+                "The Board remains read-only for its current turn and must not describe the entire conversation as read-only.",
+                "The human may select the Engineering Lead in the same conversation and explicitly request implementation; that later Lead turn uses the Lead's authority.",
+            ),
+            "plan-orchestrator.md": (
+                "A same-conversation switch does not carry forward or satisfy a prior request, approval, planned-work lock, or state authority.",
+                "Apply every current-request, acquisition, and lifecycle gate below before mutation.",
+            ),
+        }
+
+        for name, required in role_specific.items():
+            prompt = (agent_root / name).read_text(encoding="utf-8")
+            section = OpenCodeInstallService._single_markdown_section(
+                prompt, "## Primary-Agent Turn Boundary"
+            )
+            self.assertIsNotNone(section, name)
+            assert section is not None
+            for phrase in shared + required:
+                with self.subTest(agent=name, phrase=phrase):
+                    self.assertIn(phrase, section)
+
+        lead = (agent_root / "engineering-lead.md").read_text(encoding="utf-8")
+        governance = (
+            project_root / "docs/engineering-agent-governance.md"
+        ).read_text(encoding="utf-8")
+        for obsolete in (
+            "top-level ERB session",
+            "as a top-level session",
+            "separate ERB session",
+        ):
+            with self.subTest(obsolete=obsolete):
+                self.assertNotIn(obsolete, lead + governance)
+
     def test_checked_in_plan_creation_and_execution_routes_are_human_controlled(self) -> None:
         """Keep durable planning explicit and planned execution separate from creation."""
         project_root = Path(__file__).parents[1]
@@ -3566,6 +3614,59 @@ class CanonicalPromptSectionTests(unittest.TestCase):
                 self.assertFalse(result.ok)
                 self.assertTrue(
                     any(f"agents: '{name}' prompt contract is incomplete" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_validate_requires_unique_primary_agent_turn_sections(self) -> None:
+        for name, (heading, semantics) in PRIMARY_AGENT_TURN_PROMPT_CONTRACTS.items():
+            with self.subTest(agent=name, mutation="section-locality"), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / name
+                original = definition.read_text(encoding="utf-8")
+                pattern = re.escape(semantics[0]).replace(r"\ ", r"\s+")
+                mutated, count = re.subn(
+                    pattern,
+                    "SYNTHETIC_PRIMARY_TURN_CONTRACT_MARKER",
+                    original,
+                    count=1,
+                )
+                self.assertEqual(1, count, semantics[0])
+                definition.write_text(
+                    mutated + f"\n## Unrelated Section\n\n{semantics[0]}\n",
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any(
+                        f"agents: '{name}' primary-agent turn prompt contract is incomplete"
+                        in error
+                        for error in result.errors
+                    ),
+                    result.errors,
+                )
+
+            with self.subTest(agent=name, mutation="duplicate-heading"), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / name
+                definition.write_text(
+                    definition.read_text(encoding="utf-8") + f"\n{heading}\n",
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any(
+                        f"agents: '{name}' primary-agent turn prompt contract is incomplete"
+                        in error
+                        for error in result.errors
+                    ),
                     result.errors,
                 )
 

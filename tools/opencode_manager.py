@@ -256,6 +256,36 @@ CANONICAL_PROMPT_SECTION_CONTRACTS = {
         ),
     ),
 }
+PRIMARY_AGENT_TURN_SHARED_PROMPT_REQUIREMENTS = (
+    "Authority follows the primary agent selected for the current user turn.",
+    "Earlier assistant turns from another primary agent are attributed context, not this agent's identity or permission boundary.",
+    '"Top-level" means selected as a primary agent rather than invoked through Task; it does not require a new conversation.',
+)
+PRIMARY_AGENT_TURN_PROMPT_CONTRACTS = {
+    "engineering-lead.md": (
+        "## Primary-Agent Turn Boundary",
+        PRIMARY_AGENT_TURN_SHARED_PROMPT_REQUIREMENTS
+        + (
+            "When the human explicitly asks the selected Lead to implement earlier ERB advice, proceed in the same conversation under this Lead contract after re-evaluating scope, safety, and validation.",
+        ),
+    ),
+    "engineering-review-board.md": (
+        "## Primary-Agent Turn Boundary",
+        PRIMARY_AGENT_TURN_SHARED_PROMPT_REQUIREMENTS
+        + (
+            "The Board remains read-only for its current turn and must not describe the entire conversation as read-only.",
+            "The human may select the Engineering Lead in the same conversation and explicitly request implementation; that later Lead turn uses the Lead's authority.",
+        ),
+    ),
+    "plan-orchestrator.md": (
+        "## Primary-Agent Turn Boundary",
+        PRIMARY_AGENT_TURN_SHARED_PROMPT_REQUIREMENTS
+        + (
+            "A same-conversation switch does not carry forward or satisfy a prior request, approval, planned-work lock, or state authority.",
+            "Apply every current-request, acquisition, and lifecycle gate below before mutation.",
+        ),
+    ),
+}
 BOARD_PLAN_REVIEW_PROMPT_CONTRACT = (
     "## Plan Reviews",
     (
@@ -310,10 +340,14 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
     "docs/engineering-agent-governance.md": (
         "top-level `/consult-plan`",
         "The human's decision to require, decline, or override planning advice controls the route.",
+        "Primary-agent authority is turn-scoped, not conversation-scoped.",
+        "Use a fresh conversation when formal contextual independence matters.",
     ),
     "docs/cross-reference-map.md": (
         "## OpenCode Runtime Handoff Overlay",
         "top-level `/consult-plan`",
+        "Primary-agent handoff",
+        "Earlier turns remain context but do not transfer permissions.",
     ),
     "docs/implementation-plans/README.md": (
         "## Human-Controlled Lifecycle",
@@ -2353,6 +2387,20 @@ class OpenCodeInstallService:
                 section = self._single_markdown_section(prompt, heading)
                 if section is None or not all(token in section for token in required):
                     errors.append(f"agents: '{name}' prompt contract is incomplete")
+        if set(PRIMARY_AGENT_TURN_PROMPT_CONTRACTS).issubset(inventory.agents):
+            for name, (heading, required) in PRIMARY_AGENT_TURN_PROMPT_CONTRACTS.items():
+                try:
+                    prompt = (self.sources["agents"] / name).read_text(encoding="utf-8")
+                except (OSError, UnicodeError):
+                    errors.append(
+                        f"agents: '{name}' primary-agent turn prompt contract is unreadable"
+                    )
+                    continue
+                section = self._single_markdown_section(prompt, heading)
+                if section is None or not all(token in section for token in required):
+                    errors.append(
+                        f"agents: '{name}' primary-agent turn prompt contract is incomplete"
+                    )
         board_name = "engineering-review-board.md"
         if board_name in inventory.agents:
             try:
