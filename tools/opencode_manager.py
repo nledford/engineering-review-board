@@ -633,6 +633,17 @@ PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS = (
     "Runtime approval is an additional human check, not proof the path is safe.",
     "Stop if a dirty path cannot be represented literally under the command policy.",
 )
+ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS = (
+    "only after an explicit current human request",
+    "already created and validated by the top-level Plan Orchestrator",
+    "Load `git-commit`",
+    "`security-review` and `security-review-evidence`",
+    "does not authorize plan creation, editing, checkbox advancement, state mutation, or execution",
+    "`.erb/plan-state.json` remains outside this staging exception",
+    "quote it as one literal shell word",
+    "Never use `*`, `?`, bracket expressions, braces, pathspec magic, `.` shorthand, traversal, substitution, or any other expansion syntax",
+    "full OpenCode restart before this authority exists",
+)
 KNOWN_PERMISSION_TOOLS = frozenset(
     {
         "*",
@@ -675,7 +686,24 @@ SAFE_EXACT_GIT_BASH_ALLOWS = frozenset(
         "pwd",
     }
 )
+ENGINEERING_LEAD_PLAN_STAGING_BASH_RULES = (
+    *((rule, "ask") for rule in CANONICAL_PLAN_STAGING_ASK_RULES),
+    ("git add -- .erb/plans/*/*/*", "deny"),
+    ("git add -- .erb/plans/*[*", "deny"),
+    ("git add -- .erb/plans/*{*", "deny"),
+    ("git add -- .erb/plans/*>*", "deny"),
+    ("git add -- .erb/plans/*<*", "deny"),
+    ("git add -- .erb/plans/*|*", "deny"),
+    ("git add -- .erb/plans/*&*", "deny"),
+    ("git add -- .erb/plans/*;*", "deny"),
+    ("git add -- .erb/plans/*$(*", "deny"),
+    ("git add -- .erb/plans/*$*", "deny"),
+    ("git add -- .erb/plans/*`*", "deny"),
+    (LEGACY_PLAN_REDIRECTION_DENY_RULE, "deny"),
+    (STATE_REDIRECTION_DENY_RULE, "deny"),
+)
 ENGINEERING_LEAD_POST_PLAN_BASH_RULES = (
+    *ENGINEERING_LEAD_PLAN_STAGING_BASH_RULES,
     ("pbcopy *", "allow"),
 )
 ENGINEERING_LEAD_GIT_BASH_RULES = (
@@ -820,6 +848,13 @@ ENGINEERING_LEAD_GIT_EFFECTIVE_ACTIONS = (
     ("git status --short", "allow"),
     ("git diff --cached", "allow"),
     ("git add src/app.py", "allow"),
+    ("git add -- .erb/plans/example.md", "ask"),
+    ("git add -- .erb/plans/work/01-example.md", "ask"),
+    ("git add -- .erb/plan-state.json", "deny"),
+    ("git add -- .erb/plans/work/deep/01-example.md", "deny"),
+    ("git add -- docs/implementation-plans/plans/work/01-example.md", "deny"),
+    ("git add -- .erb/plans/$(printf example).md", "deny"),
+    ("git diff > .erb/plans/work/01-example.md", "deny"),
     ("git commit", "allow"),
     ("git commit -m message", "ask"),
     ("git commit --amend", "ask"),
@@ -976,9 +1011,7 @@ CANONICAL_PERMISSION_PROFILES = {
                 + ENGINEERING_LEAD_GIT_BASH_RULES
                 + ENGINEERING_LEAD_NON_GIT_BASH_RULES
                 + (
-                    (LEGACY_PLAN_REDIRECTION_DENY_RULE, "deny"),
                     (PLAN_REDIRECTION_DENY_RULE, "deny"),
-                    (STATE_REDIRECTION_DENY_RULE, "deny"),
                 )
                 + ENGINEERING_LEAD_POST_PLAN_BASH_RULES
             ),
@@ -2019,13 +2052,22 @@ class OpenCodeInstallService:
                 if isinstance(bash, tuple)
                 else ()
             )
-            if git_rules != ENGINEERING_LEAD_GIT_BASH_RULES:
+            expected_git_rules = (
+                ENGINEERING_LEAD_GIT_BASH_RULES
+                + tuple(
+                    rule
+                    for rule in ENGINEERING_LEAD_PLAN_STAGING_BASH_RULES
+                    if rule[0].startswith("git")
+                )
+            )
+            if git_rules != expected_git_rules:
                 errors.append(
                     f"agents: '{name}' must preserve canonical git permissions"
                 )
             if isinstance(bash, tuple) and any(
                 action in {"allow", "ask"}
                 and (pattern, action) not in ENGINEERING_LEAD_GIT_BASH_RULES
+                and (pattern, action) not in ENGINEERING_LEAD_PLAN_STAGING_BASH_RULES
                 and pattern
                 not in {
                     "*",
@@ -2148,15 +2190,21 @@ class OpenCodeInstallService:
 
         bash = permissions.get("bash")
         if agent_id in ROOT_ASK_AGENT_IDS:
-            required_suffix = (
-                (LEGACY_PLAN_REDIRECTION_DENY_RULE, "deny"),
-                (PLAN_REDIRECTION_DENY_RULE, "deny"),
-                (STATE_REDIRECTION_DENY_RULE, "deny"),
-            )
             if agent_id == "engineering-lead":
-                permitted_suffixes = (required_suffix + ENGINEERING_LEAD_POST_PLAN_BASH_RULES,)
+                permitted_suffixes = (
+                    (
+                        (PLAN_REDIRECTION_DENY_RULE, "deny"),
+                        *ENGINEERING_LEAD_POST_PLAN_BASH_RULES,
+                    ),
+                )
             else:
-                permitted_suffixes = (required_suffix,)
+                permitted_suffixes = (
+                    (
+                        (LEGACY_PLAN_REDIRECTION_DENY_RULE, "deny"),
+                        (PLAN_REDIRECTION_DENY_RULE, "deny"),
+                        (STATE_REDIRECTION_DENY_RULE, "deny"),
+                    ),
+                )
             if (
                 not isinstance(bash, tuple)
                 or not any(
@@ -2379,6 +2427,26 @@ class OpenCodeInstallService:
                         f"agents: '{board_name}' Board plan-review prompt contract is incomplete"
                     )
         if self._has_canonical_active_workflow_inventory(inventory):
+            lead_name = "engineering-lead.md"
+            try:
+                lead_prompt = (self.sources["agents"] / lead_name).read_text(
+                    encoding="utf-8"
+                )
+            except (OSError, UnicodeError):
+                errors.append(
+                    f"agents: '{lead_name}' plan-staging prompt contract is unreadable"
+                )
+            else:
+                lead_commit_section = self._single_markdown_section(
+                    lead_prompt, "## Git Commit Policy"
+                )
+                if lead_commit_section is None or not all(
+                    token in lead_commit_section
+                    for token in ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS
+                ):
+                    errors.append(
+                        f"agents: '{lead_name}' plan-staging prompt contract is incomplete"
+                    )
             for name in CANONICAL_AGENT_TOPOLOGY.agent_filenames:
                 try:
                     prompt = (self.sources["agents"] / name).read_text(encoding="utf-8")

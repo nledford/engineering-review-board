@@ -15,6 +15,7 @@ from tools.opencode_manager import (
     CANONICAL_PROMPT_SECTION_CONTRACTS,
     CODE_DOCUMENTATION_PROMPT_CONTRACTS,
     COMMAND_PROMPT_CONTRACTS,
+    ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS,
     HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS,
     PLAN_ORCHESTRATOR_BASH_RULES,
     PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
@@ -213,6 +214,23 @@ LEAD_GIT_RULES = (
     ("git push -f*", "deny"),
     ("git push * -f*", "deny"),
 )
+LEAD_PLAN_STAGING_RULES = (
+    ("git add -- .erb/plans/*.md", "ask"),
+    ("git add -- .erb/plans/*/*.md", "ask"),
+    ("git add -- .erb/plans/*/*/*", "deny"),
+    ("git add -- .erb/plans/*[*", "deny"),
+    ("git add -- .erb/plans/*{*", "deny"),
+    ("git add -- .erb/plans/*>*", "deny"),
+    ("git add -- .erb/plans/*<*", "deny"),
+    ("git add -- .erb/plans/*|*", "deny"),
+    ("git add -- .erb/plans/*&*", "deny"),
+    ("git add -- .erb/plans/*;*", "deny"),
+    ("git add -- .erb/plans/*$(*", "deny"),
+    ("git add -- .erb/plans/*$*", "deny"),
+    ("git add -- .erb/plans/*`*", "deny"),
+    ("*docs/implementation-plans/plans*", "deny"),
+    ("*.erb/plan-state.json*", "deny"),
+)
 
 
 def render_lead_permissions(
@@ -233,10 +251,12 @@ def render_lead_permissions(
         "  bash:\n"
         '    "*": ask\n'
         f"{rendered_git_rules}"
-        '    "*docs/implementation-plans/plans*": deny\n'
         '    "*.erb/plans*": deny\n'
-        '    "*.erb/plan-state.json*": deny\n'
-        '    "pbcopy *": allow\n'
+        + "".join(
+            f'    "{pattern}": {action}\n'
+            for pattern, action in LEAD_PLAN_STAGING_RULES
+        )
+        + '    "pbcopy *": allow\n'
         '  "playwright_*": allow\n'
         '  "chrome-devtools_*": allow\n'
         '  "serena_*": allow\n'
@@ -959,6 +979,48 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         for command, expected in cases.items():
             with self.subTest(command=command):
                 self.assertEqual(expected, resolve_opencode_action(LEAD_GIT_RULES, command))
+
+    def test_checked_in_lead_may_stage_only_canonical_plan_markdown(self) -> None:
+        project_root = Path(__file__).parents[1]
+        lead, errors = OpenCodeInstallService._parse_frontmatter(
+            "agents",
+            "engineering-lead.md",
+            (project_root / "opencode/agents/engineering-lead.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+        self.assertEqual([], errors)
+        assert lead is not None
+        bash = lead.permissions["bash"]
+        self.assertIsInstance(bash, tuple)
+        assert isinstance(bash, tuple)
+
+        cases = {
+            "git add -- .erb/plans/example.md": "ask",
+            "git add -- .erb/plans/work/01-example.md": "ask",
+            "git add -- .erb/plan-state.json": "deny",
+            "git add -- .erb/plan-state.json .erb/plans/example.md": "deny",
+            "git add -- .erb/plans/work/deep/01-example.md": "deny",
+            "git add -- docs/implementation-plans/plans/work/01-example.md": "deny",
+            "git add -- docs/implementation-plans/plans/example.md .erb/plans/example.md": "deny",
+            "git add -- .erb/plans/example.md docs/implementation-plans/plans/example.md": "deny",
+            "git add -- .erb/plans/$(printf example).md": "deny",
+            "git diff > .erb/plans/work/01-example.md": "deny",
+        }
+        for command, expected in cases.items():
+            with self.subTest(command=command):
+                self.assertEqual(expected, resolve_opencode_action(bash, command))
+
+    def test_checked_in_lead_plan_staging_prompt_is_narrow(self) -> None:
+        project_root = Path(__file__).parents[1]
+        lead = " ".join(
+            (project_root / "opencode/agents/engineering-lead.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        for requirement in ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS:
+            with self.subTest(requirement=requirement):
+                self.assertIn(requirement, lead)
 
     def test_validate_requires_exact_lead_git_rule_matrix(self) -> None:
         mutations = {
@@ -2765,6 +2827,35 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
 
                 self.assertTrue(
                     any("prompt contract is incomplete" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_validate_requires_lead_plan_staging_prompt_contract(self) -> None:
+        project_root = Path(__file__).parents[1]
+        source = (project_root / "opencode/agents/engineering-lead.md").read_text(
+            encoding="utf-8"
+        )
+        for requirement in ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS:
+            with self.subTest(requirement=requirement), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode/agents/engineering-lead.md"
+                mutation, replacements = re.subn(
+                    r"\s+".join(re.escape(token) for token in requirement.split()),
+                    "missing plan-staging requirement",
+                    source,
+                    count=1,
+                )
+                self.assertEqual(1, replacements)
+                definition.write_text(mutation, encoding="utf-8")
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertTrue(
+                    any(
+                        "plan-staging prompt contract is incomplete" in error
+                        for error in result.errors
+                    ),
                     result.errors,
                 )
 

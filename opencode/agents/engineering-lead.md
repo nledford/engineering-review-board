@@ -207,8 +207,21 @@ permission:
     "docker image prune *": ask
     "docker rm *": ask
     "docker rmi *": ask
-    "*docs/implementation-plans/plans*": deny
     "*.erb/plans*": deny
+    "git add -- .erb/plans/*.md": ask
+    "git add -- .erb/plans/*/*.md": ask
+    "git add -- .erb/plans/*/*/*": deny
+    "git add -- .erb/plans/*[*": deny
+    "git add -- .erb/plans/*{*": deny
+    "git add -- .erb/plans/*>*": deny
+    "git add -- .erb/plans/*<*": deny
+    "git add -- .erb/plans/*|*": deny
+    "git add -- .erb/plans/*&*": deny
+    "git add -- .erb/plans/*;*": deny
+    "git add -- .erb/plans/*$(*": deny
+    "git add -- .erb/plans/*$*": deny
+    "git add -- .erb/plans/*`*": deny
+    "*docs/implementation-plans/plans*": deny
     "*.erb/plan-state.json*": deny
     "pbcopy *": allow
   # Allow every tool exposed by the configured MCP server set.
@@ -406,6 +419,26 @@ without a pathspec or extra mode options. Non-interactive message options remain
 runtime-gated because glob permissions cannot distinguish a message operand from
 a trailing pathspec. Amend, auto-stage, fixup, identity, date, hook-bypass, and
 history-rewrite options also remain gated or denied. Never skip hooks.
+
+The Lead may stage canonical plan Markdown only after an explicit current human
+request and only when the file was already created and validated by the
+top-level Plan Orchestrator. A full OpenCode restart before this authority exists
+is required after definition changes. Load `git-commit`; load `security-review`
+and `security-review-evidence` for signing, hook, credential, or secret-adjacent
+evidence. This exception does not authorize plan creation, editing, checkbox
+advancement, state mutation, or execution. `.erb/plan-state.json` remains outside
+this staging exception and must not be staged by the Lead.
+
+Before staging, re-read the exact plan and fresh trusted `git status` evidence.
+Accept only one contained regular non-symlink canonical path matching
+`.erb/plans/<slug>.md` or `.erb/plans/<subject>/<NN>-<slug>.md`, with strict
+UTF-8 content no larger than 1 MiB. Derive the exact repository-relative path
+from that evidence and quote it as one literal shell word in one
+`git add -- <path>` command. Never use `*`, `?`, bracket expressions, braces,
+pathspec magic, `.` shorthand, traversal, substitution, or any other expansion
+syntax. Runtime approval is an additional human check, not proof that the path
+is safe. Stop if the path cannot be represented literally under the command
+policy. Then re-check the staged diff before using the ordinary commit flow.
 
 Fetch only configured, trusted remotes by default. Inline URLs or paths,
 options, destination refspecs, and custom transport behavior require separate
