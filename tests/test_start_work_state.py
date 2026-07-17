@@ -1377,6 +1377,7 @@ class StartWorkStateTests(unittest.TestCase):
         (state_dir / "resume.json").write_text(json.dumps({"version": 1, "plan_path": PLAN, "contract_sha256": "a" * 64}), encoding="utf-8")
         cases = (
             (("acquire", "--repo-root", "./"), "operation-invalid"),
+            (("recover-stale", "--repo-root", "."), "operation-invalid"),
             (
                 ("acquire", "--repo-root", ".", "--owner-token", TOKEN),
                 "operation-invalid",

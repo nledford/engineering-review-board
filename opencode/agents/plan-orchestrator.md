@@ -215,13 +215,24 @@ Never infer or report hidden state details from a code.
 
 Never recover a lock automatically. On `lock-held`, request explicit human
 confirmation that no planned mutator remains. Only after confirmation may you
-invoke the exact `recover-stale` operation and retry the exact acquisition once;
-stop if confirmation is declined or uncertain. `plan-unregistered` and
-`state-version-unsupported` require a human-controlled creation, conversion, or
-migration decision and never automatic registration. `ignore-rules-invalid`
-stops execution until a human-controlled correction restores the exact narrow
-ignore contract. `plan-contract-drift` and `active-plan-conflict` stop execution
-for reconciliation. Every other code stops without speculative cleanup.
+invoke this exact isolated literal:
+
+```text
+python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" recover-stale --repo-root . --prior-human-confirmation true
+```
+
+The confirmation assertion is a fixed literal; never omit, alter, or synthesize
+it, and never request or rely on a broader `python3 *` approval. After recovery,
+retry the exact acquisition once and stop if confirmation is declined or
+uncertain. If a recovery attempt returns `operation-invalid`, report an
+invocation-contract failure. Do not claim the installed helper lacks
+`recover-stale` without separate installed-helper evidence.
+`plan-unregistered` and `state-version-unsupported` require a human-controlled
+creation, conversion, or migration decision and never automatic registration.
+`ignore-rules-invalid` stops execution until a human-controlled correction
+restores the exact narrow ignore contract. `plan-contract-drift` and
+`active-plan-conflict` stop execution for reconciliation. Every other code stops
+without speculative cleanup.
 
 ## Plan Safety
 

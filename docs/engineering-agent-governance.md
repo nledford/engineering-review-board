@@ -80,7 +80,14 @@ Known validation failures before execution mutation release only that
 preflight's matching newly acquired lock and return a fixed sanitized error
 code. A `lock-held` result never authorizes automatic recovery: the Plan
 Orchestrator must obtain explicit human confirmation that no planned mutator
-remains before exact stale recovery and a single acquisition retry.
+remains, then use only this exact literal before a single acquisition retry:
+
+```text
+python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" recover-stale --repo-root . --prior-human-confirmation true
+```
+
+An `operation-invalid` recovery result indicates an invocation-contract failure;
+it is not evidence by itself that the installed helper lacks `recover-stale`.
 Post-mutation failures keep the lock.
 
 ### Maintainer-authorized Lead tools

@@ -40,6 +40,10 @@ SUPPORT_FILES = (
     "project-template/docs/implementation-plans/TEMPLATE.md",
 )
 RUNTIME_HELPERS = ("workflow-tools/start_work_state.py",)
+RECOVER_STALE_COMMAND = (
+    'python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" '
+    "recover-stale --repo-root . --prior-human-confirmation true"
+)
 ACTIVE_WORKFLOW_FIXED_FILES = (
     ".gitignore",
     "AGENTS.md",
@@ -3194,6 +3198,82 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         self.assertEqual(root_guide, template_guide)
         self.assertIn("`begin-execution`", root_guide)
         self.assertIn("sanitized error code", root_guide)
+
+    def test_checked_in_lock_holders_use_exact_model_visible_recovery(self) -> None:
+        """Keep the recovery argv visible to the model and identical everywhere."""
+        project_root = Path(__file__).parents[1]
+        agent_path = project_root / "opencode/agents/plan-orchestrator.md"
+        agent_text = agent_path.read_text(encoding="utf-8")
+        parsed, errors = OpenCodeInstallService._parse_frontmatter(
+            "agents", "plan-orchestrator.md", agent_text
+        )
+        self.assertEqual(errors, [])
+        assert parsed is not None
+        agent_body = "\n".join(agent_text.splitlines()[parsed.closing_index + 1 :])
+
+        definitions = {"agents/plan-orchestrator.md": agent_body}
+        for name in (
+            "create-plan.md",
+            "start-work.md",
+            "convert-tapestry-plan.md",
+        ):
+            definitions[f"commands/{name}"] = (
+                project_root / "opencode/commands" / name
+            ).read_text(encoding="utf-8")
+
+        for name, prompt in definitions.items():
+            recovery_lines = [
+                line.strip()
+                for line in prompt.splitlines()
+                if "start_work_state.py" in line and "recover-stale" in line
+            ]
+            with self.subTest(definition=name):
+                self.assertEqual(recovery_lines, [RECOVER_STALE_COMMAND])
+                self.assertIn(
+                    "If a recovery attempt returns `operation-invalid`, report an invocation-contract failure.",
+                    " ".join(prompt.split()),
+                )
+                self.assertIn(
+                    "Do not claim the installed helper lacks `recover-stale` without separate installed-helper evidence.",
+                    " ".join(prompt.split()),
+                )
+
+    def test_validate_rejects_incomplete_model_visible_stale_recovery(self) -> None:
+        shortened = RECOVER_STALE_COMMAND.removesuffix(
+            " --prior-human-confirmation true"
+        )
+        for relative_path in (
+            "opencode/agents/plan-orchestrator.md",
+            "opencode/commands/create-plan.md",
+            "opencode/commands/start-work.md",
+            "opencode/commands/convert-tapestry-plan.md",
+        ):
+            with self.subTest(
+                definition=relative_path
+            ), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / relative_path
+                original = definition.read_text(encoding="utf-8")
+                index = original.rfind(RECOVER_STALE_COMMAND)
+                self.assertNotEqual(index, -1, relative_path)
+                definition.write_text(
+                    original[:index]
+                    + shortened
+                    + original[index + len(RECOVER_STALE_COMMAND) :],
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any(
+                        "stale-recovery prompt contract is incomplete" in error
+                        for error in result.errors
+                    ),
+                    result.errors,
+                )
 
     def test_checked_in_conversational_plan_replacement_is_guarded(self) -> None:
         project_root = Path(__file__).parents[1]

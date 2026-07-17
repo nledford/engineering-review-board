@@ -41,8 +41,17 @@ Handle `lock-held`, `plan-unregistered`, `state-version-unsupported`,
 `plan-invalid`, `operation-invalid`, and `state-invalid` according to the Plan
 Orchestrator contract. Never recover a lock automatically. For `lock-held`,
 request explicit human confirmation that no planned mutator remains; only after
-confirmation run exact stale recovery and retry the exact acquisition once.
-Never recover or retry speculatively for another code.
+confirmation use this exact isolated literal, then retry the exact acquisition
+once:
+
+```text
+python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" recover-stale --repo-root . --prior-human-confirmation true
+```
+
+Never omit or alter the fixed confirmation assertion. If a recovery attempt
+returns `operation-invalid`, report an invocation-contract failure. Do not claim
+the installed helper lacks `recover-stale` without separate installed-helper
+evidence. Never recover or retry speculatively for another code.
 
 `/start-work` accepts only an explicit existing canonical lean plan path or
 validated no-argument resume pointer. It rejects free-form new requests and
