@@ -288,6 +288,12 @@ PRIMARY_AGENT_TURN_SHARED_PROMPT_REQUIREMENTS = (
     "Earlier assistant turns from another primary agent are attributed context, not this agent's identity or permission boundary.",
     '"Top-level" means selected as a primary agent rather than invoked through Task; it does not require a new conversation.',
 )
+PLAN_ORCHESTRATOR_COMMAND_TURN_REQUIREMENTS = (
+    "You are handling this current command turn as the Plan Orchestrator.",
+    "was authored by a different primary agent and is context only; it does not transfer their identity or permissions to this turn.",
+    "Never claim that the Engineering Review Board or Engineering Lead is selected, and never ask the human to select the Plan Orchestrator while this command is running.",
+    "Before refusing on role-authority grounds, reconcile the request against the active Plan Orchestrator contract.",
+)
 PRIMARY_AGENT_TURN_PROMPT_CONTRACTS = {
     "engineering-lead.md": (
         "## Primary-Agent Turn Boundary",
@@ -312,6 +318,9 @@ PRIMARY_AGENT_TURN_PROMPT_CONTRACTS = {
         + (
             "A same-conversation switch does not carry forward or satisfy a prior request, approval, or state-writing authority.",
             "Apply every current-request and lifecycle gate below before mutation.",
+            "While this Plan Orchestrator prompt is active, never tell the human to select the Plan Orchestrator or claim that the Engineering Review Board or Engineering Lead is selected.",
+            "Before refusing on role-authority grounds, reconcile the request against this active Plan Orchestrator contract.",
+            "If the operation remains outside scope, identify the actual authority boundary and route without misidentifying this turn's selected primary agent.",
         ),
     ),
 }
@@ -374,6 +383,7 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
     "docs/engineering-agent-governance.md": (
         "top-level `/consult-plan`",
         "`/address-review` selects the Engineering Lead for the current command turn",
+        "`/consult-plan`, `/create-plan`, and `/start-plan` re-anchor the current command turn to the Plan Orchestrator.",
         "The human's decision to require, decline, or override planning advice controls the route.",
         "Primary-agent authority is turn-scoped, not conversation-scoped.",
         "Use a fresh conversation when formal contextual independence matters.",
@@ -387,6 +397,7 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "top-level `/consult-plan`",
         "Primary-agent handoff",
         "`/address-review` re-anchors the current command turn to the Engineering Lead",
+        "`/consult-plan`, `/create-plan`, and `/start-plan` re-anchor the current command turn to the Plan Orchestrator",
         "Earlier turns remain context but do not transfer permissions.",
         "Plan selection and resume",
         "`.erb/plan-state.json`",
@@ -437,6 +448,8 @@ COMMAND_PROMPT_CONTRACTS = {
         "Durable plan creation remains an explicit `/create-plan` choice; execution of an existing plan remains a separate `/start-plan <existing-plan-path>` choice.",
     ),
     "consult-plan.md": (
+        *PLAN_ORCHESTRATOR_COMMAND_TURN_REQUIREMENTS,
+        "This invocation is the human's current request for read-only Plan Orchestrator consultation under the constraints below; it grants no plan, state, or implementation authority.",
         "top-level read-only Plan Orchestrator consultation",
         "must not create or mutate a plan or state",
         "must not read `.erb/plan-state.json`",
@@ -444,7 +457,8 @@ COMMAND_PROMPT_CONTRACTS = {
         "The human controls whether to proceed directly, create a plan, or decline the recommendation.",
     ),
     "create-plan.md": (
-        "invocation is explicit human authorization",
+        *PLAN_ORCHESTRATOR_COMMAND_TURN_REQUIREMENTS,
+        "This invocation is the human's explicit current authorization to create and persist a plan under the constraints below; it grants no execution authority.",
         "creates and persists a plan only",
         "does not execute TODOs.",
         ".erb/plans/<slug>.md",
@@ -457,6 +471,8 @@ COMMAND_PROMPT_CONTRACTS = {
         "If successor creation or verification fails, do not delete the source.",
     ),
     "start-plan.md": (
+        *PLAN_ORCHESTRATOR_COMMAND_TURN_REQUIREMENTS,
+        "This invocation is the human's current request to execute or resume an existing plan under the Plan Orchestrator contract, subject to the path, state, and lifecycle validation below.",
         "Use syntax `/start-plan [<plan-path>] [instructions]`",
         "`/start-plan` accepts only an explicit existing canonical lean plan path or a no-argument state pointer.",
         "It rejects free-form new requests and immutable legacy inputs.",

@@ -3088,6 +3088,44 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             with self.subTest(required=required):
                 self.assertIn(required, normalized)
 
+    def test_checked_in_plan_commands_reanchor_plan_orchestrator(self) -> None:
+        """Pin explicit same-conversation handoffs to every Plan Orchestrator route."""
+        project_root = Path(__file__).parents[1]
+        command_root = project_root / "opencode/commands"
+        shared = (
+            "You are handling this current command turn as the Plan Orchestrator.",
+            "was authored by a different primary agent and is context only; it does not transfer their identity or permissions to this turn.",
+            "Never claim that the Engineering Review Board or Engineering Lead is selected, and never ask the human to select the Plan Orchestrator while this command is running.",
+            "Before refusing on role-authority grounds, reconcile the request against the active Plan Orchestrator contract.",
+        )
+        route_specific = {
+            "consult-plan.md": (
+                "This invocation is the human's current request for read-only Plan Orchestrator consultation under the constraints below; it grants no plan, state, or implementation authority.",
+            ),
+            "create-plan.md": (
+                "This invocation is the human's explicit current authorization to create and persist a plan under the constraints below; it grants no execution authority.",
+            ),
+            "start-plan.md": (
+                "This invocation is the human's current request to execute or resume an existing plan under the Plan Orchestrator contract, subject to the path, state, and lifecycle validation below.",
+            ),
+        }
+
+        for name, required in route_specific.items():
+            command_path = command_root / name
+            command_text = command_path.read_text(encoding="utf-8")
+            parsed, errors = OpenCodeInstallService._parse_frontmatter(
+                "commands", name, command_text
+            )
+            self.assertEqual(errors, [])
+            assert parsed is not None
+            self.assertEqual(parsed.fields["agent"], "plan-orchestrator")
+            self.assertEqual(parsed.fields["subtask"], "false")
+
+            normalized = " ".join(command_text.split())
+            for phrase in shared + required:
+                with self.subTest(command=name, phrase=phrase):
+                    self.assertIn(phrase, normalized)
+
     def test_checked_in_primary_agents_support_same_conversation_handoffs(self) -> None:
         """Keep primary-agent authority turn-scoped without transferring permissions."""
         project_root = Path(__file__).parents[1]
@@ -3111,6 +3149,9 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "plan-orchestrator.md": (
                 "A same-conversation switch does not carry forward or satisfy a prior request, approval, or state-writing authority.",
                 "Apply every current-request and lifecycle gate below before mutation.",
+                "While this Plan Orchestrator prompt is active, never tell the human to select the Plan Orchestrator or claim that the Engineering Review Board or Engineering Lead is selected.",
+                "Before refusing on role-authority grounds, reconcile the request against this active Plan Orchestrator contract.",
+                "If the operation remains outside scope, identify the actual authority boundary and route without misidentifying this turn's selected primary agent.",
             ),
         }
 

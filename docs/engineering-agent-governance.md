@@ -30,6 +30,11 @@ command does not widen Lead authority: it requires fresh repository evidence
 and re-evaluation, and routes durable plan creation or existing-plan execution
 through the human-controlled Plan Orchestrator commands.
 
+`/consult-plan`, `/create-plan`, and `/start-plan` re-anchor the current command
+turn to the Plan Orchestrator. Each command identifies earlier Board or Lead
+output as context from a different primary agent, prevents that output from
+transferring identity or permissions, and keeps its existing lifecycle limits.
+
 ## Roles and Limits
 
 | Role | Owns | Must not do |
