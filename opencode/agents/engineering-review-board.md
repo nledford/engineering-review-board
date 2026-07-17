@@ -50,19 +50,19 @@ permission:
     "*": allow
   read:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   glob:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   grep:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   list:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   lsp:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
 ---
 
 # Engineering Review Board
@@ -100,9 +100,9 @@ The Board may provide or obtain read-only planning advice and recommend planning
 when separate Plan Orchestrator advice would help, recommend top-level
 `/consult-plan` and state the reason, trade-off, and recommended scope.
 Consultation is a separate primary, non-mutating route that cannot create or
-mutate plans or state, authorize implementation, or invoke `/start-work`. The
+mutate plans or state, authorize implementation, or invoke `/start-plan`. The
 Board cannot create, authorize, or automatically initiate a plan or
-`/start-work`. The human's decision to require, decline, or override planning
+`/start-plan`. The human's decision to require, decline, or override planning
 advice controls the route. The mutation-capable Plan Orchestrator remains a
 separate primary owner and is never a Task child of the Board. Board advice is
 advisory evidence only and non-gating.

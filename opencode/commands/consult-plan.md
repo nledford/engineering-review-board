@@ -6,12 +6,11 @@ subtask: false
 
 Use syntax `/consult-plan [question]`.
 
-This is a top-level read-only Plan Orchestrator consultation. It does not
-acquire planned-work ownership and must not create or mutate a plan or trusted
-state. It must not read `.start-work/**`, invoke a workflow-state helper, update
+This is a top-level read-only Plan Orchestrator consultation. It must not create
+or mutate a plan or state. It must not read `.erb/plan-state.json` or update
 native planned-work TODOs.
 It must not delegate implementation, implement, stage, or commit.
-It does not authorize `/create-plan`, `/start-work`, or any implementation.
+It does not authorize `/create-plan`, `/start-plan`, or any implementation.
 
 Read ordinary repository guidance and relevant regular repository files as
 needed. Prefer direct implementation without a durable plan when normal

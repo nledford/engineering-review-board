@@ -34,10 +34,10 @@ through the human-controlled Plan Orchestrator commands.
 
 | Role | Owns | Must not do |
 | --- | --- | --- |
-| [Engineering Lead](../opencode/agents/engineering-lead.md) | Request intake, process selection, direct or bounded unplanned delivery, integration, validation, and independent-review handoff. | Invoke the ERB as a Task child, claim a Board decision without its output, or write or execute a durable plan or trusted planned-work state. |
+| [Engineering Lead](../opencode/agents/engineering-lead.md) | Request intake, process selection, direct or bounded unplanned delivery, integration, validation, and independent-review handoff. | Invoke the ERB as a Task child, claim a Board decision without its output, or write or execute a durable plan or plan state. |
 | [Engineering Review Board](../opencode/agents/engineering-review-board.md) | Optional independent read-only advice, specialist selection, evidence synthesis, and severity assessment. Invoke it as a separate primary agent. | Edit the repository, implement a fix, change plans or state, or control plan creation, updates, execution, or persistence. |
-| [Plan Orchestrator](../opencode/agents/plan-orchestrator.md) | Top-level read-only consultation, safe closed lean-plan creation, trusted planned-work state, planned execution, integration, validation, and native planned-work TODOs. | Act as a Task child, mutate a created plan beyond evidenced existing checkboxes, delegate to anything other than the Worker, or claim ERB advisory evidence controls planned work. |
-| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, plus focused validation and an evidence report. It is the only implementation subagent. | Edit durable plans; read or mutate `.start-work/**`; invoke the trusted planned-work helper; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
+| [Plan Orchestrator](../opencode/agents/plan-orchestrator.md) | Top-level read-only consultation, safe closed lean-plan creation, selected-plan state, planned execution, integration, validation, and native planned-work TODOs. | Act as a Task child, mutate a created plan beyond evidenced existing checkboxes, delegate to anything other than the Worker, or claim ERB advisory evidence controls planned work. |
+| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, plus focused validation and an evidence report. It is the only implementation subagent. | Edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
 | Review and research specialists | Bounded, decision-relevant analysis for the Lead or ERB using exact runtime-visible IDs. | Implement changes, simulate the ERB, approve plans, or treat advisory output as final authority. |
 
 For audit-only work on code comments, docstrings, embedded API documentation,
@@ -53,42 +53,33 @@ authority to the critic.
 The Lead may directly implement complex work when scope, safety, and validation
 are adequate, and retains its MCP, clipboard, Git, and transient unplanned-TODO
 authority. Complexity may justify a planning recommendation but never creates a
-plan or invokes `/start-work` automatically. The Lead or ERB may recommend
+plan or invokes `/start-plan` automatically. The Lead or ERB may recommend
 top-level `/consult-plan` for separate read-only Plan Orchestrator advice, with a
 reason, trade-off, and proposed scope. It is not Task delegation and cannot
 create, mutate, authorize, or execute work. The human's decision to require,
 decline, or override planning advice controls the route. When the Lead delegates implementation, it uses only
-`implementation-worker`. Durable plan or `.start-work` mutations route through a
+`implementation-worker`. Durable plan or `.erb/plan-state.json` mutations route through a
 top-level Plan Orchestrator command, never a Task child. The ERB and its
 specialists stay on the advisory side of that boundary.
 
 A current conversational split-or-replace request to the top-level Plan
 Orchestrator is explicit plan-only authority to create at least two successors
-and retire one unambiguous source after guarded registration. Earlier review or
-consultation advice alone is not authority. The source must be registered,
-unchanged, unchecked, and inactive. The Plan Orchestrator finalizes every
-successor and invokes `register-replacement` before deleting only the exact
-source. After registration it immediately re-reads the source and successors for
-drift, then uses an exact-content edit patch for retirement. Trusted state
-retains the source contract in history; failure or uncertainty before or after
-deletion retains the lock. This guarded file retirement does not permit an
-in-place plan rewrite or execution.
+and retire one unambiguous source after successor creation. Earlier review or
+consultation advice alone is not authority. The Plan Orchestrator creates and
+re-reads every successor, re-reads the exact source, and then uses an
+exact-content edit patch for retirement. This guarded file retirement does not
+permit an in-place plan rewrite or execution. No registry or retained contract
+history is involved.
 
-For `/start-work`, the Plan Orchestrator keeps the exact literal acquisition
-boundary, then invokes the trusted helper's internal `begin-execution` preflight.
-Known validation failures before execution mutation release only that
-preflight's matching newly acquired lock and return a fixed sanitized error
-code. A `lock-held` result never authorizes automatic recovery: the Plan
-Orchestrator must obtain explicit human confirmation that no planned mutator
-remains, then use only this exact literal before a single acquisition retry:
-
-```text
-python3 -I "$HOME/.config/opencode/workflow-tools/start_work_state.py" recover-stale --repo-root . --prior-human-confirmation true
-```
-
-An `operation-invalid` recovery result indicates an invocation-contract failure;
-it is not evidence by itself that the installed helper lacks `recover-stale`.
-Post-mutation failures keep the lock.
+For `/start-plan`, the Plan Orchestrator validates an explicit canonical plan
+path or reads the selection from `.erb/plan-state.json`. The state schema stores
+only the repository-relative plan path. An explicit valid path repairs missing,
+invalid, or stale state. With no usable selection, the command asks for an
+explicit path and stops. Plan activity and current work are derived from the
+plan: any unchecked TODO or Verification checkbox means active, and the first
+unchecked checkbox is current. A completed plan reports exactly `This plan has
+already been implemented.` and stops. The selection pointer is not concurrency
+control; the most recent explicit selection wins.
 
 ### Maintainer-authorized Lead tools
 
@@ -119,17 +110,17 @@ agents and the validator whenever the configured server set changes.
 
 ### Plan Orchestrator commit boundary
 
-While it retains planned-work ownership, the Plan Orchestrator has a separately
-validated Git surface for exact inspection, approval-gated `git add --` paths,
+The Plan Orchestrator has a separately validated Git surface for exact
+inspection, approval-gated `git add --` paths,
 and bare staged-index commits. It may use that surface only for an explicit
 current human request. With that request it may commit an appropriately complete,
 validated, coherent unit during implementation or after implementation completes.
 Before committing, it
-freshly reconciles the pointer, plan, worktree status, unstaged and staged diffs,
+freshly reconciles the plan and state pointer, worktree status, unstaged and staged diffs,
 recent history, and effective hook/signing policy; it rechecks the staged diff
 and resulting commit/worktree before advancing a checkbox. It derives paths from
 fresh trusted evidence, does not interpolate human or plan text into Git, and
-keeps the lock and staged state on failure or uncertainty.
+keeps staged state on failure or uncertainty.
 
 For every approval-gated `git add --`, it separately enumerates each
 repository-relative dirty path from fresh `git status`/worktree evidence and
@@ -165,12 +156,10 @@ checked-in permission map with its assigned profile and evaluates ordered rules
 for protected behavior. In particular:
 
 - the Lead, ERB, Worker, reviewers, and researchers deny direct navigation of
-  `.start-work/**`;
-- the Plan Orchestrator also denies direct state navigation and reaches trusted
-  state only through its checked-in helper command surface;
-- no other role has effective helper access;
+  `.erb/plan-state.json`;
+- the Plan Orchestrator may read and edit `.erb/plan-state.json` directly;
 - the Worker's staging, commit, push, destructive Git, deletion, privilege,
-  plan, state, and helper denies remain effective against later overrides; and
+  plan, and state denies remain effective against later overrides; and
 - bare Worker `git status`, `git diff`, `git log`, and `git show` are allowed,
   while argument-bearing forms require approval.
 
@@ -197,26 +186,24 @@ documented in [`implementation-plans/README.md`](implementation-plans/README.md)
    [`/consult-plan`](../opencode/commands/consult-plan.md); it remains advisory,
    non-mutating, and cannot persist, authorize, or begin work.
 3. On explicit human authorization, top-level
-   [`/create-plan`](../opencode/commands/create-plan.md) acquires trusted state
-   and creates and persists a closed lean plan only. A current conversational
+   [`/create-plan`](../opencode/commands/create-plan.md) creates and persists a
+   closed lean plan only, then selects it in `.erb/plan-state.json`. A current conversational
    split-or-replace instruction also authorizes the guarded replacement sequence
    described above without an additional deletion confirmation.
 4. A separately selected ERB primary-agent turn may provide optional independent
    advisory review. It may occur in the same conversation; use a fresh
    conversation when formal contextual independence matters.
 5. A separate human choice of top-level
-   [`/start-work <existing-plan-path>`](../opencode/commands/start-work.md), or a
-   validated no-argument resume pointer with explicit human confirmation,
+   [`/start-plan <existing-plan-path>`](../opencode/commands/start-plan.md), or a
+   valid no-argument state pointer,
    executes existing planned work. The Plan Orchestrator then executes bounded
    Worker units and records only observed plan checkbox and state evidence.
 
 Existing plan content cannot be updated after creation except for evidenced
 existing checkbox advancement during execution. Guarded replacement retires one
-source file after successor registration but never updates its content. Material
+source file after successor creation but never updates its content. Material
 discoveries require a new human decision and, when authorized, a new
-`/create-plan` request or guarded conversational replacement. Legacy
-conversion is plan-only and requires a separate later
-`/start-work <destination>` choice to execute.
+`/create-plan` request or guarded conversational replacement.
 
 ERB output is advisory evidence, not implementation, plan, state, or execution
 authority.
@@ -229,10 +216,9 @@ are authoritative for primary ownership.
 | Command | Primary agent | Job |
 | --- | --- | --- |
 | [`/address-review`](../opencode/commands/address-review.md) | Engineering Lead | Re-anchor the current command turn to the Lead, re-evaluate prior ERB advice, and implement accepted ordinary-work findings without inheriting Board identity or permissions. |
-| [`/consult-plan`](../opencode/commands/consult-plan.md) | Plan Orchestrator | Provide top-level read-only planning advice without acquiring state, creating a plan, or authorizing work. |
+| [`/consult-plan`](../opencode/commands/consult-plan.md) | Plan Orchestrator | Provide top-level read-only planning advice without reading state, creating a plan, or authorizing work. |
 | [`/create-plan`](../opencode/commands/create-plan.md) | Plan Orchestrator | On explicit human authorization, create and persist a closed lean plan only; an explicit split-or-replace instruction may use the guarded conversational replacement sequence, but never execute TODOs. |
-| [`/start-work`](../opencode/commands/start-work.md) | Plan Orchestrator | Execute or resume only an existing valid canonical lean plan; reject free-form creation and plan-update requests. |
-| [`/convert-tapestry-plan`](../opencode/commands/convert-tapestry-plan.md) | Plan Orchestrator | Revalidate a legacy Tapestry source and create the smallest safe lean destination layout; always plan-only, with execution requiring separate `/start-work <destination>`. |
+| [`/start-plan`](../opencode/commands/start-plan.md) | Plan Orchestrator | Execute or resume an existing valid canonical lean plan; derive active/completed status and current work from its checkboxes. |
 | [`/review-plan`](../opencode/commands/review-plan.md) | Engineering Review Board | Review canonical plans without editing them. |
 | [`/review-implementation`](../opencode/commands/review-implementation.md) | Engineering Review Board | Review completed implementation against the relevant plan and evidence without editing either. |
 | [`/investigate-regression`](../opencode/commands/investigate-regression.md) | Engineering Review Board | Investigate a suspected regression without modifying the repository. |
@@ -251,8 +237,7 @@ Before changing role or command guidance:
   evidence. Do not compress a delegation packet into one dense paragraph.
 - Keep implementation and durable-plan persistence separate. The Worker owns one
   bounded implementation unit; the top-level Plan Orchestrator owns plan and
-  trusted state mutations through the linked helper, never copied into a target
-  repository or exposed as a custom tool.
+  `.erb/plan-state.json` mutations.
 - Check each command's primary owner, `subtask: false` setting, required evidence,
   and next handoff. ERB output remains optional, read-only advice.
 - Reconcile lean-plan routing changes across the canonical plan guide and the

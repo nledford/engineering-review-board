@@ -22,7 +22,6 @@ agent-skills/
   opencode/
     agents/
     commands/
-    workflow-tools/
     manifest.json
   tools/
   tests/
@@ -103,9 +102,8 @@ symlink to another location.
 ## OpenCode Agents And Commands
 
 Custom OpenCode definitions are tracked under `opencode/agents/` and
-`opencode/commands/`; `opencode/workflow-tools/` contains the trusted helper
-used by planned work. `opencode/manifest.json` is the reviewed inventory for
-agents, commands, runtime helpers, and supporting templates. Validation uses a
+`opencode/commands/`. `opencode/manifest.json` is the reviewed inventory for
+agents, commands, and supporting templates. Validation uses a
 documented, fail-closed subset of YAML frontmatter. It checks definition metadata,
 permission baseline ordering, one-level Task topology, primary command ownership,
 `subtask: false`, balanced Markdown fences, support-file safety, and synchronized
@@ -116,12 +114,11 @@ See [Engineering Agent Governance](docs/engineering-agent-governance.md) for the
 role boundaries, command owners, Task-ID rules, and delivery/review handoffs that
 connect these definitions.
 
-The setup workflow manages these three links as one installation:
+The setup workflow manages these two links as one installation:
 
 ```text
 ~/.config/opencode/agents         -> <repository>/opencode/agents
 ~/.config/opencode/commands       -> <repository>/opencode/commands
-~/.config/opencode/workflow-tools -> <repository>/opencode/workflow-tools
 ```
 
 Preview setup before changing the global configuration:
@@ -138,16 +135,14 @@ file, directory, broken symlink, or symlink to another location. It validates
 and binds the owned OpenCode configuration root before mutation, then rechecks
 the root and each destination; aliases, root substitution, mixed ownership, and
 unsafe destinations stop the operation. For an initial migration, review and
-import the intended Markdown files first, manually move the existing `agents/`,
-`commands/`, and `workflow-tools/` directories outside the repository and
+import the intended Markdown files first, manually move the existing `agents/`
+and `commands/` directories outside the repository and
 OpenCode discovery tree, and then rerun setup. If any destination is unsafe,
 none of the new links is installed.
 
 Treat the linked checkout as live configuration: newly tracked or modified
-agent, command, and trusted helper files take effect the next time OpenCode
-starts. The helper remains linked from reviewed checkout source; it is not copied
-into target repositories or registered as an OpenCode custom tool. Setup and
-uninstall do not create, remove, or modify target-repository `.start-work` state.
+agent and command files take effect the next time OpenCode starts. Setup and
+uninstall do not create, remove, or modify target-repository plan state.
 Do not use the linked checkout for unreviewed branches. Keep provider credentials,
 secrets, packages, backups, runtime state, and the rest of `~/.config/opencode`
 outside this repository.
@@ -160,7 +155,7 @@ with synchronized starter copies under
 [`opencode/project-template/`](opencode/project-template/). Plans use canonical
 single-plan `.erb/plans/<slug>.md` paths or, only for genuinely separately managed
 work, `.erb/plans/<subject>/<NN>-<slug>.md` series paths. The top-level Plan
-Orchestrator owns durable plan writes and trusted state, while the ERB remains
+Orchestrator owns durable plan writes and state, while the ERB remains
 read-only advisory review. See the
 [legacy Weave cleanup checklist](opencode/cleanup/weave-cleanup-checklist.md)
 when migrating prior workflow material.
@@ -170,27 +165,27 @@ when migrating prior workflow material.
 Three human-controlled lifecycle paths keep delivery separate from durable
 planning: (1) the Engineering Lead may deliver directly when scope, safety, and
 validation are adequate; (2) an explicit `/create-plan` request creates and
-persists a plan only; and (3) `/start-work <existing-plan-path>` executes an
-existing canonical lean plan, while no arguments resume only from a validated
-pointer after explicit human confirmation. Complexity may justify recommending a
-plan, never automatic creation. The Lead or ERB may recommend top-level
-`/consult-plan` with a reason, trade-off, and proposed scope; it provides
-non-mutating Plan Orchestrator advice and neither creates nor authorizes work.
-The human controls whether to require, decline, or override that recommendation.
+persists a plan only; and (3) `/start-plan <existing-plan-path>` executes an
+existing canonical lean plan, while no arguments resume the selection in
+`.erb/plan-state.json`. Complexity may justify recommending a plan, never
+automatic creation. The Lead or ERB may recommend top-level `/consult-plan`
+with a reason, trade-off, and proposed scope; it provides non-mutating Plan
+Orchestrator advice and neither creates nor authorizes work. The human controls
+whether to require, decline, or override that recommendation.
+
+The state file stores only the selected repository-relative plan path. Plan
+activity is derived from unchecked TODO or Verification boxes, and the first
+unchecked checkbox is the current step. A fully checked plan reports that it has
+already been implemented and stops. An explicit valid path repairs missing,
+invalid, or stale state. Selection is not an exclusivity or concurrency control;
+the most recent explicit selection wins.
+
 An explicit current conversational plan replacement request may split one
-unambiguous registered, unchanged, unchecked, inactive plan into at least two
-successors. The Plan Orchestrator registers all successors through
-`register-replacement`, re-reads them and the source for drift, and only then
-retires the original with an exact-content edit patch. No separate deletion
-confirmation is required, review advice alone is insufficient, and trusted
-history retains the source contract. Existing plan bodies remain immutable
-except for evidenced checkbox advancement; guarded file retirement does not
-authorize a rewrite.
-`/convert-tapestry-plan` remains plan-only; conversion execution requires a
-later human `/start-work <destination>` choice. After exact trusted acquisition,
-`/start-work` uses an internal atomic preflight that returns sanitized error
-codes and releases only a newly acquired lock on known pre-execution validation
-failure. Existing-lock recovery remains explicitly human-confirmed.
+unambiguous source into at least two successors. The Plan Orchestrator creates
+and re-reads all successors, re-reads the source, and only then retires the
+source with an exact-content edit patch. No registry, retained history, or
+separate deletion confirmation is required. Existing plan bodies remain
+immutable except for evidenced checkbox advancement.
 
 To bootstrap a repository that does not already have plan guidance, copy
 `opencode/project-template/docs/implementation-plans/` to the target repository's
@@ -210,7 +205,7 @@ agents, and any required plugins or tools. A full OpenCode restart is required
 after setup or definition changes because configuration is loaded at startup.
 
 `just uninstall-opencode-dry-run` previews removal. `just uninstall-opencode`
-removes all three links only when all still point to this checkout; it never removes
+removes both links only when both still point to this checkout; it never removes
 the repository definitions or restores old directories.
 
 ## Third-Party Updates
@@ -258,7 +253,8 @@ Validation checks the repository's actual skill format:
 - when `.skill-lock.json` exists, every lockfile-listed third-party skill is
   present locally
 
-Helper behavior is covered by `python3 -m unittest discover -s tests -v`.
+Installer and definition behavior is covered by
+`python3 -m unittest discover -s tests -v`.
 
 First-party skills should not keep unlinked changelogs, placeholder scripts,
 generic templates, or copied reference files that no skill instruction can load.

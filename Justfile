@@ -134,15 +134,15 @@ sync-third-party-lock:
 sync-third-party-lock-dry-run:
     @{{python}} {{manager}} sync-third-party-lock --dry-run
 
-# Run unit tests for helper behavior.
+# Run unit tests for repository tooling behavior.
 [group('quality')]
 test:
     @{{python}} -m unittest discover -s tests -v
 
-# Compile Python helpers, workflow tools, and tests to catch syntax errors.
+# Compile Python tools and tests to catch syntax errors.
 [group('quality')]
 lint:
-    @{{python}} -m compileall -q tools opencode/workflow-tools tests
+    @{{python}} -m compileall -q tools tests
 
 # Report formatter status.
 [group('quality')]

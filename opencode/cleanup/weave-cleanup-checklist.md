@@ -15,8 +15,8 @@ Tapestry references that preserve provenance, conversion, or cleanup history.
 
 ## Remove Only Confirmed Stale Material
 
-- Do not remove source Tapestry plans before `/convert-tapestry-plan` has
-  preserved the source and the lean destination is verified.
+- Do not remove source Tapestry plans until a human has manually preserved any
+  required provenance and verified a canonical lean destination.
 - Do not remove historical logs, snapshots, or records solely for terminology.
 - Remove a reference only when it incorrectly states that Weave is installed or
   required by the current workflow.
@@ -28,10 +28,10 @@ Tapestry references that preserve provenance, conversion, or cleanup history.
 - Confirm no command bypasses the top-level Plan Orchestrator for durable plan
   writes.
 - Confirm plan creation has explicit human authorization and uses `/create-plan`;
-  `/start-work <existing-plan-path>` is only the separate human-chosen execution
+  `/start-plan <existing-plan-path>` is only the separate human-chosen execution
   route.
-- Confirm the primary Plan Orchestrator alone owns plan and trusted planned-work
-  state mutations.
+- Confirm the primary Plan Orchestrator alone owns plan and plan-state
+  mutations.
 - Confirm no command asks the ERB to edit or treats advisory review as an
   execution gate; ERB advice is non-gating.
 - Confirm native agents use valid IDs and no prompt claims delegation or

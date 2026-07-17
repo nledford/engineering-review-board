@@ -28,12 +28,11 @@
     "address-review.md",
     "audit-technical-debt.md",
     "consult-plan.md",
-    "convert-tapestry-plan.md",
     "create-plan.md",
     "investigate-regression.md",
     "review-implementation.md",
     "review-plan.md",
-    "start-work.md"
+    "start-plan.md"
   ],
   "support_files": [
     "cleanup/weave-cleanup-checklist.md",
@@ -41,8 +40,5 @@
     "project-template/AGENTS-plan-workflow-snippet.md",
     "project-template/docs/implementation-plans/README.md",
     "project-template/docs/implementation-plans/TEMPLATE.md"
-  ],
-  "runtime_helpers": [
-    "workflow-tools/start_work_state.py"
   ]
 }

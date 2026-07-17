@@ -10,7 +10,7 @@ permission:
     "*": ask
     "docs/implementation-plans/plans/**": deny
     ".erb/plans/**": deny
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   bash:
     # Unknown or unclassified commands require approval.
     "*": ask
@@ -209,8 +209,7 @@ permission:
     "docker rmi *": ask
     "*docs/implementation-plans/plans*": deny
     "*.erb/plans*": deny
-    "*.start-work*": deny
-    "*start_work_state.py*": deny
+    "*.erb/plan-state.json*": deny
     "pbcopy *": allow
   # Allow every tool exposed by the configured MCP server set.
   "playwright_*": allow
@@ -246,19 +245,19 @@ permission:
     "*": allow
   read:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   glob:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   grep:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   list:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   lsp:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
 ---
 
 # Engineering Lead
@@ -311,17 +310,17 @@ Lead retains access to every configured MCP server.
 
 ## Durable-Contract Routing
 
-Never write durable plans or `.start-work/**` state. Prefer direct unplanned
+Never write durable plans or `.erb/plan-state.json`. Prefer direct unplanned
 implementation when safe. This includes complex work when scope, safety, and
 validation are adequate. Complexity may justify recommending a plan but never
-automatically creates one or invokes `/start-work`.
+automatically creates one or invokes `/start-plan`.
 
 Only explicit human authorization controls plan creation. When durable planning
 would help, recommend top-level `/consult-plan` with the reason, trade-off, and
 proposed scope. That separate, read-only Plan Orchestrator consultation creates
 or mutates no plan or state and authorizes no implementation; the human decides
 whether to require, decline, or override its advice. Route authorized creation to
-top-level `/create-plan`, which is plan-only. Use `/start-work
+top-level `/create-plan`, which is plan-only. Use `/start-plan
 <existing-plan-path>` only for human-chosen execution of an existing plan.
 
 Do not invoke `plan-orchestrator` or any plan role through Task. The

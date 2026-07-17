@@ -45,29 +45,28 @@ complexity may justify a recommendation, but never automatic plan creation. The
 Lead or ERB may recommend top-level `/consult-plan` for bounded read-only Plan
 Orchestrator advice, stating the reason, trade-off, and proposed scope; the human
 controls the route. An explicit human `/create-plan` request may create and
-persist a new plan, and it is plan-only. A current conversational
-split-or-replace request also authorizes retirement of one unambiguous source
-only after guarded successor registration through `register-replacement`; the
-operation remains plan-only, requires at least two successors, and retains the
-source contract in trusted history. The execution-only `/start-work` accepts an
-existing valid registered canonical plan or validated resume pointer with
-explicit human confirmation. Existing plan bodies are immutable except for
-evidenced checkbox advancement; guarded source-file retirement is not permission
-to rewrite a plan. `/convert-tapestry-plan` is a separate plan-only Plan
-Orchestrator request. The
-Plan Orchestrator is the exclusive durable-plan and state writer; the
-Engineering Review Board remains separate, optional, and read-only advisory.
-After exact literal acquisition, `/start-work` uses the helper's internal
-`begin-execution` preflight; known pre-execution validation failures release
-only their newly acquired matching lock and return sanitized error codes.
-`lock-held` recovery always requires explicit human confirmation that no planned
-mutator remains and is never automatic.
+persist a new plan, and it is plan-only. `/start-plan` executes or resumes an
+existing canonical plan. It accepts an explicit plan path or, without a path,
+the selection in `.erb/plan-state.json`. The state file stores only the selected
+repository-relative plan path. Active status and the current step are derived
+from the plan: a plan is active while any TODO or Verification checkbox is
+unchecked, and the first unchecked checkbox is current. A completed selection
+reports that it has already been implemented and performs no work. An explicit
+valid path repairs missing, invalid, or stale state. The selection pointer does
+not serialize work or prevent the user from starting another plan.
+
+Existing plan bodies are immutable except for evidenced checkbox advancement.
+A current conversational split-or-replace request may create at least two
+successors and retire one unambiguous source after every successor is re-read;
+no registry or retained contract history is required. The Plan Orchestrator is
+the exclusive durable-plan and state writer; the Engineering Review Board
+remains separate, optional, and read-only advisory.
+
 Keep OpenCode's live configuration machine-local; repository files are reviewed
 definitions and templates, not
 credentials or a replacement for a user's `opencode.jsonc`. The Plan Orchestrator
-may construct a commit only for an explicit current human request, while
-retaining its planned-work lock; the Worker remains forbidden
-to stage or commit. Agent-definition permission changes take effect only after a
+may construct a commit only for an explicit current human request; the Worker
+remains forbidden to stage or commit. Agent-definition permission changes take effect only after a
 full OpenCode restart, never in the running session. Approval for `git add --` is
 an additional human check, not proof that a path is safe: the Plan Orchestrator
 must derive, separately enumerate, and literally quote each repository-relative

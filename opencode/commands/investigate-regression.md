@@ -14,7 +14,7 @@ Prioritize whether the behavior is a genuine regression, introducing change, roo
 
 Do not modify the repository or a durable plan. Return repair guidance for
 direct Lead implementation when safe. When the human wants durable repair
-planning, recommend top-level `/create-plan`; `/start-work <existing-plan-path>`
+planning, recommend top-level `/create-plan`; `/start-plan <existing-plan-path>`
 is only a separate human-chosen execution of an existing plan.
 
 Return:

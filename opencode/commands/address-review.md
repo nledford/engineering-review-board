@@ -28,7 +28,7 @@ running. If an action is outside the Lead's authority, identify the actual
 authority boundary and route it instead of misidentifying the selected primary
 agent. Durable plan creation remains an explicit `/create-plan` choice;
 execution of an existing plan remains a separate
-`/start-work <existing-plan-path>` choice.
+`/start-plan <existing-plan-path>` choice.
 
 Report accepted, adapted, and rejected findings; changes made; validation run or
 skipped; and residual risks.

@@ -3,7 +3,6 @@ import unittest
 from tools.opencode_manager import (
     OpenCodeInstallService,
     STATE_PATH_EDIT_RULE,
-    WORKFLOW_HELPER_DENY_RULE,
 )
 
 
@@ -22,7 +21,7 @@ def worker_permissions(
 ) -> dict[str, str | tuple[tuple[str, str], ...]]:
     permissions: dict[str, str | tuple[tuple[str, str], ...]] = {
         "*": "ask",
-        "bash": (("*", "ask"), (WORKFLOW_HELPER_DENY_RULE, "deny")),
+        "bash": (("*", "ask"),),
         "task": "deny",
         "webfetch": "deny",
         "websearch": "deny",

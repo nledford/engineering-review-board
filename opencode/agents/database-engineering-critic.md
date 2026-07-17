@@ -7,19 +7,19 @@ permission:
   "*": deny
   read:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   glob:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   grep:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   list:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   lsp:
     "*": allow
-    ".start-work/**": deny
+    ".erb/plan-state.json": deny
   edit: deny
   bash:
     "*": deny
