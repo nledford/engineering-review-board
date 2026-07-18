@@ -166,9 +166,6 @@ permission:
     "cargo clippy *": ask
     "cargo metadata *": ask
     "just *": ask
-    "just test-web": ask
-    "just check-web-ssr": ask
-    "just build-web": ask
     "npm run *": ask
     "npm test": ask
     "npm test *": ask

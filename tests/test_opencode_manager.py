@@ -1681,6 +1681,87 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             self.assertFalse(result.ok)
             self.assertIn("bash permission has an unsafe allow rule", result.errors[0])
 
+    def test_validate_rejects_concrete_project_defined_just_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_opencode_repo(root)
+            definition = repo / "opencode" / "agents" / "reviewer.md"
+            definition.write_text(
+                definition.read_text(encoding="utf-8").replace(
+                    '    "*": deny\n  task: deny',
+                    '    "*": deny\n    "just application-check": deny\n  task: deny',
+                ),
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any(
+                    "concrete project-defined Just recipe" in error
+                    for error in result.errors
+                )
+            )
+
+    def test_validate_accepts_generic_just_option_permission(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_opencode_repo(root)
+            definition = repo / "opencode" / "agents" / "reviewer.md"
+            definition.write_text(
+                definition.read_text(encoding="utf-8").replace(
+                    '    "*": deny\n  task: deny',
+                    '    "*": deny\n    "just --list": deny\n  task: deny',
+                ),
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertTrue(result.ok, result.errors)
+
+    def test_validate_rejects_machine_specific_definition_paths(self) -> None:
+        cases = {
+            "agents": "/Users/example/work/application",
+            "commands": r"C:\Users\example\work\application",
+        }
+        for kind, machine_path in cases.items():
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_opencode_repo(root)
+                name = "reviewer.md" if kind == "agents" else "review.md"
+                definition = repo / "opencode" / kind / name
+                definition.write_text(
+                    definition.read_text(encoding="utf-8")
+                    + f"\nInspect {machine_path}.\n",
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("machine-specific" in error for error in result.errors)
+                )
+
+    def test_validate_accepts_portable_definition_path_placeholders(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_opencode_repo(root)
+            command = repo / "opencode" / "commands" / "review.md"
+            command.write_text(
+                command.read_text(encoding="utf-8")
+                + "\nInspect `/home/<user>/workspace` or "
+                + r"`C:\Users\<user>\workspace`."
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertTrue(result.ok, result.errors)
+
     def test_validate_rejects_primary_task_ask_for_manifested_subagent(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

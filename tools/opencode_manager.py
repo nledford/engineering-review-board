@@ -13,6 +13,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Sequence
 
+try:
+    from .project_neutrality import project_neutrality_errors
+except ImportError:  # Direct script execution.
+    from project_neutrality import project_neutrality_errors
+
 
 GLOBAL_CONFIG_ROOT = Path.home() / ".config" / "opencode"
 DEFINITION_ROOT_NAME = "opencode"
@@ -1040,9 +1045,6 @@ ENGINEERING_LEAD_NON_GIT_BASH_RULES = (
     ("cargo clippy *", "ask"),
     ("cargo metadata *", "ask"),
     ("just *", "ask"),
-    ("just test-web", "ask"),
-    ("just check-web-ssr", "ask"),
-    ("just build-web", "ask"),
     ("npm run *", "ask"),
     ("npm test", "ask"),
     ("npm test *", "ask"),
@@ -1417,6 +1419,7 @@ class OpenCodeInstallService:
         errors.extend(self._validate_support_files(inventory.support_files))
         for kind in DEFINITION_KINDS:
             errors.extend(self._validate_kind(kind, inventory.for_kind(kind)))
+        errors.extend(self._validate_project_neutrality(inventory))
 
         if canonical_active_workflow:
             agent_metadata = self._agent_metadata(inventory)
@@ -1449,6 +1452,44 @@ class OpenCodeInstallService:
                 f"agents={len(inventory.agents)} commands={len(inventory.commands)}"
             ]
         )
+
+    def _validate_project_neutrality(
+        self, inventory: DefinitionInventory
+    ) -> list[str]:
+        errors: list[str] = []
+        for kind in DEFINITION_KINDS:
+            for name in inventory.for_kind(kind):
+                path = self.sources[kind] / name
+                try:
+                    text = path.read_text(encoding="utf-8")
+                except (OSError, UnicodeError):
+                    continue
+                errors.extend(
+                    project_neutrality_errors(
+                        text,
+                        location=f"opencode/{kind}/{name}",
+                    )
+                )
+                if kind != "agents":
+                    continue
+                parsed, parse_errors = self._parse_frontmatter(kind, name, text)
+                if parsed is None or parse_errors:
+                    continue
+                bash_rules = parsed.permissions.get("bash")
+                if not isinstance(bash_rules, tuple):
+                    continue
+                for pattern, _ in bash_rules:
+                    if (
+                        pattern.startswith("just ")
+                        and not pattern.removeprefix("just ").startswith("-")
+                        and "*" not in pattern
+                    ):
+                        errors.append(
+                            f"agents: '{name}' Bash permission names concrete "
+                            f"project-defined Just recipe '{pattern}'; use 'just *' "
+                            "and discover target-repository recipes at runtime"
+                        )
+        return errors
 
     def setup(self, *, dry_run: bool = False) -> OperationResult:
         validation = self.validate()

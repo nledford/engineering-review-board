@@ -151,6 +151,67 @@ class SkillRegistryTests(unittest.TestCase):
                 result.errors,
             )
 
+    def test_first_party_validation_rejects_source_project_identifiers(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "portable-skill")
+            skill_file = skill / "SKILL.md"
+            skill_file.write_text(
+                skill_file.read_text(encoding="utf-8")
+                + "\nFollow engineering-review-board conventions.\n",
+                encoding="utf-8",
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any("source-project identifier" in error for error in result.errors)
+            )
+
+    def test_first_party_validation_rejects_machine_specific_resource_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "portable-skill")
+            references = skill / "references"
+            references.mkdir()
+            (references / "example.md").write_text(
+                "Run the tool from /Users/example/work/application.\n",
+                encoding="utf-8",
+            )
+            skill_file = skill / "SKILL.md"
+            skill_file.write_text(
+                skill_file.read_text(encoding="utf-8")
+                + "\n[Example](references/example.md)\n",
+                encoding="utf-8",
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any(
+                    "machine-specific POSIX home path" in error
+                    for error in result.errors
+                )
+            )
+
+    def test_first_party_validation_accepts_portable_path_placeholders(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "portable-skill")
+            skill_file = skill / "SKILL.md"
+            skill_file.write_text(
+                skill_file.read_text(encoding="utf-8")
+                + "\nUse `/home/<user>/workspace` or `C:\\Users\\<user>\\workspace`.\n",
+                encoding="utf-8",
+            )
+            write_taxonomy(repo, ["portable-skill"])
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok, result.errors)
+
     def test_reachable_resource_files_are_validated_recursively(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

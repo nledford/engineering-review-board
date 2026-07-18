@@ -13,6 +13,11 @@ from pathlib import Path
 from typing import Iterable, Sequence
 from urllib.parse import unquote, urlsplit
 
+try:
+    from .project_neutrality import project_neutrality_errors
+except ImportError:  # Direct script execution.
+    from project_neutrality import project_neutrality_errors
+
 
 GLOBAL_SKILLS_PATH = Path.home() / ".agents" / "skills"
 SKILLS_DIR_NAME = "skills"
@@ -50,6 +55,10 @@ REQUIRED_SECURITY_LINKS = ("security-review", "security-review-evidence")
 REQUIRED_API_SECURITY_LINKS = ("security-review",)
 GIT_SKILLS = frozenset({"git-commit", "git-workflows"})
 REQUIRED_GIT_SKILL_LINKS = ("git-commit", "git-workflows")
+FORBIDDEN_SKILL_SOURCE_PROJECT_IDENTIFIERS = (
+    "engineering-review-board",
+    "chidori",
+)
 
 
 @dataclass(frozen=True)
@@ -423,8 +432,30 @@ def validate_skill(skill: Skill, *, label: str) -> ValidationResult:
     if skill.kind == "first-party":
         resource_result = _validate_skill_resources(skill)
         errors.extend(resource_result.errors)
+        neutrality_result = _validate_skill_project_neutrality(skill)
+        errors.extend(neutrality_result.errors)
 
     return ValidationResult(errors=errors, warnings=warnings)
+
+
+def _validate_skill_project_neutrality(skill: Skill) -> ValidationResult:
+    errors: list[str] = []
+    for path in sorted(skill.path.rglob("*")):
+        if not path.is_file() or _is_hidden_path(path, skill.path):
+            continue
+        relative_path = path.relative_to(skill.path)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        errors.extend(
+            project_neutrality_errors(
+                text,
+                location=f"{skill.name}/{relative_path}",
+                forbidden_identifiers=FORBIDDEN_SKILL_SOURCE_PROJECT_IDENTIFIERS,
+            )
+        )
+    return ValidationResult(errors=errors)
 
 
 def _validate_required_related_skill_links(
