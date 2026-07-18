@@ -4,4 +4,22 @@
   // Merge into the machine-local opencode.jsonc; do not replace credentials,
   // providers, plugins, or other local configuration.
   "default_agent": "engineering-lead"
+
+  /*
+  Optional per-agent external-audit override. Replace the placeholder with one
+  trusted machine-local root, keep the catch-all rule first, and repeat the
+  permission block for every agent or subagent that needs the same scope.
+
+  "agent": {
+    "engineering-review-board": {
+      "permission": {
+        "external_directory": {
+          "*": "deny",
+          "~/projects/<external-project>": "ask",
+          "~/projects/<external-project>/**": "ask"
+        }
+      }
+    }
+  }
+  */
 }

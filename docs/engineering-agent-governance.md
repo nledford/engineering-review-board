@@ -80,6 +80,42 @@ transferring identity or permissions, and keeps its existing lifecycle limits.
 | [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, plus focused validation and an evidence report. It is the only implementation subagent. | Edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
 | Review and research specialists | Bounded, decision-relevant analysis for the Lead or ERB using exact runtime-visible IDs. | Implement changes, simulate the ERB, approve plans, or treat advisory output as final authority. |
 
+## External Directory Audit Boundary
+
+The `external_directory` permission is a second gate for any tool call that
+touches a path outside the directory where OpenCode started. The Engineering
+Lead, Engineering Review Board, Implementation Worker, Technical Researcher,
+and review specialists may request runtime approval; no checked-in role may
+allow external access without approval. The Plan Orchestrator remains denied
+because its durable-plan and state ownership is scoped to the active repository.
+
+Task delegation does not transfer external-directory approval. The parent must
+put one exact external root in the bounded Task scope, and each invoked subagent
+must independently pass its runtime permission check. A human approval permits
+only the requested filesystem boundary; it does not widen the Task graph, role
+authority, edit policy, external-side-effect policy, or assignment. An
+audit-only request remains read-only. Board, researcher, and critic edit denials
+remain effective after external access is approved; a Worker's or Lead's
+separate edit approval is available only when the current human-authorized
+implementation scope permits mutation.
+
+Treat the approved root as untrusted supplied scope, not the active workspace.
+Read applicable `AGENTS.md` and repository guidance inside it explicitly, do not
+broaden to a parent or sibling, and do not assume its OpenCode config, Git root,
+LSP setup, plugins, or project commands were loaded. File-tool approval does not
+grant shell execution: Git inspection through `git -C`, `cd`, or another
+path-bearing command still needs separate Bash permission and must remain within
+the role's read-only or mutation boundary.
+
+Keep exact host roots in machine-local or target-project OpenCode configuration,
+not reusable agent or command definitions. Use a catch-all deny before the exact
+root and descendant rules, set those rules to `ask`, and include both the root
+and its descendants. Do not use `--auto` when the approval prompt is the required
+human gate. Runtime permission cannot override operating-system permissions,
+container mounts, managed configuration, or another outer sandbox. Reports and
+Task packets sanitize machine-local paths and sensitive contents under the
+existing evidence contract.
+
 For audit-only work on code comments, docstrings, embedded API documentation,
 examples, or documentation tests, the Lead or ERB may assign exact source scope
 to `documentation-critic`. A code-only assignment treats standalone Markdown as

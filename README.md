@@ -147,6 +147,37 @@ Do not use the linked checkout for unreviewed branches. Keep provider credential
 secrets, packages, backups, runtime state, and the rest of `~/.config/opencode`
 outside this repository.
 
+## External Directory Audits
+
+OpenCode's `external_directory` permission is an additional approval gate for
+tools that touch paths outside the working directory. The checked-in Lead,
+Board, Worker, Technical Researcher, and review-specialist profiles set that
+permission to `ask`; the Plan Orchestrator explicitly denies it. Read-only roles
+remain unable to edit even after external access is approved. The Worker and
+Lead retain their existing edit policies, so an audit-only request still grants
+no mutation authority.
+
+The human may approve a request once or for the current session. Do not start
+OpenCode with `--auto` when explicit per-request approval is required, because
+auto mode approves requests that would otherwise ask. Task delegation does not
+grant external access: every invoked agent or subagent must pass its own
+permission check, and the assignment must name one exact external root.
+
+An approved external root is supplied scope, not a replacement working
+directory. Read applicable guidance inside it explicitly. Repository-relative
+Git commands, LSP discovery, project configuration, and other workspace behavior
+remain anchored to the directory where OpenCode started unless the relevant tool
+is separately configured. Bash commands also remain subject to the role's Bash
+permission map.
+
+Keep literal host roots in machine-local or target-project configuration rather
+than these reusable definitions. The commented example in
+[`opencode/config/opencode.merge-fragment.jsonc`](opencode/config/opencode.merge-fragment.jsonc)
+shows a deny-by-default, approval-gated per-agent override. OpenCode permissions
+do not bypass operating-system, container, or other outer sandbox controls. See
+[Engineering Agent Governance](docs/engineering-agent-governance.md#external-directory-audit-boundary)
+for the complete role and delegation contract.
+
 ## Durable Plan Workflow
 
 The repository includes a project-neutral implementation-plan contract in

@@ -17,6 +17,9 @@ from tools.opencode_manager import (
     CODE_DOCUMENTATION_PROMPT_CONTRACTS,
     COMMAND_PROMPT_CONTRACTS,
     ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS,
+    EXTERNAL_DIRECTORY_ASK_AGENT_IDS,
+    EXTERNAL_DIRECTORY_DOC_TOKENS,
+    EXTERNAL_DIRECTORY_SCOPE_INVARIANT,
     HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS,
     PLAN_ORCHESTRATOR_BASH_RULES,
     PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
@@ -468,6 +471,59 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             self.assertTrue(result.ok)
             self.assertIn("agents=1", result.messages[0])
             self.assertIn("commands=1", result.messages[0])
+
+    def test_validate_accepts_ask_gated_external_directory_permission(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_opencode_repo(root)
+            definition = repo / "opencode" / "agents" / "reviewer.md"
+            definition.write_text(
+                definition.read_text(encoding="utf-8").replace(
+                    "  edit: deny\n",
+                    "  external_directory:\n"
+                    '    "*": ask\n'
+                    "  edit: deny\n",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertTrue(result.ok, result.errors)
+
+    def test_validate_rejects_unprompted_external_directory_permission(self) -> None:
+        cases = (
+            "  external_directory: allow\n",
+            "  external_directory:\n"
+            '    "*": deny\n'
+            '    "~/projects/<external-project>/**": allow\n',
+        )
+        for permission in cases:
+            with self.subTest(permission=permission), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_opencode_repo(root)
+                definition = repo / "opencode" / "agents" / "reviewer.md"
+                definition.write_text(
+                    definition.read_text(encoding="utf-8").replace(
+                        "  edit: deny\n",
+                        f"{permission}  edit: deny\n",
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any(
+                        "external_directory permission must require approval or deny access"
+                        in error
+                        for error in result.errors
+                    ),
+                    result.errors,
+                )
 
     def test_validate_rejects_unknown_command_agent(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1199,8 +1255,8 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             ),
             "broad git allow": (
                 source.replace(
-                    '    "*": deny\n',
-                    '    "*": deny\n    "git *": allow\n',
+                    '  bash:\n    "*": deny\n',
+                    '  bash:\n    "*": deny\n    "git *": allow\n',
                     1,
                 ),
                 "canonical Git permissions",
@@ -4050,6 +4106,10 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
                     1,
                     " ".join(prompt.split()).count(SANITIZED_EVIDENCE_INVARIANT),
                 )
+                self.assertEqual(
+                    1 if policy.agent_id in EXTERNAL_DIRECTORY_ASK_AGENT_IDS else 0,
+                    " ".join(prompt.split()).count(EXTERNAL_DIRECTORY_SCOPE_INVARIANT),
+                )
 
         researcher_prompt = (
             project_root / "opencode" / "agents" / "technical-researcher.md"
@@ -4091,6 +4151,38 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
                 self.assertFalse(result.ok)
                 self.assertTrue(
                     any("sanitized-evidence prompt contract" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_validate_rejects_missing_external_directory_contract_per_ask_profile(self) -> None:
+        """Static prompt-contract validation only; runtime approval remains OpenCode-owned."""
+        representatives = {
+            "engineering-lead": "engineering-lead.md",
+            "engineering-review-board": "engineering-review-board.md",
+            "implementation-worker": "implementation-worker.md",
+            "technical-researcher": "technical-researcher.md",
+            "review-specialist": "accessibility-critic.md",
+        }
+        for profile, name in representatives.items():
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / name
+                prompt = definition.read_text(encoding="utf-8")
+                definition.write_text(
+                    prompt.replace(
+                        "For external-path work",
+                        "SYNTHETIC_STATIC_CONTRACT_MARKER",
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("external-directory prompt contract" in error for error in result.errors),
                     result.errors,
                 )
 
@@ -4324,6 +4416,17 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
                 parsed.permissions,
                 policy.agent_id,
             )
+            external_directory = parsed.permissions["external_directory"]
+            self.assertIsInstance(external_directory, tuple)
+            assert isinstance(external_directory, tuple)
+            self.assertEqual(
+                "deny" if policy.agent_id == "plan-orchestrator" else "ask",
+                resolve_opencode_action(
+                    external_directory,
+                    "/external-audit-root/example.py",
+                    baseline="deny",
+                ),
+            )
             for tool in ("read", "glob", "grep", "list", "lsp"):
                 rules = parsed.permissions[tool]
                 self.assertIsInstance(rules, tuple)
@@ -4338,6 +4441,68 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
                     specialist_permissions = parsed.permissions
                 else:
                     self.assertEqual(specialist_permissions, parsed.permissions)
+
+    def test_checked_in_external_directory_governance_contract(self) -> None:
+        project_root = Path(__file__).parents[1]
+        for relative_path, tokens in EXTERNAL_DIRECTORY_DOC_TOKENS.items():
+            with self.subTest(path=relative_path):
+                text = (project_root / relative_path).read_text(encoding="utf-8")
+                for token in tokens:
+                    self.assertIn(token, text)
+
+    def test_validate_rejects_external_directory_governance_drift(self) -> None:
+        for relative_path, tokens in EXTERNAL_DIRECTORY_DOC_TOKENS.items():
+            with self.subTest(path=relative_path), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                path = repo / relative_path
+                text = path.read_text(encoding="utf-8")
+                path.write_text(
+                    text.replace(tokens[0], "SYNTHETIC_STATIC_CONTRACT_MARKER", 1),
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("external-directory document" in error for error in result.errors),
+                    result.errors,
+                )
+
+    def test_validate_rejects_external_directory_permission_profile_drift(self) -> None:
+        cases = {
+            "engineering-lead.md": ("ask", "allow"),
+            "engineering-review-board.md": ("ask", "deny"),
+            "implementation-worker.md": ("ask", "deny"),
+            "plan-orchestrator.md": ("deny", "ask"),
+            "technical-researcher.md": ("ask", "deny"),
+            "accessibility-critic.md": ("ask", "deny"),
+        }
+        for name, (current, replacement) in cases.items():
+            with self.subTest(agent=name), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                definition = repo / "opencode" / "agents" / name
+                text = definition.read_text(encoding="utf-8")
+                rule = f'  external_directory:\n    "*": {current}\n'
+                self.assertIn(rule, text)
+                definition.write_text(
+                    text.replace(
+                        rule,
+                        f'  external_directory:\n    "*": {replacement}\n',
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertTrue(
+                    any("permission profile" in error for error in result.errors),
+                    result.errors,
+                )
 
     def test_checked_in_worker_git_permissions_resolve_to_effective_actions(self) -> None:
         project_root = Path(__file__).parents[1]

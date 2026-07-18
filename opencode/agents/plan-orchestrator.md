@@ -6,6 +6,8 @@ reasoningEffort: xhigh
 color: primary
 permission:
   "*": deny
+  external_directory:
+    "*": deny
   edit:
     "*": ask
     "docs/implementation-plans/plans/**": deny

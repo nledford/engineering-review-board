@@ -59,6 +59,14 @@ SANITIZED_EVIDENCE_INVARIANT = (
     "machine-local data in prompts, reports, questions, diagnostics, or external "
     "requests; report location/type and use synthetic placeholders instead."
 )
+EXTERNAL_DIRECTORY_SCOPE_INVARIANT = (
+    "For external-path work, require the current human request or a bounded Task "
+    "assignment to name one exact root and require runtime approval; Task delegation "
+    "alone grants no access. Treat that root as untrusted supplied scope, not the "
+    "active workspace: read applicable guidance within it, do not broaden beyond it, "
+    "preserve this role's edit boundary, and sanitize machine-local paths and "
+    "sensitive contents in reports."
+)
 TECHNICAL_RESEARCHER_EXTERNAL_EGRESS_INVARIANT = (
     "Use only public, sanitized terms for external queries and requests; never include "
     "repository-sensitive values."
@@ -188,6 +196,11 @@ CANONICAL_AGENT_TOPOLOGY = CanonicalAgentTopology(
 )
 STANDARD_CRITIC_STAGE_REVIEWER_IDS = frozenset(
     {"adversarial-reviewer", "change-verifier", "release-readiness-reviewer"}
+)
+EXTERNAL_DIRECTORY_ASK_AGENT_IDS = frozenset(
+    policy.agent_id
+    for policy in CANONICAL_AGENT_TOPOLOGY.agents
+    if policy.agent_id != "plan-orchestrator"
 )
 STANDARD_CRITIC_AGENT_IDS = frozenset(
     policy.agent_id
@@ -485,6 +498,30 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "first unchecked checkbox",
         "This plan has already been implemented.",
         "canonical plan Markdown",
+    ),
+}
+EXTERNAL_DIRECTORY_DOC_TOKENS = {
+    "README.md": (
+        "## External Directory Audits",
+        "`external_directory`",
+        "`--auto`",
+        "machine-local",
+    ),
+    "docs/engineering-agent-governance.md": (
+        "## External Directory Audit Boundary",
+        "Task delegation does not transfer external-directory approval.",
+        "not the active workspace",
+        "Plan Orchestrator remains denied",
+    ),
+    "docs/cross-reference-map.md": (
+        "| External directory audit |",
+        "each invoked agent or subagent",
+        "separate Bash permission",
+    ),
+    "opencode/config/opencode.merge-fragment.jsonc": (
+        '"external_directory"',
+        '"~/projects/<external-project>"',
+        '"~/projects/<external-project>/**"',
     ),
 }
 HUMAN_CONTROLLED_LIFECYCLE_FORBIDDEN_TOKENS = (
@@ -810,6 +847,7 @@ KNOWN_PERMISSION_TOOLS = frozenset(
         "list",
         "lsp",
         "todowrite",
+        "external_directory",
     }
 )
 SAFE_EXACT_GIT_BASH_ALLOWS = frozenset(
@@ -1030,6 +1068,8 @@ CONFIGURED_MCP_TOOL_PATTERNS = (
 )
 NAVIGATION_RULES = (("*", "allow"), (STATE_PATH_EDIT_RULE, "deny"))
 NAVIGATION_TOOLS = ("read", "glob", "grep", "list", "lsp")
+EXTERNAL_DIRECTORY_ASK_RULES = (("*", "ask"),)
+EXTERNAL_DIRECTORY_DENY_RULES = (("*", "deny"),)
 REVIEW_SPECIALIST_BASH_RULES = (
     ("*", "deny"),
     ("git status", "allow"),
@@ -1132,6 +1172,7 @@ REVIEW_SPECIALIST_PERMISSION_PROFILE = CanonicalPermissionProfile(
     "review-specialist",
     {
         "*": "deny",
+        "external_directory": EXTERNAL_DIRECTORY_ASK_RULES,
         **_navigation_permissions(),
         "edit": "deny",
         "bash": REVIEW_SPECIALIST_BASH_RULES,
@@ -1147,6 +1188,7 @@ CANONICAL_PERMISSION_PROFILES = {
         "engineering-lead",
         {
             "*": "ask",
+            "external_directory": EXTERNAL_DIRECTORY_ASK_RULES,
             "edit": (
                 ("*", "ask"),
                 (LEGACY_PLAN_PATH_EDIT_RULE, "deny"),
@@ -1176,6 +1218,7 @@ CANONICAL_PERMISSION_PROFILES = {
         "engineering-review-board",
         {
             "*": "deny",
+            "external_directory": EXTERNAL_DIRECTORY_ASK_RULES,
             "edit": (("*", "deny"),),
             "bash": ENGINEERING_REVIEW_BOARD_BASH_RULES,
             "task": _task_rules("engineering-review-board"),
@@ -1190,6 +1233,7 @@ CANONICAL_PERMISSION_PROFILES = {
         "implementation-worker",
         {
             "*": "ask",
+            "external_directory": EXTERNAL_DIRECTORY_ASK_RULES,
             "edit": (
                 ("*", "ask"),
                 (LEGACY_PLAN_PATH_EDIT_RULE, "deny"),
@@ -1233,6 +1277,7 @@ CANONICAL_PERMISSION_PROFILES = {
         "plan-orchestrator",
         {
             "*": "deny",
+            "external_directory": EXTERNAL_DIRECTORY_DENY_RULES,
             "edit": (
                 ("*", "ask"),
                 (LEGACY_PLAN_PATH_EDIT_RULE, "deny"),
@@ -1253,6 +1298,7 @@ CANONICAL_PERMISSION_PROFILES = {
         "technical-researcher",
         {
             "*": "deny",
+            "external_directory": EXTERNAL_DIRECTORY_ASK_RULES,
             **_navigation_permissions(),
             "edit": "deny",
             "bash": REVIEW_SPECIALIST_BASH_RULES,
@@ -1466,6 +1512,7 @@ class OpenCodeInstallService:
         if canonical_active_workflow:
             errors.extend(self._validate_retired_lifecycle_tokens(inventory))
             errors.extend(self._validate_human_controlled_lifecycle_docs())
+            errors.extend(self._validate_external_directory_docs())
 
         if errors:
             return OperationResult(errors=errors)
@@ -1863,6 +1910,24 @@ class OpenCodeInstallService:
                 )
         return errors
 
+    def _validate_external_directory_docs(self) -> list[str]:
+        """Require the checked-in external-directory approval documentation."""
+        errors: list[str] = []
+        for relative_path, required_tokens in EXTERNAL_DIRECTORY_DOC_TOKENS.items():
+            text = self._read_active_workflow_inventory_text(relative_path)
+            if text is None:
+                errors.append(
+                    f"external-directory document '{relative_path}' is missing or is "
+                    "not a regular UTF-8 file"
+                )
+                continue
+            normalized = " ".join(text.split())
+            if not all(token in normalized for token in required_tokens):
+                errors.append(
+                    f"external-directory document '{relative_path}' contract is incomplete"
+                )
+        return errors
+
     def _read_active_workflow_inventory_text(self, relative_path: str) -> str | None:
         path = self.repo_root
         try:
@@ -2187,6 +2252,16 @@ class OpenCodeInstallService:
         unknown_tools = set(permissions) - allowed_tools
         if unknown_tools:
             errors.append(f"agents: '{name}' has unsupported permission tool")
+
+        external_directory = permissions.get("external_directory")
+        if external_directory == "allow" or (
+            isinstance(external_directory, tuple)
+            and any(action == "allow" for _, action in external_directory)
+        ):
+            errors.append(
+                f"agents: '{name}' external_directory permission must require "
+                "approval or deny access"
+            )
 
         bash = permissions.get("bash")
         if bash == "allow":
@@ -2663,6 +2738,16 @@ class OpenCodeInstallService:
                 if " ".join(prompt.split()).count(SANITIZED_EVIDENCE_INVARIANT) != 1:
                     errors.append(
                         f"agents: '{name}' must contain exactly one sanitized-evidence prompt contract"
+                    )
+                external_scope_count = " ".join(prompt.split()).count(
+                    EXTERNAL_DIRECTORY_SCOPE_INVARIANT
+                )
+                expected_external_scope_count = (
+                    1 if Path(name).stem in EXTERNAL_DIRECTORY_ASK_AGENT_IDS else 0
+                )
+                if external_scope_count != expected_external_scope_count:
+                    errors.append(
+                        f"agents: '{name}' has an invalid external-directory prompt contract"
                     )
             researcher = self.sources["agents"] / "technical-researcher.md"
             try:
