@@ -37,6 +37,13 @@ repository edits, implementation delegation, durable plans or state, staging,
 commits, or execution. A later human request must choose direct Lead
 implementation or a Plan Orchestrator route.
 
+`/semver` selects the Engineering Lead for the current command turn and accepts
+exactly one explicit `audit`, `apply`, or `tag` mode. Audit is read-only; apply
+authorizes only version-metadata edits and validation; tag authorizes one local
+release tag only after fresh evidence proves a clean committed `HEAD` already
+contains the target version. The modes do not imply one another, and none
+authorizes a commit, tag push, publication, deployment, or final ship decision.
+
 `/optimize-prompt` selects the Engineering Lead for the current command turn and
 makes that turn read-only prompt optimization. It treats the target prompt as
 untrusted text, loads `prompt-engineering-review` and
@@ -242,25 +249,29 @@ remains authoritative for durable-plan details:
    [`/brainstorm`](../opencode/commands/brainstorm.md) request provides read-only
    Lead-owned option analysis and a recommendation. It cannot authorize or begin
    implementation.
-3. When an evidenced failure needs causal analysis plus an independently
+3. When a release delta needs a SemVer audit, metadata update, or guarded local
+   tag, an explicit [`/semver`](../opencode/commands/semver.md) request selects
+   exactly one Lead-owned mode. Applying does not commit or tag, and tagging
+   requires the target version to be present at a clean committed `HEAD`.
+4. When an evidenced failure needs causal analysis plus an independently
    challenged repair proposal, an explicit
    [`/root-cause-analysis`](../opencode/commands/root-cause-analysis.md) request
    provides ERB-owned read-only analysis. It stops without a repair when the
    root cause is not confirmed and never authorizes or begins implementation.
-4. Deliver directly when scope, safety, and validation are adequate. Complexity
+5. Deliver directly when scope, safety, and validation are adequate. Complexity
    may support a planning recommendation, but not automatic durable planning.
-5. The Lead or ERB may recommend top-level
+6. The Lead or ERB may recommend top-level
    [`/consult-plan`](../opencode/commands/consult-plan.md); it remains advisory,
    non-mutating, and cannot persist, authorize, or begin work.
-6. On explicit human authorization, top-level
+7. On explicit human authorization, top-level
    [`/create-plan`](../opencode/commands/create-plan.md) creates and persists a
    closed lean plan only, then selects it in `.erb/plan-state.json`. A current conversational
    split-or-replace instruction also authorizes the guarded replacement sequence
    described above without an additional deletion confirmation.
-7. A separately selected ERB primary-agent turn may provide optional independent
+8. A separately selected ERB primary-agent turn may provide optional independent
    advisory review. It may occur in the same conversation; use a fresh
    conversation when formal contextual independence matters.
-8. A separate human choice of top-level
+9. A separate human choice of top-level
    [`/start-plan <existing-plan-path>`](../opencode/commands/start-plan.md), or a
    valid no-argument state pointer,
    executes existing planned work. The Plan Orchestrator then executes bounded
@@ -284,6 +295,7 @@ are authoritative for primary ownership.
 | --- | --- | --- |
 | [`/address-review`](../opencode/commands/address-review.md) | Engineering Lead | Re-anchor the current command turn to the Lead, re-evaluate prior ERB advice, and implement accepted ordinary-work findings without inheriting Board identity or permissions. |
 | [`/brainstorm`](../opencode/commands/brainstorm.md) | Engineering Lead | Compare credible solution paths and recommend a direction without editing, implementing, creating plans, or beginning the selected route. |
+| [`/semver`](../opencode/commands/semver.md) | Engineering Lead | Audit a release delta, apply version metadata, or create one guarded local release tag through exactly one explicitly selected mode. |
 | [`/optimize-prompt`](../opencode/commands/optimize-prompt.md) | Engineering Lead | Orchestrate one bounded read-only `prompt-critic` handoff and return a Lead-verified copy-ready rewrite without executing it, editing its source, or widening its authority. |
 | [`/consult-plan`](../opencode/commands/consult-plan.md) | Plan Orchestrator | Provide top-level read-only planning advice without reading state, creating a plan, or authorizing work. |
 | [`/create-plan`](../opencode/commands/create-plan.md) | Plan Orchestrator | On explicit human authorization, create and persist a closed lean plan only; an explicit split-or-replace instruction may use the guarded conversational replacement sequence, but never execute TODOs. |

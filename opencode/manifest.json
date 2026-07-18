@@ -35,6 +35,7 @@
     "review-implementation.md",
     "review-plan.md",
     "root-cause-analysis.md",
+    "semver.md",
     "start-plan.md"
   ],
   "support_files": [

@@ -3116,6 +3116,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "review-implementation.md",
             "review-plan.md",
             "root-cause-analysis.md",
+            "semver.md",
             "start-plan.md",
         )
         expected_owners = {
@@ -3129,6 +3130,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "review-implementation.md": "engineering-review-board",
             "review-plan.md": "engineering-review-board",
             "root-cause-analysis.md": "engineering-review-board",
+            "semver.md": "engineering-lead",
             "start-plan.md": "plan-orchestrator",
         }
 
@@ -3145,6 +3147,56 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             assert parsed is not None
             self.assertEqual(parsed.fields["agent"], owner)
             self.assertEqual(parsed.fields["subtask"], "false")
+
+    def test_checked_in_semver_routes_explicit_modes_and_guards_tagging(self) -> None:
+        """Pin SemVer mode authority, fresh evidence, and local-tag safety."""
+        project_root = Path(__file__).parents[1]
+        command_path = project_root / "opencode/commands/semver.md"
+        self.assertTrue(command_path.is_file(), "semver.md")
+        if not command_path.is_file():
+            return
+
+        command_text = command_path.read_text(encoding="utf-8")
+        parsed, errors = OpenCodeInstallService._parse_frontmatter(
+            "commands", "semver.md", command_text
+        )
+        self.assertEqual(errors, [])
+        assert parsed is not None
+        self.assertEqual(parsed.fields["agent"], "engineering-lead")
+        self.assertEqual(parsed.fields["subtask"], "false")
+
+        stages = (
+            "## Shared evidence rules",
+            "## Audit mode",
+            "## Apply mode",
+            "## Tag mode",
+            "## Report",
+        )
+        positions = tuple(command_text.index(stage) for stage in stages)
+        self.assertEqual(positions, tuple(sorted(positions)))
+
+        normalized = " ".join(command_text.split())
+        required = (
+            "Use exactly one mode per invocation",
+            "Load `semantic-versioning` for every valid mode.",
+            "Treat any earlier version recommendation as context only",
+            "Audit mode is read-only.",
+            "When audit scope does not identify a target, inspect the released baseline through `HEAD` and report release-relevant staged and unstaged changes separately.",
+            "Apply mode authorizes version-metadata edits and their repository-native validation only.",
+            "refuse an under-bump",
+            "Do not stage, commit, tag, push, publish, or deploy in apply mode.",
+            "Load `git-workflows` before any tag operation.",
+            "Tag mode authorizes creation of one local release tag only.",
+            "With no version operand in tag mode, use only the single unambiguous canonical version recorded at `HEAD`.",
+            "require `git status` to show no staged, unstaged, or untracked paths",
+            "the canonical version metadata at `HEAD` equals the target Semantic Version",
+            "the target version is not lower than the fresh minimum recommendation",
+            "Do not edit version metadata, stage, commit, push, publish, or deploy in tag mode.",
+            "Never create, move, replace, delete, or force a pre-existing tag.",
+        )
+        for token in required:
+            with self.subTest(token=token):
+                self.assertIn(token, normalized)
 
     def test_checked_in_root_cause_analysis_is_read_only_and_human_gated(self) -> None:
         """Pin RCA, specialist, adversarial, and human-gate sequencing."""
@@ -4457,6 +4509,7 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
                 "review-implementation.md",
                 "review-plan.md",
                 "root-cause-analysis.md",
+                "semver.md",
                 "start-plan.md",
             ],
         )
