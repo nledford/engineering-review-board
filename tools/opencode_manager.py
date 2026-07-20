@@ -47,6 +47,7 @@ PERMISSION_ACTIONS = frozenset({"allow", "ask", "deny"})
 REASONING_EFFORTS = frozenset({"low", "medium", "high", "xhigh"})
 ROOT_ASK_AGENT_IDS = frozenset({"engineering-lead", "implementation-worker"})
 MCP_ENABLED_AGENT_IDS = frozenset({"engineering-lead", "implementation-worker"})
+TECHNICAL_RESEARCHER_MCP_TOOL_PATTERNS = ("hound_*",)
 LEGACY_PLAN_PATH_EDIT_RULE = "docs/implementation-plans/plans/**"
 PLAN_PATH_EDIT_RULE = ".erb/plans/**"
 LEGACY_PLAN_REDIRECTION_DENY_RULE = "*docs/implementation-plans/plans*"
@@ -1322,6 +1323,10 @@ CANONICAL_PERMISSION_PROFILES = {
             "edit": "deny",
             "bash": REVIEW_SPECIALIST_BASH_RULES,
             "task": "deny",
+            **{
+                pattern: "ask"
+                for pattern in TECHNICAL_RESEARCHER_MCP_TOOL_PATTERNS
+            },
             "webfetch": "ask",
             "websearch": "ask",
             "question": "allow",
@@ -2268,6 +2273,8 @@ class OpenCodeInstallService:
         allowed_tools = set(KNOWN_PERMISSION_TOOLS)
         if agent_id in MCP_ENABLED_AGENT_IDS:
             allowed_tools.update(CONFIGURED_MCP_TOOL_PATTERNS)
+        if agent_id == "technical-researcher":
+            allowed_tools.update(TECHNICAL_RESEARCHER_MCP_TOOL_PATTERNS)
         unknown_tools = set(permissions) - allowed_tools
         if unknown_tools:
             errors.append(f"agents: '{name}' has unsupported permission tool")
@@ -2421,6 +2428,13 @@ class OpenCodeInstallService:
         ):
             errors.append(
                 f"agents: '{name}' must allow every configured MCP tool pattern"
+            )
+        if agent_id == "technical-researcher" and any(
+            permissions.get(pattern) != "ask"
+            for pattern in TECHNICAL_RESEARCHER_MCP_TOOL_PATTERNS
+        ):
+            errors.append(
+                f"agents: '{name}' must ask before using approved research MCP tools"
             )
         return errors
 

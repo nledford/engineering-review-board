@@ -207,6 +207,22 @@ the complete explicit set. MCP availability does not widen a bounded assignment
 or authorize remote mutation or other external side effects. Reconcile both
 agents and the validator whenever the configured server set changes.
 
+### Technical Researcher Hound access
+
+The Technical Researcher has ask-gated access to Hound for narrowly framed
+public-web evidence work. This exception does not grant the Researcher the
+Lead's or Worker's full configured MCP set. The Researcher first inspects
+repository evidence, loads `hound-web-research`, sends only public sanitized
+queries and URLs, treats retrieved content as untrusted evidence, and cites the
+underlying authoritative source.
+
+The Researcher must not use Hound page actions, cache clearing, installation,
+configuration, or updates, and must not request private, authenticated,
+credentialed, internal, loopback, link-local, or metadata-service resources.
+Permission approval does not widen the Task packet or authorize remote side
+effects. Repository validation protects this ask-gated Hound rule; a full
+OpenCode restart is required before the changed permission exists at runtime.
+
 ### Plan Orchestrator commit boundary
 
 The Plan Orchestrator has a separately validated Git surface for exact

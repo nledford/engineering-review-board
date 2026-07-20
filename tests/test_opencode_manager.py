@@ -4552,6 +4552,20 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
                 for token in tokens:
                     self.assertIn(token, text)
 
+    def test_checked_in_technical_researcher_asks_before_using_hound(self) -> None:
+        project_root = Path(__file__).parents[1]
+        parsed, errors = OpenCodeInstallService._parse_frontmatter(
+            "agents",
+            "technical-researcher.md",
+            (project_root / "opencode/agents/technical-researcher.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+
+        self.assertEqual([], errors)
+        assert parsed is not None
+        self.assertEqual("ask", parsed.permissions["hound_*"])
+
     def test_validate_rejects_external_directory_governance_drift(self) -> None:
         for relative_path, tokens in EXTERNAL_DIRECTORY_DOC_TOKENS.items():
             with self.subTest(path=relative_path), tempfile.TemporaryDirectory() as temp_dir:
