@@ -130,6 +130,13 @@ and resumes the same Task child for safe in-scope corrections before checking
 the TODO. The Worker cannot edit plans or `.erb/plan-state.json`, delegate,
 stage, or commit.
 
+Every resumed correction prompt is independently actionable. It enumerates each
+evidence gap, the blocked acceptance criterion, observed versus required result,
+exact correction scope, validation to rerun, unchanged constraints, and stop
+condition. A TODO-status sentence or a phrase such as `these findings` is never
+a substitute for the findings themselves. The Worker must block rather than
+guess when a correction packet omits those details.
+
 ## Security And Validation
 
 Treat state paths and plan content as untrusted. Reject absolute paths, traversal,

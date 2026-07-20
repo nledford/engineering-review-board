@@ -33,7 +33,10 @@ Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit. Each new
 Worker Task receives a self-contained packet with numbered acceptance criteria;
 the Plan Orchestrator reconciles each criterion against fresh evidence and
 resumes the same Task child for safe in-scope corrections before checking a
-TODO.
+TODO. Every resumed correction prompt enumerates its evidence gaps, blocked
+criteria, observed and required results, exact correction scope, validation to
+rerun, and unchanged constraints; a status-only reference to `these findings`
+is incomplete, and the Worker blocks rather than guesses.
 
 After the Plan Orchestrator creates and validates a plan, an explicit current
 human commit request may authorize the Engineering Lead to stage and commit only

@@ -670,6 +670,7 @@ COMMAND_PROMPT_CONTRACTS = {
         "dedicated Verification checkboxes",
         "Use the Plan Orchestrator's self-contained delegation and corrective-continuation contract.",
         "A Worker return does not end the current TODO.",
+        "Each resumed correction prompt must enumerate the evidence gaps, blocked criteria, required corrections, and validation to rerun.",
         "Direct human-authorized plan creation to `/create-plan`",
         "Accept exactly 1 MiB and reject limit-plus-one data",
     ),
@@ -2618,6 +2619,12 @@ class OpenCodeInstallService:
 
     def _validate_prompt_contracts(self, inventory: DefinitionInventory) -> list[str]:
         contracts = {
+            "engineering-lead.md": (
+                "Use only `implementation-worker` for bounded implementation Tasks.",
+                "When resuming the same Worker for a correction, send a complete actionable packet",
+                "enumerate each evidence gap, the acceptance criterion it blocks",
+                "Never send only a status preamble or references such as `these findings`",
+            ),
             "plan-orchestrator.md": (
                 "top-level primary agent, never a Task child",
                 "native planned-work TODOs",
@@ -2632,6 +2639,8 @@ class OpenCodeInstallService:
                 "Do not return partial progress while safe, in-scope work remains executable.",
                 "Return exactly one status: `COMPLETED` or `BLOCKED`.",
                 "requirement-to-evidence table",
+                "A resumed correction assignment must enumerate at least one concrete evidence gap",
+                "Do not infer missing findings from a status-only preamble",
             ),
         }
         errors: list[str] = []
@@ -2941,6 +2950,13 @@ class OpenCodeInstallService:
             "Map every acceptance criterion to fresh source, diff, and validation evidence.",
             "resume the same Worker child session by passing its `task_id`",
             "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
+            "For every resumed correction, send a complete correction packet",
+            "numbered evidence gaps",
+            "the acceptance criterion each gap blocks",
+            "the observed evidence and required result",
+            "the exact correction requested",
+            "validation to rerun",
+            "A status-only preamble or a reference such as `these findings`",
             *PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
         )
         normalized = " ".join(prompt.split())

@@ -297,6 +297,16 @@ every criterion is evidenced or a genuine permission, tooling, validation,
 material-scope, or contract blocker requires a human decision. Check the TODO
 only after that reconciliation succeeds.
 
+For every resumed correction, send a complete correction packet, not merely a
+progress sentence. Include the current plan path and TODO; numbered evidence
+gaps; the acceptance criterion each gap blocks; the observed evidence and
+required result; the exact correction requested with owned files or boundaries;
+validation to rerun; unchanged exclusions and stable interfaces; and the stop
+condition. A status-only preamble or a reference such as `these findings`,
+`the gaps above`, or `fix the remaining issues` is incomplete unless the same
+Task prompt immediately enumerates the actionable gaps. Inspect the final prompt
+before invoking Task and do not send it until every section is non-empty.
+
 ## Native TODO Projection
 
 Replace the whole native TODO list on every update. Keep at most five entries

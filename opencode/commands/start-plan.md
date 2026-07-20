@@ -78,6 +78,10 @@ corrective-continuation contract. A Worker return does not end the current TODO.
 Reconcile every acceptance criterion against fresh source, diff, and validation
 evidence, and continue the same Task child for safe in-scope corrections until
 the TODO is complete or a genuine blocker requires a human decision.
+Each resumed correction prompt must enumerate the evidence gaps, blocked
+criteria, required corrections, and validation to rerun. Never send only a TODO
+status sentence or a deictic reference to findings that the prompt does not
+contain.
 
 The pointer selects a plan; it is not an exclusivity mechanism. The last valid
 explicit selection wins. Never block because another plan is selected or may be

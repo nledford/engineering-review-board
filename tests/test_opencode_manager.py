@@ -3383,6 +3383,11 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             .read_text(encoding="utf-8")
             .split()
         )
+        lead = " ".join(
+            (project_root / "opencode/agents/engineering-lead.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
         start_plan = " ".join(
             (project_root / "opencode/commands/start-plan.md")
             .read_text(encoding="utf-8")
@@ -3399,16 +3404,31 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "Map every acceptance criterion to fresh source, diff, and validation evidence.",
             "resume the same Worker child session by passing its `task_id`",
             "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
+            "For every resumed correction, send a complete correction packet",
+            "numbered evidence gaps",
+            "the acceptance criterion each gap blocks",
+            "the observed evidence and required result",
+            "the exact correction requested",
+            "validation to rerun",
+            "A status-only preamble or a reference such as `these findings`",
         )
         worker_requirements = (
             "Make the smallest durable change that satisfies every assigned acceptance criterion.",
             "Do not return partial progress while safe, in-scope work remains executable.",
             "Return exactly one status: `COMPLETED` or `BLOCKED`.",
             "requirement-to-evidence table",
+            "A resumed correction assignment must enumerate at least one concrete evidence gap",
+            "Do not infer missing findings from a status-only preamble",
         )
         command_requirements = (
             "Use the Plan Orchestrator's self-contained delegation and corrective-continuation contract.",
             "A Worker return does not end the current TODO.",
+            "Each resumed correction prompt must enumerate the evidence gaps, blocked criteria, required corrections, and validation to rerun.",
+        )
+        lead_requirements = (
+            "When resuming the same Worker for a correction, send a complete actionable packet",
+            "enumerate each evidence gap, the acceptance criterion it blocks",
+            "Never send only a status preamble or references such as `these findings`",
         )
 
         for phrase in orchestrator_requirements:
@@ -3420,6 +3440,9 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         for phrase in command_requirements:
             with self.subTest(command="start-plan", phrase=phrase):
                 self.assertIn(phrase, start_plan)
+        for phrase in lead_requirements:
+            with self.subTest(agent="engineering-lead", phrase=phrase):
+                self.assertIn(phrase, lead)
 
     def test_checked_in_primary_agents_support_same_conversation_handoffs(self) -> None:
         """Keep primary-agent authority turn-scoped without transferring permissions."""
@@ -3634,6 +3657,12 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 name: semantics
                 for name, (_, semantics) in CANONICAL_PROMPT_SECTION_CONTRACTS.items()
             } | {
+                "engineering-lead.md": (
+                    "Use only `implementation-worker` for bounded implementation Tasks.",
+                    "When resuming the same Worker for a correction, send a complete actionable packet",
+                    "enumerate each evidence gap, the acceptance criterion it blocks",
+                    "Never send only a status preamble or references such as `these findings`",
+                ),
                 "plan-orchestrator.md": (
                     "The lifecycle distinguishes read-only consultation, explicit plan-only creation, and execution.",
                     "It must not execute newly created plans automatically.",
@@ -3656,12 +3685,21 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                     "Map every acceptance criterion to fresh source, diff, and validation evidence.",
                     "resume the same Worker child session by passing its `task_id`",
                     "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
+                    "For every resumed correction, send a complete correction packet",
+                    "numbered evidence gaps",
+                    "the acceptance criterion each gap blocks",
+                    "the observed evidence and required result",
+                    "the exact correction requested",
+                    "validation to rerun",
+                    "A status-only preamble or a reference such as `these findings`",
                 ),
                 "implementation-worker.md": (
                     "Make the smallest durable change that satisfies every assigned acceptance criterion.",
                     "Do not return partial progress while safe, in-scope work remains executable.",
                     "Return exactly one status: `COMPLETED` or `BLOCKED`.",
                     "requirement-to-evidence table",
+                    "A resumed correction assignment must enumerate at least one concrete evidence gap",
+                    "Do not infer missing findings from a status-only preamble",
                 ),
             }
             for name, tokens in agent_tokens.items():

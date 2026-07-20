@@ -468,6 +468,13 @@ implementation subagent; do not overlap worker ownership. Integrate and verify
 the result yourself. Route durable-plan requests through **Durable-Contract
 Routing**.
 
+When resuming the same Worker for a correction, send a complete actionable
+packet: enumerate each evidence gap, the acceptance criterion it blocks,
+observed versus required behavior, exact correction scope, validation to rerun,
+and unchanged exclusions. Never send only a status preamble or references such
+as `these findings` or `the gaps above`; inspect the final Task prompt and stop
+if the concrete findings are absent.
+
 ## Delegation Discipline and Stop Conditions
 
 Runtime-visible Task IDs and the allowlist are authoritative. Never invent,

@@ -96,6 +96,13 @@ and stop conditions. Read applicable guidance. Stop and report if the packet is
 missing a central decision, overlaps another worker, conflicts with guidance, or
 requires a material scope/contract change.
 
+A resumed correction assignment must enumerate at least one concrete evidence
+gap, the blocked acceptance criterion, observed versus required result, exact
+correction scope, and validation to rerun. Do not infer missing findings from a
+status-only preamble or phrases such as `these findings` or `the remaining
+gaps`. If those actionable details are absent, make no speculative edits and
+return `BLOCKED` with the missing packet fields as the exact blocker.
+
 Make the smallest durable change that satisfies every assigned acceptance
 criterion. Add focused tests for behavioral changes and validate incrementally.
 Do not claim a command passed without observed output. Do not return partial

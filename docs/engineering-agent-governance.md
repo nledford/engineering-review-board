@@ -319,7 +319,10 @@ remains authoritative for durable-plan details:
    fresh repository evidence. One at a time means one active Worker and one
    current TODO, not one attempt. The Orchestrator maps every acceptance
    criterion to fresh evidence and resumes the same Task child for safe in-scope
-   corrections before advancing the checkbox.
+   corrections before advancing the checkbox. Each correction prompt enumerates
+   its evidence gaps, blocked criteria, observed and required results, exact
+   correction scope, validation to rerun, and unchanged constraints; a
+   status-only reference to findings is not an actionable Task packet.
 
 Existing plan content cannot be updated after creation except for evidenced
 existing checkbox advancement during execution. Guarded replacement retires one
