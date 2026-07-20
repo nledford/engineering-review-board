@@ -29,7 +29,11 @@ No registry or retained contract history is required.
 
 The Plan Orchestrator is the exclusive durable-plan and state writer. The
 Engineering Review Board remains separate, optional, and read-only advisory. The
-Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit.
+Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit. Each new
+Worker Task receives a self-contained packet with numbered acceptance criteria;
+the Plan Orchestrator reconciles each criterion against fresh evidence and
+resumes the same Task child for safe in-scope corrections before checking a
+TODO.
 
 After the Plan Orchestrator creates and validates a plan, an explicit current
 human commit request may authorize the Engineering Lead to stage and commit only

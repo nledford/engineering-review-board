@@ -79,8 +79,8 @@ transferring identity or permissions, and keeps its existing lifecycle limits.
 | --- | --- | --- |
 | [Engineering Lead](../opencode/agents/engineering-lead.md) | Request intake, process selection, direct or bounded unplanned delivery, integration, validation, and independent-review handoff. | Invoke the ERB as a Task child, claim a Board decision without its output, or write or execute a durable plan or plan state. |
 | [Engineering Review Board](../opencode/agents/engineering-review-board.md) | Optional independent read-only advice, specialist selection, evidence synthesis, and severity assessment. Invoke it as a separate primary agent. | Edit the repository, implement a fix, change plans or state, or control plan creation, updates, execution, or persistence. |
-| [Plan Orchestrator](../opencode/agents/plan-orchestrator.md) | Top-level read-only consultation, safe closed lean-plan creation, selected-plan state, planned execution, integration, validation, and native planned-work TODOs. | Act as a Task child, mutate a created plan beyond evidenced existing checkboxes, delegate to anything other than the Worker, or claim ERB advisory evidence controls planned work. |
-| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, plus focused validation and an evidence report. It is the only implementation subagent. | Edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
+| [Plan Orchestrator](../opencode/agents/plan-orchestrator.md) | Top-level read-only consultation, safe closed lean-plan creation, selected-plan state, planned execution, self-contained Worker handoffs, acceptance reconciliation, integration, validation, and native planned-work TODOs. | Act as a Task child, mutate a created plan beyond evidenced existing checkboxes, delegate to anything other than the Worker, or claim ERB advisory evidence controls planned work. |
+| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, complete against every assigned acceptance criterion, plus focused validation and a requirement-to-evidence report. It is the only implementation subagent. | Edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
 | Review and research specialists | Bounded, decision-relevant analysis for the Lead or ERB using exact runtime-visible IDs. | Implement changes, simulate the ERB, approve plans, or treat advisory output as final authority. |
 
 ## External Directory Audit Boundary
@@ -314,7 +314,12 @@ remains authoritative for durable-plan details:
    [`/start-plan <existing-plan-path>`](../opencode/commands/start-plan.md), or a
    valid no-argument state pointer,
    executes existing planned work. The Plan Orchestrator then executes bounded
-   Worker units and records only observed plan checkbox and state evidence.
+   Worker units and records only observed plan checkbox and state evidence. Each
+   new Worker Task receives a self-contained packet derived from the plan and
+   fresh repository evidence. One at a time means one active Worker and one
+   current TODO, not one attempt. The Orchestrator maps every acceptance
+   criterion to fresh evidence and resumes the same Task child for safe in-scope
+   corrections before advancing the checkbox.
 
 Existing plan content cannot be updated after creation except for evidenced
 existing checkbox advancement during execution. Guarded replacement retires one
@@ -361,10 +366,15 @@ Before changing role or command guidance:
   ERB never becomes a child of the Lead.
 - Keep delegated Task prompts scannable: use Markdown sections separated by
   blank lines and bullets for multi-item scope, constraints, questions, and
-  evidence. Do not compress a delegation packet into one dense paragraph.
+  evidence. Do not compress a delegation packet into one dense paragraph or
+  rely on parent-conversation context that a new Task child does not receive.
 - Keep implementation and durable-plan persistence separate. The Worker owns one
   bounded implementation unit; the top-level Plan Orchestrator owns plan and
   `.erb/plan-state.json` mutations.
+- Treat a Worker return as evidence rather than automatic completion. Reconcile
+  every assigned criterion, continue the same Task child for safe in-scope
+  corrections, and advance a plan checkbox only after fresh source, diff, and
+  validation evidence closes the unit.
 - Check each command's primary owner, `subtask: false` setting, required evidence,
   and next handoff. ERB output remains optional, read-only advice.
 - Reconcile lean-plan routing changes across the canonical plan guide and the

@@ -122,8 +122,13 @@ blocked, failed, or uncertain step remains unchecked and is still current.
 Re-read the plan and fresh worktree evidence before each mutable phase.
 
 The Plan Orchestrator may delegate one bounded implementation TODO at a time to
-the Implementation Worker. The Worker cannot edit plans or
-`.erb/plan-state.json`, delegate, stage, or commit.
+the Implementation Worker. Each new Task receives a self-contained packet with
+the current plan context, owned scope, numbered acceptance criteria, validation,
+and stop conditions. One at a time limits active concurrency, not attempts. The
+Orchestrator maps every criterion to fresh source, diff, and validation evidence
+and resumes the same Task child for safe in-scope corrections before checking
+the TODO. The Worker cannot edit plans or `.erb/plan-state.json`, delegate,
+stage, or commit.
 
 ## Security And Validation
 

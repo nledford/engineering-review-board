@@ -449,6 +449,8 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "first unchecked checkbox",
         "This plan has already been implemented.",
         "canonical plan Markdown",
+        "self-contained Worker handoffs",
+        "resumes the same Task child for safe in-scope corrections",
     ),
     "docs/cross-reference-map.md": (
         "## OpenCode Runtime Handoff Overlay",
@@ -472,6 +474,8 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "`.erb/plan-state.json`",
         "first unchecked checkbox",
         "canonical plan Markdown",
+        "Planned implementation delegation",
+        "maps every criterion to fresh source, diff, and validation evidence",
     ),
     "docs/implementation-plans/README.md": (
         "## Human-Controlled Lifecycle",
@@ -481,6 +485,8 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "first unchecked checkbox",
         "This plan has already been implemented.",
         "canonical plan Markdown",
+        "Each new Task receives a self-contained packet",
+        "resumes the same Task child for safe in-scope corrections",
     ),
     "opencode/project-template/AGENTS-plan-workflow-snippet.md": (
         "Only an explicit human `/create-plan` request creates and persists a plan",
@@ -489,6 +495,8 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "`.erb/plan-state.json`",
         "first unchecked checkbox",
         "canonical plan Markdown",
+        "Each new Worker Task receives a self-contained packet",
+        "resumes the same Task child for safe in-scope corrections",
     ),
     "opencode/project-template/docs/implementation-plans/README.md": (
         "## Human-Controlled Lifecycle",
@@ -498,6 +506,8 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "first unchecked checkbox",
         "This plan has already been implemented.",
         "canonical plan Markdown",
+        "Each new Task receives a self-contained packet",
+        "resumes the same Task child for safe in-scope corrections",
     ),
 }
 EXTERNAL_DIRECTORY_DOC_TOKENS = {
