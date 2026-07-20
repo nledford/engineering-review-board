@@ -64,7 +64,7 @@ contract is already settled.
   telemetry semantics, correlation, audit events, SLOs, dashboards, and alerts.
   Keep this skill involved when a telemetry field or event is itself part of the
   published API, SDK, CLI, webhook, or message contract.
-- Load [`context7-docs`](../context7-docs/SKILL.md) when the contract depends on
+- Consult current official upstream documentation when the contract depends on
   current behavior of a third-party provider, API gateway, framework, SDK,
   schema tool, OpenAPI/AsyncAPI/GraphQL/protobuf library, cloud service,
   webhook provider, auth provider, rate-limit product, or CLI. Inspect local
@@ -175,8 +175,8 @@ into REST nouns, RPC verbs, or GraphQL shapes when another style is clearer.
   sensitive fields, rate limits, and abuse controls route through
   `security-review` before the contract is treated as complete.
 - **Provider/framework dependence:** current external provider or framework
-  behavior is checked through `context7-docs` when local code and docs are not
-  enough.
+  behavior is checked against official upstream documentation when local code
+  and docs are not enough.
 - **Docs and examples:** examples are realistic, deterministic, sanitized, and
   cover success, validation failure, authorization/security-sensitive failures
   when appropriate, pagination, and migration-relevant changes.

@@ -73,9 +73,8 @@ explicit migration.
 For Tailwind, determine the installed major version from the manifest and
 lockfile, then corroborate it with the stylesheet entrypoint, framework plugin,
 and configuration. Do not infer a version from one directive or copy syntax from
-a different major. Load
-[`context7-docs`](../context7-docs/SKILL.md) for the installed version's official
-setup, configuration, source-detection, migration, and compatibility guidance.
+a different major. Consult the installed version's official setup,
+configuration, source-detection, migration, and compatibility guidance.
 
 ## Tailwind CSS Decision Rules
 
@@ -273,9 +272,9 @@ adds less toolchain and migration burden.
 - Avoid loading unused CSS. Check code splitting, extraction, purging/content
   scanning, and critical CSS only within the project's existing build model.
 - Check browser compatibility against the project's stated support matrix,
-  Browserslist, framework baseline, or test browsers. Load
-  [`context7-docs`](../context7-docs/SKILL.md) for version-sensitive Tailwind,
-  framework, Sass, or build-tool behavior.
+  Browserslist, framework baseline, or test browsers. Consult current official
+  documentation for version-sensitive Tailwind, framework, Sass, or build-tool
+  behavior.
 
 ## Safe Tailwind Adoption Or Migration
 

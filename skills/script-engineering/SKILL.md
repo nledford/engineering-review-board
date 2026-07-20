@@ -212,9 +212,9 @@ imports/modules, shell configuration, listing behavior, and Just validation.
   privileged operations, or remote/production targets. Use
   [`security-review-evidence`](../security-review-evidence/SKILL.md) when captured
   output, fixtures, or reports may contain sensitive values.
-- Use [`context7-docs`](../context7-docs/SKILL.md) for current, version-specific
-  behavior of an external interpreter, runner, linter, task runner, or module
-  after inspecting the repository's pinned version and local usage.
+- Consult current official documentation for version-specific behavior of an
+  external interpreter, runner, linter, task runner, or module after inspecting
+  the repository's pinned version and local usage.
 
 ## Completion Evidence
 

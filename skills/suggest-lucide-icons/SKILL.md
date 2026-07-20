@@ -18,9 +18,9 @@ artwork. Optimize for recognizable meaning in the user's context.
 4. Verify candidates against installed, lockfile-resolved, or exact-version
    package assets. If no project version exists, confirm the icon through the
    official current package metadata or release, the current upstream package,
-   or `https://lucide.dev/icons/<icon-name>`. Use
-   [`context7-docs`](../context7-docs/SKILL.md) for current framework integration
-   documentation when needed, not as sole proof of icon existence or version.
+   or `https://lucide.dev/icons/<icon-name>`. Consult current official framework
+   integration documentation when needed, not as sole proof of icon existence or
+   version.
 5. Discard names that cannot be verified.
 6. Present up to 3 confirmed candidates and recommend one, stating the verification
    source and version.

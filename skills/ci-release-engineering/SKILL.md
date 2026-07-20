@@ -65,8 +65,8 @@ and provider documentation before assuming syntax or behavior.
   design.
 - [`container-engineering`](../container-engineering/SKILL.md) owns Dockerfile,
   OCI image, and Compose behavior that a pipeline invokes.
-- [`context7-docs`](../context7-docs/SKILL.md) owns current CI or release-provider
-  syntax and API documentation.
+- Consult current official CI or release-provider syntax and API documentation
+  after identifying the configured provider and version.
 - [`git-workflows`](../git-workflows/SKILL.md) owns manual tags, branches, pushes,
   recovery, and other Git operations outside automation.
 - [`systematic-debugging`](../systematic-debugging/SKILL.md) starts investigation

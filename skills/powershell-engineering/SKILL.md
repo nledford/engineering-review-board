@@ -41,8 +41,8 @@ preferable to shell, Python, Ruby, or JavaScript.
 - Use `$PSVersionTable` and the repository's declared matrix as evidence. Keep
   platform branches small and test each branch; prefer capability detection when
   it expresses the real requirement better than an operating-system name.
-- Use [`context7-docs`](../context7-docs/SKILL.md) for current PowerShell,
-  Pester, PSScriptAnalyzer, or module behavior after determining pinned versions.
+- Consult current official PowerShell, Pester, PSScriptAnalyzer, or module
+  documentation after determining pinned versions.
 
 ## Idiomatic PowerShell
 

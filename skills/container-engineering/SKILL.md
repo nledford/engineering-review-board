@@ -57,8 +57,8 @@ changing images or service topology.
 - [`justfiles`](../justfiles/SKILL.md) owns local container command wrappers.
 - [`ci-release-engineering`](../ci-release-engineering/SKILL.md) owns hosted
   pipeline configuration that builds, tests, or publishes images.
-- [`context7-docs`](../context7-docs/SKILL.md) owns current Docker, BuildKit, OCI,
-  and Compose syntax documentation.
+- Consult current official Docker, BuildKit, OCI, and Compose syntax
+  documentation after identifying the configured versions.
 - [`systematic-debugging`](../systematic-debugging/SKILL.md) starts active,
   unexplained build, startup, networking, or runtime failures.
 - [`release-readiness`](../release-readiness/SKILL.md) owns final ship decisions.

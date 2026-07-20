@@ -10,9 +10,9 @@ without executing untrusted code or leaking private dependency details.
 
 Pair with [`security-review`](../security-review/SKILL.md) for the broader
 security audit and [`security-review-evidence`](../security-review-evidence/SKILL.md)
-for sanitized evidence. Use [`context7-docs`](../context7-docs/SKILL.md) only for
-current package-manager, library, scanner, or API documentation; Context7 output
-is not provenance, trust, or exploitability evidence.
+for sanitized evidence. Use current official package-manager, library, scanner,
+or API documentation only as reference material; upstream documentation is not
+provenance, trust, or exploitability evidence.
 
 ## Use When
 
@@ -155,7 +155,7 @@ For CVE, GHSA, OSV, vendor, SCA, or package-manager advisory output, record:
   commands as the first step of review.
 - Treating scanner severity as final without checking affected versions and local
   reachability.
-- Trusting Context7 docs, README popularity, or package download counts as
+- Trusting upstream docs, README popularity, or package download counts as
   provenance evidence.
 - Copying private package names, registry hosts, exploit payloads, or raw scanner
   logs into reviews.

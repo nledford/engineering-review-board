@@ -55,8 +55,8 @@ security modeling or supply-chain-only review; route those surfaces as below.
 - For OAuth/OIDC/SAML, identity-provider, session-cookie, CSRF, redirect URI,
   token lifetime, scope/audience, signature, or key-rotation changes, inspect
   repository policy first and then current provider/protocol documentation before
-  judging compliance. Use [`context7-docs`](../context7-docs/SKILL.md) for
-  provider SDKs, libraries, CLIs, and APIs when current docs matter; cite only
+  judging compliance. Consult current official documentation for provider SDKs,
+  libraries, CLIs, and APIs when needed; cite only
   sanitized, review-relevant facts instead of turning the review into a protocol
   tutorial.
 - Use [`api-design`](../api-design/SKILL.md) for API-contract shape: resources,

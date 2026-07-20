@@ -1,6 +1,6 @@
 ---
 name: internationalization-localization
-description: Internationalization and localization guidance, including Project Fluent and Fluent Translation List (.ftl) files. Use when adding, changing, reviewing, or testing localized, multilingual, or localization-ready user-facing text, locale negotiation, translation catalogs, plural/select behavior, localized date/number formatting, or Fluent integrations in JavaScript, TypeScript, Python, Rust, or web UI. Do not use for fixed-language copyediting with no localization surface. Use context7-docs for current Fluent binding APIs and security-review plus security-review-evidence when localized content crosses trust boundaries.
+description: Internationalization and localization guidance, including Project Fluent and Fluent Translation List (.ftl) files. Use when adding, changing, reviewing, or testing localized, multilingual, or localization-ready user-facing text, locale negotiation, translation catalogs, plural/select behavior, localized date/number formatting, or Fluent integrations in JavaScript, TypeScript, Python, Rust, or web UI. Do not use for fixed-language copyediting with no localization surface. Consult current official documentation for Fluent binding APIs and use security-review plus security-review-evidence when localized content crosses trust boundaries.
 ---
 
 # Internationalization and Localization
@@ -55,9 +55,9 @@ for docs-only localization guidance.
 6. Apply the negotiated BCP 47 language and script-aware direction with `lang`
    and `dir` on the document or localized subtree. Use logical CSS properties;
    do not infer direction from arbitrary user strings.
-7. Fetch current upstream docs with [`context7-docs`](../context7-docs/SKILL.md)
-   before changing version-sensitive binding APIs, framework adapters, CLI tools,
-   or parser/validator behavior.
+7. Consult current official upstream documentation before changing
+   version-sensitive binding APIs, framework adapters, CLI tools, or
+   parser/validator behavior.
 8. Verify with the repository's parser, linter, typecheck, unit tests, snapshot
    tests, E2E tests, or build-time catalog validation.
 
