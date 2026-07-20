@@ -3370,6 +3370,57 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 with self.subTest(command=name, phrase=phrase):
                     self.assertIn(phrase, normalized)
 
+    def test_checked_in_planned_worker_delegation_closes_partial_work(self) -> None:
+        """Require self-contained Worker context and evidence-driven correction."""
+        project_root = Path(__file__).parents[1]
+        orchestrator = " ".join(
+            (project_root / "opencode/agents/plan-orchestrator.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        worker = " ".join(
+            (project_root / "opencode/agents/implementation-worker.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        start_plan = " ".join(
+            (project_root / "opencode/commands/start-plan.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+
+        orchestrator_requirements = (
+            "Treat every new Task child as context-isolated; its prompt must be self-contained",
+            "canonical plan path, current TODO number and exact text",
+            "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
+            "numbered acceptance criteria",
+            "One at a time means one active Worker and one current implementation TODO, not one attempt.",
+            "A Worker return is evidence, not a terminal event.",
+            "Map every acceptance criterion to fresh source, diff, and validation evidence.",
+            "resume the same Worker child session by passing its `task_id`",
+            "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
+        )
+        worker_requirements = (
+            "Make the smallest durable change that satisfies every assigned acceptance criterion.",
+            "Do not return partial progress while safe, in-scope work remains executable.",
+            "Return exactly one status: `COMPLETED` or `BLOCKED`.",
+            "requirement-to-evidence table",
+        )
+        command_requirements = (
+            "Use the Plan Orchestrator's self-contained delegation and corrective-continuation contract.",
+            "A Worker return does not end the current TODO.",
+        )
+
+        for phrase in orchestrator_requirements:
+            with self.subTest(agent="plan-orchestrator", phrase=phrase):
+                self.assertIn(phrase, orchestrator)
+        for phrase in worker_requirements:
+            with self.subTest(agent="implementation-worker", phrase=phrase):
+                self.assertIn(phrase, worker)
+        for phrase in command_requirements:
+            with self.subTest(command="start-plan", phrase=phrase):
+                self.assertIn(phrase, start_plan)
+
     def test_checked_in_primary_agents_support_same_conversation_handoffs(self) -> None:
         """Keep primary-agent authority turn-scoped without transferring permissions."""
         project_root = Path(__file__).parents[1]
@@ -3596,6 +3647,21 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                     "or equally explicit current top-level human plan-creation or plan-replacement request",
                     "must complete every planned TODO before beginning any dedicated Verification step",
                     "must not add, remove, rewrite, reorder, or renumber plan content",
+                    "Treat every new Task child as context-isolated; its prompt must be self-contained",
+                    "canonical plan path, current TODO number and exact text",
+                    "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
+                    "numbered acceptance criteria",
+                    "One at a time means one active Worker and one current implementation TODO, not one attempt.",
+                    "A Worker return is evidence, not a terminal event.",
+                    "Map every acceptance criterion to fresh source, diff, and validation evidence.",
+                    "resume the same Worker child session by passing its `task_id`",
+                    "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
+                ),
+                "implementation-worker.md": (
+                    "Make the smallest durable change that satisfies every assigned acceptance criterion.",
+                    "Do not return partial progress while safe, in-scope work remains executable.",
+                    "Return exactly one status: `COMPLETED` or `BLOCKED`.",
+                    "requirement-to-evidence table",
                 ),
             }
             for name, tokens in agent_tokens.items():

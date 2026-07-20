@@ -658,6 +658,8 @@ COMMAND_PROMPT_CONTRACTS = {
         "Never block because another plan is selected or may be running.",
         "Display the resolved canonical path and its checked and unchecked numbered TODOs",
         "dedicated Verification checkboxes",
+        "Use the Plan Orchestrator's self-contained delegation and corrective-continuation contract.",
+        "A Worker return does not end the current TODO.",
         "Direct human-authorized plan creation to `/create-plan`",
         "Accept exactly 1 MiB and reject limit-plus-one data",
     ),
@@ -2616,6 +2618,10 @@ class OpenCodeInstallService:
                 "`.erb/plan-state.json`",
                 "edit durable plan paths",
                 "read or edit `.erb/plan-state.json`",
+                "Make the smallest durable change that satisfies every assigned acceptance criterion.",
+                "Do not return partial progress while safe, in-scope work remains executable.",
+                "Return exactly one status: `COMPLETED` or `BLOCKED`.",
+                "requirement-to-evidence table",
             ),
         }
         errors: list[str] = []
@@ -2916,6 +2922,15 @@ class OpenCodeInstallService:
             "After creation, every plan body is immutable.",
             "must not add, remove, rewrite, reorder, or renumber plan content",
             "must never stage or commit and must never be instructed or delegated to create a commit.",
+            "Treat every new Task child as context-isolated; its prompt must be self-contained",
+            "canonical plan path, current TODO number and exact text",
+            "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
+            "numbered acceptance criteria",
+            "One at a time means one active Worker and one current implementation TODO, not one attempt.",
+            "A Worker return is evidence, not a terminal event.",
+            "Map every acceptance criterion to fresh source, diff, and validation evidence.",
+            "resume the same Worker child session by passing its `task_id`",
+            "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
             *PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
         )
         normalized = " ".join(prompt.split())

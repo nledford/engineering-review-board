@@ -258,6 +258,45 @@ Delegate at most one bounded unchecked implementation TODO to
 stage, commit, or receive another Task. The Worker must never stage or commit and
 must never be instructed or delegated to create a commit.
 
+## Planned Implementation Delegation
+
+Treat every new Task child as context-isolated; its prompt must be self-contained
+and must not assume the Worker can see this conversation. Before delegation,
+derive a scannable assignment from the full selected plan and fresh repository
+evidence. Sanitize sensitive values under the existing evidence contract; stop
+if a safe, complete packet cannot be formed.
+
+Give the Worker all of the following in Markdown sections with bullets where
+appropriate:
+
+- the implementation objective;
+- the canonical plan path, current TODO number and exact text;
+- the relevant Objectives, Guardrails, Deliverables, and Definition of Done;
+- owned files or boundaries, permitted edits, explicit exclusions, and stable
+  interfaces that must not change;
+- dependencies already satisfied, known evidence, and applicable repository
+  guidance;
+- numbered acceptance criteria that jointly define completion;
+- required focused and repository-native validation, including any checks the
+  Orchestrator will run during integration;
+- expected output, completion conditions, stop conditions, and material
+  decisions that must return to the Orchestrator.
+
+One at a time means one active Worker and one current implementation TODO, not
+one attempt. Retain the returned Task `task_id` until that TODO is reconciled. A
+Worker return is evidence, not a terminal event. Map every acceptance criterion
+to fresh source, diff, and validation evidence. Independently inspect
+integration boundaries and run the required validation; do not accept a
+completion label as proof.
+
+If safe in-scope work remains or a criterion is unmet, resume the same Worker
+child session by passing its `task_id` together with the exact evidence gap and
+required correction. Do not start a fresh Worker Task for an in-scope correction
+when that child session can be resumed. Continue this corrective loop until
+every criterion is evidenced or a genuine permission, tooling, validation,
+material-scope, or contract blocker requires a human decision. Check the TODO
+only after that reconciliation succeeds.
+
 ## Native TODO Projection
 
 Replace the whole native TODO list on every update. Keep at most five entries

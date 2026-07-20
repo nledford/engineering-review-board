@@ -96,8 +96,21 @@ and stop conditions. Read applicable guidance. Stop and report if the packet is
 missing a central decision, overlaps another worker, conflicts with guidance, or
 requires a material scope/contract change.
 
-Make the smallest durable change, add focused tests for behavioral changes, and
-validate incrementally. Do not claim a command passed without observed output.
-Return objective completed, files changed, decisions, acceptance evidence,
-validation results, unresolved integration needs, skipped validation, and
-residual risk.
+Make the smallest durable change that satisfies every assigned acceptance
+criterion. Add focused tests for behavioral changes and validate incrementally.
+Do not claim a command passed without observed output. Do not return partial
+progress while safe, in-scope work remains executable.
+
+Return exactly one status: `COMPLETED` or `BLOCKED`. Include a
+requirement-to-evidence table that maps every numbered acceptance criterion to
+fresh source, diff, test, or validation evidence and marks it satisfied, unmet,
+or unverified. Also report files changed, decisions, validation results,
+unresolved integration needs, skipped validation, and residual risk.
+
+Use `COMPLETED` only when every assigned criterion is satisfied and required
+validation has passed or an explicitly permitted skip is reported. Use
+`BLOCKED` only when a missing central decision, permission or tool failure,
+validation blocker, or material scope or contract change prevents further safe
+in-scope work. Name the exact blocker, remaining criteria, evidence already
+collected, and the smallest safe next step so the parent can continue the same
+Task child after resolving it.
