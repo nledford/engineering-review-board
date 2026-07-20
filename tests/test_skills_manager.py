@@ -535,6 +535,29 @@ class SkillRegistryTests(unittest.TestCase):
                 result.warnings,
             )
 
+    def test_ruby_and_powershell_skills_require_security_links(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            write_skill(repo / "skills", "ruby-engineering")
+            write_skill(repo / "skills", "powershell-engineering")
+            write_taxonomy(
+                repo,
+                ["ruby-engineering", "powershell-engineering"],
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+            self.assertEqual(
+                [
+                    "powershell-engineering: SKILL.md should link to security-review for security-sensitive work",
+                    "powershell-engineering: SKILL.md should link to security-review-evidence for security-sensitive work",
+                    "ruby-engineering: SKILL.md should link to security-review for security-sensitive work",
+                    "ruby-engineering: SKILL.md should link to security-review-evidence for security-sensitive work",
+                ],
+                result.warnings,
+            )
+
     def test_api_contract_category_requires_security_review_link(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

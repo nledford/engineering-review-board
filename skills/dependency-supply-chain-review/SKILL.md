@@ -113,6 +113,12 @@ For CVE, GHSA, OSV, vendor, SCA, or package-manager advisory output, record:
 - Load [`python-engineering`](../python-engineering/SKILL.md) for `pyproject.toml`,
   `uv.lock`, requirements files, Python packaging, dependency groups, or Python
   build hooks.
+- Load [`ruby-engineering`](../ruby-engineering/SKILL.md) for `Gemfile`,
+  `Gemfile.lock`, gemspecs, Bundler, gem sources, native extensions, or Ruby
+  install hooks.
+- Load [`powershell-engineering`](../powershell-engineering/SKILL.md) for
+  PowerShell module manifests, galleries, required-module versions, install
+  commands, script signing, or module compatibility mechanics.
 - Load [`rust-engineering`](../rust-engineering/SKILL.md) for `Cargo.toml`,
   `Cargo.lock`, features, build scripts, proc macros, native crates, or Cargo
   tree review; add [`rust-persistence-sql`](../rust-persistence-sql/SKILL.md)

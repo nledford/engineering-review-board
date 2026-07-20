@@ -55,17 +55,54 @@ responsive layout, and design-token decisions.
 - Do not switch package managers silently. Lockfiles are policy evidence:
   `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, and
   `deno.lock` imply different workflows.
-- Use Node.js and npm for install/run/test/add/remove commands by default, and
-  use `npx` for one-off CLI execution unless the repository documents another
-  tool. Use pnpm, Yarn, Deno, or Bun when local config, CI, runtime APIs,
+- Use Node.js and npm for install/run/test/add/remove commands by default only
+  when no repository evidence selects another workflow. Use pnpm, Yarn, Deno,
+  or Bun when local config, CI, runtime APIs,
   deployment target, or workspace policy requires them.
 - Do not introduce another lockfile unless the project intentionally supports
   multiple package managers.
-- Add dependencies only when durable project code needs them. Use one-off CLI
-  runners (`npx`, `pnpm dlx`, `yarn dlx`, `bunx`, `deno run`) only when they fit
-  the local workflow and do not hide unreviewed side effects.
+- Add dependencies when durable project code or a repeatable project workflow
+  needs them. Prefer locked local executables over fetch-and-run commands.
 - Keep package scripts explicit about arguments, environment variables, working
   directory, generated files, and exit codes.
+
+## Package Scripts And One-Off Runners
+
+Use `package.json` scripts for durable, repository-owned entry points that should
+be discoverable and run consistently through the selected package manager. Keep
+one short cross-platform command inline. Move quoting-heavy commands, reusable
+functions, structured data work, substantial branching, cleanup, or separately
+tested behavior into a checked-in script and keep the package script a thin
+wrapper. Load [`script-engineering`](../script-engineering/SKILL.md) for that
+boundary and script implementation.
+
+Distinguish commands that expose already installed project dependencies from
+commands that may fetch code:
+
+- Prefer package scripts or the selected manager's local execution form, such as
+  `npm exec` or `pnpm exec`, for locked project tools. Verify the tool is present
+  locally when network access or unreviewed fetching is forbidden.
+- Treat `npx`/`npm exec` with a missing package, pnpm's `pnx`/`pnpm dlx`/`pnpx`
+  family, `yarn dlx`, `bunx`, and comparable commands as potential
+  fetch-and-execute operations. Exact aliases, prompts, caches, lifecycle
+  scripts, and trust controls vary by package-manager version; inspect the
+  repository's pinned version and current official documentation.
+- Use an ephemeral runner only for explicit low-risk exploration or a bounded
+  maintenance action when the package identity and source are trusted, the
+  version is exact where practical, network execution is authorized, lifecycle
+  behavior is understood, and the command receives no secrets or unnecessary
+  privileges.
+- Do not use an ephemeral runner for a recurring project workflow, CI/release or
+  production execution, offline/reproducible builds, privileged automation, or
+  untrusted repository input. Add and lock the tool, use an existing trusted
+  toolchain, or stop and request a supply-chain decision.
+- Do not assume a confirmation prompt will protect CI or a non-interactive
+  agent. Some runners fetch automatically or assume approval without a TTY.
+
+Load
+[`dependency-supply-chain-review`](../dependency-supply-chain-review/SKILL.md)
+before approving new downloaded executables, package lifecycle scripts,
+registry/provenance changes, or fetch-and-run behavior.
 
 Common commands to adapt to the repo:
 
@@ -73,12 +110,15 @@ Common commands to adapt to the repo:
 npm ci
 npm run <script>
 npx <tool> [args]
+pnpm exec <tool> [args]
+pnpm dlx <package>@<version> [args]
 pnpm install --frozen-lockfile
 pnpm run <script>
 yarn install --immutable
 yarn <script>
 bun install --frozen-lockfile
 bun run <script>
+bunx <package>@<version> [args]
 bun test <filter>
 deno task <task>
 ```
@@ -200,6 +240,8 @@ collecting or reporting sensitive security evidence.
 - Following default `npm`/`npx` instructions after local evidence shows the repo
   requires pnpm, Yarn, Bun, or Deno, without translating and verifying them.
 - Adding dependencies for trivial standard-library or platform behavior.
+- Using `npx`, `pnpx`, `pnpm dlx`, `bunx`, or another fetch-and-run command as a
+  durable substitute for a locked project dependency.
 - Letting framework, ORM, SDK, HTTP, UI, or generated-client types leak into core
   domain APIs without an intentional adapter boundary.
 - Using `Math.random()` for secrets, tokens, identifiers, or security-sensitive

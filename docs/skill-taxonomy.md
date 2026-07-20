@@ -133,8 +133,9 @@ handoff.
 | Design methods and architecture | `brainstorming`, `behavior-driven-development`, `clean-architecture`, `domain-driven-design`, `hexagonal-architecture`, `onion-architecture`, `test-driven-development`, `gherkin` | Use the direct method or architecture skill that matches the work; do not load a meta-selection skill for simple changes. |
 | Debugging and prevention | `systematic-debugging`, `root-cause-analysis` | Active symptom diagnosis first; postmortem and recurrence prevention after the direct cause is understood. |
 | Data, identifiers, and SQL | `random-data-identifiers`, `sql-engineering`, `postgresql-sql-engineering`, `sqlite-sql-engineering` | Randomness/IDs, database-neutral SQL, and engine-specific PostgreSQL/SQLite schema, migration, query, transaction, performance, security, and review guidance. |
-| Scripting and automation | `script-engineering` | Cross-language runtime discovery, script suitability and language selection, shared script contracts, testing, safety, and task-runner integration; language and workflow skills retain their specialized mechanics. |
+| Scripting and automation | `script-engineering`, `powershell-engineering` | Cross-language runtime discovery, script suitability and language selection, shared script contracts, testing, safety, task-runner integration, and idiomatic cross-platform PowerShell; other language and workflow skills retain their specialized mechanics. |
 | Python engineering | `python-engineering` | Python implementation, review, testing, packaging, dependency management, quality gates, docs, and `uv` workflows. |
+| Ruby engineering | `ruby-engineering` | Ruby implementation, scripting, review, testing, Bundler/gem workflows, idioms, anti-patterns, and quality gates. |
 | JavaScript and TypeScript engineering | `javascript-typescript-engineering`, `playwright-e2e` | JS/TS implementation/tooling/package workflows and checked-in Playwright E2E tests. |
 | Frontend styling | `css-scss-styling` | CSS/SCSS/Sass and Tailwind CSS decisions, stylesheet architecture, CSS modules, CSS-in-JS, utility-class conventions, design tokens, source detection, responsive layout, browser compatibility, and styling migrations across web stacks. |
 | Rust engineering | `rust-engineering`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review` | Project-neutral Rust implementation, tests, Cargo/Bacon feedback and quality gates, async/web/full-stack work, SQLx/SeaQuery/ORM persistence, and Rust review. |
@@ -274,8 +275,10 @@ count as third-party skills.
 | `postgresql-sql-engineering` | PostgreSQL schema design, migrations, constraints, indexes, views, transactions, RLS, privileges, JSONB, query plans, maintenance, and database review in any language stack. | Rust SQLx/SeaQuery typing, Python adapter code, SQLite-only behavior, or ORM API usage with no database-native change. |
 | `sqlite-sql-engineering` | SQLite schema design, migrations, constraints, indexes, transactions, PRAGMAs, locking, WAL, local/embedded behavior, temporary DB tests, and SQLite query review in any language stack. | PostgreSQL-native features, Rust SQLx/SeaQuery adapter choices, or using SQLite as proof of another database's behavior. |
 | `random-data-identifiers` | Random numbers, secure tokens, UUIDs/CUIDs/ULIDs, collision-resistant IDs, deterministic seeded tests, fixtures, simulations, and reproducibility. | Fixed examples with no randomness or database-native ID/index design without generated-value decisions. |
-| `script-engineering` | Cross-language automation scripts, runtime discovery, POSIX shell/Bash/PowerShell/Python/Node selection, script suitability, shared safety contracts, behavioral testing, and Just integration. | Running an existing script or recipe without changing it, ordinary application code with no automation surface, or hosted CI/container semantics beyond invoked commands. |
+| `script-engineering` | Cross-language automation scripts, runtime discovery, POSIX shell/Bash/zsh/Fish/PowerShell/Python/Ruby/Node selection, script suitability, shared safety contracts, behavioral testing, package/task-runner boundaries, and Just integration. | Running an existing script or recipe without changing it, ordinary application code with no automation surface, or hosted CI/container semantics beyond invoked commands. |
 | `python-engineering` | Python source, tests, pyproject.toml, uv.lock, packaging, linting, typing, docstrings, dependency management, async task/queue execution, and Python review. | Non-Python package managers, database-native schema design, browser E2E test design, or hosted CI/release provider configuration. |
+| `ruby-engineering` | Ruby source, scripts, gems, Gemfile/Gemfile.lock, Bundler, Rake, Minitest, RSpec, RuboCop, CLIs, idioms, anti-patterns, and Ruby review. | Generic script-language selection with no Ruby implementation, non-Ruby package workflows, or framework-specific behavior better owned elsewhere. |
+| `powershell-engineering` | Cross-platform `.ps1`/`.psm1`/`.psd1` implementation, advanced functions/modules, objects and streams, native commands, errors, `SupportsShouldProcess`, Pester, PSScriptAnalyzer, and Windows/macOS/Linux compatibility. | Running an existing PowerShell command, generic language selection with no PowerShell implementation, or Windows-only platform administration outside a repository script change. |
 | `python-design-patterns` | Python-specific design patterns such as dataclasses, value objects, protocols, context managers, supervised task groups, adapters, repositories, factories, and Python expression of Clean/Hexagonal/Onion boundaries. | General Python workflow, package management, async execution policy, or smell-focused anti-pattern review. |
 | `python-antipatterns` | Python-specific generated-code and design smells such as mutable defaults, global state, import-time side effects, broad `Any`, broad exceptions, framework/ORM leakage, async blocking, and brittle tests. | Positive pattern selection or ordinary Python workflow. |
 | `javascript-typescript-engineering` | JS/TS source, package.json, lockfiles, Node/npm, Bun, Deno, pnpm, or Yarn workflows, TypeScript, lint/format/test/build scripts, dependencies, workspaces, and JS/TS review. | Checked-in Playwright spec design, Rust/Python/database work, or CSS/SCSS styling decisions without JS/TS implementation or tooling impact. |
@@ -311,6 +314,11 @@ and browser-test skills.
 - **Anti-pattern review:** create narrower smell-review skills only when one
   repeated review surface has its own evidence rules and false-positive risks.
   Do not split merely to add more examples to the existing anti-pattern skills.
+
+Apply the same evidence threshold to `ruby-engineering`. Keep idioms,
+anti-patterns, testing, gems, and ordinary framework-adjacent Ruby together until
+repeated tasks show that a Ruby testing, packaging, design-pattern, anti-pattern,
+or framework skill has a distinct activation boundary and evidence workflow.
 
 ## Rust Skill Boundaries
 
@@ -431,10 +439,12 @@ reading the code, making a small change, and running the relevant check is enoug
 | `python-antipatterns` | Python generated-code and design smell review for mutable defaults, global state, import-time side effects, broad typing, framework leakage, async blocking, and brittle tests. | Owns smell-focused Python review while positive patterns and broad workflow stay separate. |
 | `python-design-patterns` | Python pattern guidance for dataclasses, value objects, protocols, context managers, supervised task groups, adapters, repositories, factories, fixtures, and architecture boundaries. | Owns positive pattern selection while `python-engineering` remains the workflow and concurrency-execution skill. |
 | `python-engineering` | Python code, tests, typing, packaging, dependency management, `uv`, Ruff, ty/mypy/Pyright, docstrings, async task/queue execution, and review. | Covers Python broadly while delegating database-native behavior, hosted pipelines, and container configuration to focused skills. |
+| `powershell-engineering` | Cross-platform PowerShell scripts, modules, manifests, advanced functions, object pipelines, streams, errors, native processes, safe side effects, Pester, PSScriptAnalyzer, and compatibility testing. | Owns language-specific PowerShell mechanics while `script-engineering` owns script suitability and cross-language selection. |
 | `random-data-identifiers` | Secure randomness, UUIDs/CUIDs/ULIDs, generated IDs, test data, seeded reproducibility, and collision review. | Owns cross-language randomness and generated-identifier decisions. |
 | `release-readiness` | Final merge or release assessment across acceptance criteria, tests, docs, migrations, rollout, rollback, operations, and cross-functional risk. | Owns the evidence-based ship or hold decision after implementation and focused reviews. |
 | `review-verification-protocol` | Evidence gates for review findings and specialist review lenses. | Provides a hidden, reusable gate that prevents speculative findings across review skills. |
 | `root-cause-analysis` | Recurring failures, incidents, regressions, control gaps, and prevention work. | Starts after the direct cause is understood and owns recurrence prevention. |
+| `ruby-engineering` | Ruby implementation, scripting, gems, Bundler, Rake, Minitest/RSpec, quality gates, idioms, anti-patterns, and review. | Covers Ruby broadly while `script-engineering` owns cross-language selection and focused security/data/workflow skills own their boundaries. |
 | `rust-antipatterns` | Rust generated-code and design smell review for ownership workarounds, reflexive shared mutability, deref polymorphism, deny-warnings misuse, panic boundaries, async overuse, and framework leakage. | Owns smell-focused Rust review while positive patterns and broad Rust workflow stay separate. |
 | `rust-async-web` | Tokio, async tasks, channels, cancellation, Axum, Leptos, Axum-Leptos, SSR, hydration, and WASM. | Owns Rust runtime and web behavior while delegating SQL, cargo lanes, and deep references. |
 | `rust-code-review` | Rust-specific review lens for ownership, APIs, async, persistence, macros, unsafe, and performance. | Adds Rust-specific rigor to the general review workflow and routes to implementation and data skills. |
@@ -485,12 +495,13 @@ existing skill.
 | PostgreSQL | `postgresql-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | JSONB, indexes, plans, constraints, transactions, privileges/RLS, and maintenance. |
 | SQLite | `sqlite-sql-engineering`, `sql-engineering`, `rust-persistence-sql` | Baseline complete | PRAGMAs, WAL/locking, one-writer model, migrations, indexes, and limitations. |
 | Python | `python-engineering`, `python-design-patterns`, `python-antipatterns`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | `uv`, Ruff, ty/mypy/Pyright, tests, docstrings, review, async task ownership, bounded queues, cancellation/backpressure/retry policy, security, DB delegation, pattern selection, and smell detection. |
-| JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | Node/npm defaults, `npx`, pnpm/yarn/Bun/Deno when local evidence requires them, Prettier/ecosystem tooling, pattern selection, smell detection, and browser E2E are covered. |
-| Scripting and task automation | `script-engineering`, `justfiles`, language engineering skills, `test-driven-development`, `dependency-supply-chain-review`, security skills | Baseline complete | Runtime discovery, script suitability, POSIX shell/Bash/Python/PowerShell/JS selection, shared contracts, syntax/static/behavioral validation, test-runner choice, safety, and thin task-runner wrappers are covered. |
+| JavaScript and TypeScript | `javascript-typescript-engineering`, `typescript-javascript-design-patterns`, `typescript-javascript-antipatterns`, `playwright-e2e`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | Node/npm defaults, repository-selected pnpm/yarn/Bun/Deno workflows, package scripts, local executables versus potentially fetching `npx`/`pnx`/`pnpm dlx`/`pnpx`/`bunx` runners, supply-chain routing, pattern selection, smell detection, and browser E2E are covered. |
+| Ruby | `ruby-engineering`, `script-engineering`, `documentation-engineering`, data/security skills | Baseline complete; known extensions tracked | Runtime/Bundler evidence, gems and lockfiles, idioms, anti-patterns, Minitest/RSpec, unit/integration/CLI/E2E boundaries, scripting selection, quality gates, and security/dependency routing are covered. |
+| Scripting and task automation | `script-engineering`, `powershell-engineering`, `ruby-engineering`, `justfiles`, language engineering skills, `test-driven-development`, `dependency-supply-chain-review`, security skills | Baseline complete | Runtime discovery, script suitability, POSIX shell/Bash/zsh/Fish/Python/Ruby/PowerShell/JS selection, no-shell/application promotion, shared contracts, syntax/static/behavioral validation, PowerShell cross-platform mechanics, test-runner choice, safety, package scripts, and thin task-runner wrappers are covered. |
 | CSS, SCSS, and utility styling | `css-scss-styling`, `ux-accessibility-review`, `javascript-typescript-engineering`, `python-engineering`, `rust-async-web`, `playwright-e2e`, `context7-docs` | Baseline complete | Tailwind vs CSS vs SCSS decisions, installed-major detection, static utility source detection, theme tokens, Preflight/base-style risk, Sass modules, modern CSS features, cross-stack integration, accessibility/responsive/performance concerns, focused UI review, and migration validation are covered. |
 | Internationalization and localization | `internationalization-localization`, language engineering skills, `api-design`, `css-scss-styling`, `playwright-e2e`, `security-review`, `security-review-evidence`, `context7-docs` | Baseline complete | Covers i18n/l10n concepts, Project Fluent and `.ftl` authoring, American English source locale, multilingual catalogs, locale fallback, Fluent JS/Python/Rust binding routing, localized output tests, accessibility, and trust-boundary/evidence handoffs. |
 | Rust | `rust-engineering`, `rust-design-patterns`, `rust-antipatterns`, `rust-testing-quality`, `rust-async-web`, `rust-persistence-sql`, `rust-code-review`, data/security/docs skills | Baseline complete; known extensions tracked | Crates, workspaces, Cargo/Bacon feedback loops, patterns, anti-patterns, macros, async/web, error handling, docs/tests, rand/serde/anyhow/tokio/reqwest, and SQL library choices. |
-| Running and reviewing tests effectively | `test-driven-development`, `testing-strategy`, `script-engineering`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Baseline complete | Unit, integration, script syntax/static/behavioral checks, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, continuous feedback, strategy review, selection, and failure interpretation are distributed to the relevant workflow skills. |
+| Running and reviewing tests effectively | `test-driven-development`, `testing-strategy`, `script-engineering`, `ruby-engineering`, `powershell-engineering`, `rust-testing-quality`, `python-engineering`, `javascript-typescript-engineering`, `playwright-e2e`, `gherkin` | Baseline complete | Unit, integration, script syntax/static/behavioral checks, Minitest/RSpec, Pester/PSScriptAnalyzer, doctest/rustdoc, pydoc examples, E2E, behavior, property, regression, continuous feedback, strategy review, selection, and failure interpretation are distributed to the relevant workflow skills. |
 | Root cause analysis and systematic debugging | `systematic-debugging`, `root-cause-analysis` | Baseline complete | Reproduction, narrowing, hypotheses, instrumentation, logs/traces, minimal cases, fix validation, and prevention. |
 | API design and contracts | `api-design`, language/framework/data/security/testing/docs skills | Baseline complete | First-party API contract guidance covers resource/operation shape, request/response/error envelopes, idempotency, versioning, compatibility, schema artifacts, SDK/CLI surfaces, and consumer/provider obligations while existing skills remain primary for implementation, database behavior, security controls, tests, observability, and docs. |
 | Observability and telemetry | `observability-engineering`, language/framework/security/debugging/docs skills | Baseline complete | First-party observability guidance covers logs, metrics, traces, correlation/context propagation, telemetry safety, dashboards, alerts, SLO/SLI/error-budget signals, runbooks, and incident visibility while existing skills remain primary for implementation mechanics, active debugging, security evidence, tests, and documentation-only edits. |
@@ -647,6 +658,36 @@ Scenario: JavaScript and TypeScript choose the local workflow
   Then it loads javascript-typescript-engineering
   And defaults to Node/npm when no repository evidence requires another workflow
   And does not assume pnpm, yarn, Bun, Deno, React, Vite, ESLint, or Prettier without repository evidence
+```
+
+```gherkin
+Scenario: Package runners distinguish local tools from fetched execution
+  Given a JavaScript or TypeScript workflow needs a package CLI
+  When an agent chooses package scripts, npm exec or npx, pnpm exec or pnx/dlx/pnpx, or bunx
+  Then it loads javascript-typescript-engineering
+  And prefers the repository's selected package manager and locked local dependency for durable work
+  And treats any missing-package fetch-and-run behavior as an explicit dependency and supply-chain decision
+  And does not rely on an interactive confirmation prompt in CI or another non-interactive environment
+```
+
+```gherkin
+Scenario: Ruby work uses repository-owned runtime and test conventions
+  Given a change touches Ruby source, scripts, gems, Bundler, Rake, Minitest, or RSpec
+  When the agent implements or validates the change
+  Then it loads ruby-engineering
+  And derives Ruby, Bundler, dependency, style, and test commands from repository evidence
+  And chooses unit, integration, CLI/process, or end-to-end coverage for the observable risk
+  And uses script-engineering when the unresolved decision is Ruby versus another automation language
+```
+
+```gherkin
+Scenario: Cross-platform PowerShell is tested as a platform contract
+  Given a change claims PowerShell support on more than one operating system or edition
+  When the agent implements or validates the script or module
+  Then it loads powershell-engineering
+  And distinguishes pwsh from Windows PowerShell
+  And checks cmdlets, modules, paths, encodings, native commands, streams, and exit behavior on the claimed targets
+  And uses Pester, PSScriptAnalyzer, and target execution proportionately without treating static analysis as runtime proof
 ```
 
 ```gherkin

@@ -44,6 +44,8 @@ SECURITY_LINK_REQUIRED_SKILLS = frozenset(
         "justfiles",
         "postgresql-sql-engineering",
         "python-engineering",
+        "powershell-engineering",
+        "ruby-engineering",
         "rust-async-web",
         "rust-engineering",
         "rust-persistence-sql",

@@ -161,6 +161,11 @@ security modeling or supply-chain-only review; route those surfaces as below.
 
 - **Python:** check subprocess use, path handling, deserialization, template
   rendering, dependency changes, async blocking at boundaries, and exception logs.
+- **Ruby:** check process invocation, paths, dynamic loading, deserialization,
+  templates, metaprogramming boundaries, gem sources, and exception/log output.
+- **PowerShell:** check native-command arguments, `Invoke-Expression`, paths,
+  remoting, credentials, execution policy assumptions, module sources,
+  `SupportsShouldProcess`, and transcript/output exposure.
 - **JavaScript/TypeScript:** check XSS, SSR, package scripts, HTML/Markdown
   rendering, cookies, browser storage, CORS/CSRF, and dependency install scripts.
 - **Rust:** check unsafe boundaries, `unwrap`/panic at trust boundaries, async

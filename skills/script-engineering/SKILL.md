@@ -1,6 +1,6 @@
 ---
 name: script-engineering
-description: Script and automation engineering guidance. Use when creating, changing, reviewing, or testing POSIX shell, Bash, PowerShell, Python, Node, or other repository scripts; choosing a scripting language or interpreter; deciding whether automation belongs in a script; or exposing script workflows through Just. Do not use when only running an existing script or recipe, for ordinary application code with no automation surface, or for hosted CI/release-provider or container semantics beyond the commands scripts invoke.
+description: Script and automation engineering guidance. Use when creating, changing, reviewing, or testing POSIX shell, Bash, zsh, Fish, PowerShell, Python, Ruby, Node, or other repository scripts; choosing a scripting language or interpreter; deciding whether automation belongs in a script or shell; or exposing script workflows through Just or package scripts. Do not use when only running an existing script or recipe, for ordinary application code with no automation surface, or for hosted CI/release-provider or container semantics beyond the commands scripts invoke.
 ---
 
 # Script Engineering
@@ -81,6 +81,17 @@ One-off does not automatically mean unscripted. Data migrations, releases, and
 other high-risk operations often need a reviewed, repeatable implementation with
 preview, rollback, and evidence rather than an improvised terminal sequence.
 
+Use the smallest durable boundary that remains understandable:
+
+1. keep one short, safe command inline;
+2. use a task-runner or package recipe as a discoverable thin entry point;
+3. move reusable or branching behavior into an independently tested script; and
+4. promote substantial domain behavior, concurrency, state, recovery, or public
+   interfaces into an application module, library, or maintained CLI.
+
+Do not keep growing a shell or package-script body after quoting, parsing,
+branching, cleanup, or state management becomes the main engineering work.
+
 ## Choose A Language
 
 Prefer the repository's established language when it satisfies the target
@@ -90,15 +101,26 @@ platforms and keeps the workflow maintainable.
 | --- | --- | --- |
 | POSIX `sh` | The script is a small portable sequence of commands with limited branching and no Bash-only features. | Arrays, complex data, substantial parsing, or non-POSIX features are required. |
 | Bash | Unix-like targets guarantee Bash and shell-native orchestration, pipelines, traps, or Bash data structures materially simplify the task. | Portability excludes Bash, or quoting, parsing, branching, and state are becoming the main work. |
+| zsh | The repository explicitly owns zsh configuration or every target guarantees the required zsh version and features. | The script is general repository automation, runs in CI/containers without zsh, or POSIX `sh`/Bash is sufficient. |
+| Fish | The behavior is intentionally Fish-specific interactive configuration, functions, or completions for known Fish users. | The script is portable automation or must run under POSIX-compatible shells; Fish syntax is not POSIX shell syntax. |
 | Python | The task handles structured data, files, APIs, reusable functions, robust CLI parsing, subprocess orchestration, or meaningful cross-platform behavior. | The repository does not support Python on every target, or a tiny shell command is clearer. |
+| Ruby | The repository already supports Ruby and the automation benefits from Ruby code, locked gems, text/data handling, or a Ruby application/Rake boundary. | Ruby is absent from bootstrap or target hosts, or an existing supported language provides a clearer path. |
 | PowerShell | Windows administration, registry/services, Microsoft modules, .NET objects, or an existing cross-platform PowerShell workflow is the natural boundary. | Required targets do not provide the needed PowerShell edition, or the repository already has a simpler supported runtime. |
 | JavaScript or TypeScript | The repository already standardizes on Node, Bun, or Deno and the script benefits from its package/tooling ecosystem. | Adding that runtime would create a new dependency or the script is simpler in an existing shell/Python workflow. |
 | Another existing runtime | Local evidence shows it is the repository's supported automation language and all targets provide it. | Selection is based only on author familiarity or introduces an otherwise unused toolchain. |
 
 Load [`python-engineering`](../python-engineering/SKILL.md) for Python
 implementation, packaging, and pytest/unittest workflow. Load
+[`ruby-engineering`](../ruby-engineering/SKILL.md) for Ruby, Bundler, gems,
+idioms, and Minitest/RSpec workflow. Load
+[`powershell-engineering`](../powershell-engineering/SKILL.md) for idiomatic and
+cross-platform PowerShell implementation, Pester, and PSScriptAnalyzer. Load
 [`javascript-typescript-engineering`](../javascript-typescript-engineering/SKILL.md)
 for JavaScript or TypeScript runtime, package, type, lint, and test workflow.
+
+Do not select zsh or Fish merely because it is the author's interactive shell.
+Interactive convenience is not evidence that CI, containers, developer hosts,
+or production targets provide that shell.
 
 ## Script Contract And Safety
 
@@ -135,7 +157,9 @@ Use temporary isolated fixtures and test failure paths as well as success.
 | --- | --- | --- |
 | POSIX shell | Run the target shell's no-execute syntax check where supported and ShellCheck with the intended dialect. | Run black-box tests under every shell/platform the repository claims to support. Prefer the existing runner; [ShellSpec](https://github.com/shellspec/shellspec) is an option when multi-shell behavior needs a framework. |
 | Bash | Run `bash -n` and the repository's configured ShellCheck lane. | Prefer the existing Bash runner. [`bash_unit`](https://github.com/bash-unit/bash_unit) is suitable for function-oriented assertions, setup/teardown, status checks, and TAP output; [Bats-core](https://github.com/bats-core/bats-core) is suited to command-oriented Bash tests. |
+| zsh or Fish | Run the selected shell's parser/no-execute check where available and any configured linter. | Test under the exact supported shell versions; do not use POSIX/Bash tests as proof of zsh or Fish behavior. |
 | Python | Run the configured formatter, linter, and type checker as applicable. | Use the repository's pytest or unittest lane through its managed environment; test CLI behavior at process boundaries when invocation is part of the contract. |
+| Ruby | Run `ruby -c` on affected entry points plus configured format/lint checks. | Use the repository's Minitest or RSpec lane through Bundler, with process-level tests when arguments, streams, or exit status are contractual. |
 | PowerShell | Run the repository's parser or PSScriptAnalyzer lane when configured. | Use [Pester](https://pester.dev/) for functions, modules, commands, side effects, and error behavior. Test both `pwsh` and Windows PowerShell only when both are supported targets. |
 | JavaScript or TypeScript | Run the configured format, lint, type-check, and build lanes. | Use the repository's configured test runner and add process-level tests when the CLI contract matters. |
 
