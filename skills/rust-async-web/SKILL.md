@@ -136,6 +136,11 @@ queues, and treat cancellation as real control flow.
 
 ## Leptos And Axum-Leptos
 
+For a technical-debt audit of an Axum + Leptos SSR application, read the
+[Axum + Leptos technical-debt audit reference](references/axum-leptos-debt-audit.md)
+before selecting commands or diagnosing hydration, feature-gating, route, or
+multi-instance concerns.
+
 - Decide whether behavior belongs in CSR, SSR, server functions, actions,
   resources, or ordinary backend routes. Keep security-sensitive work on the
   server.

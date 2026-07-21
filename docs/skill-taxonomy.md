@@ -448,7 +448,7 @@ reading the code, making a small change, and running the relevant check is enoug
 | `root-cause-analysis` | Recurring failures, incidents, regressions, control gaps, and prevention work. | Starts after the direct cause is understood and owns recurrence prevention. |
 | `ruby-engineering` | Ruby implementation, scripting, gems, Bundler, Rake, Minitest/RSpec, quality gates, idioms, anti-patterns, and review. | Covers Ruby broadly while `script-engineering` owns cross-language selection and focused security/data/workflow skills own their boundaries. |
 | `rust-antipatterns` | Rust generated-code and design smell review for ownership workarounds, reflexive shared mutability, deref polymorphism, deny-warnings misuse, panic boundaries, async overuse, and framework leakage. | Owns smell-focused Rust review while positive patterns and broad Rust workflow stay separate. |
-| `rust-async-web` | Tokio, async tasks, channels, cancellation, Axum, Leptos, Axum-Leptos, SSR, hydration, and WASM. | Owns Rust runtime and web behavior while delegating SQL, cargo lanes, and deep references. |
+| `rust-async-web` | Tokio, async tasks, channels, cancellation, Axum, Leptos, Axum-Leptos, SSR, hydration, and WASM, with a focused Axum + Leptos technical-debt audit reference. | Owns Rust runtime and web behavior while delegating SQL and general Cargo lanes; its audit reference coordinates hydration-mode, feature/target, route, dependency, runtime, and scaling evidence. |
 | `rust-code-review` | Rust-specific review lens for ownership, APIs, async, persistence, macros, unsafe, and performance. | Adds Rust-specific rigor to the general review workflow and routes to implementation and data skills. |
 | `rust-design-patterns` | Rust pattern and idiom guidance for newtypes, enums, RAII guards, builders, traits as ports, compose-structs, contained unsafe modules, custom traits, and macros. | Owns positive Rust pattern selection while `rust-engineering` remains the workflow skill. |
 | `rust-engineering` | Core Rust implementation, crates, modules, APIs, ownership, traits, errors, features, refactors, common crates, and macros. | Owns core Rust implementation and delegates specialist surfaces. |
@@ -462,7 +462,7 @@ reading the code, making a small change, and running the relevant check is enoug
 | `sqlite-sql-engineering` | SQLite schema, migrations, PRAGMAs, WAL/locking, transactions, temporary DB tests, limitations, and query review. | Owns SQLite-native behavior without duplicating PostgreSQL or Rust adapter guidance. |
 | `suggest-lucide-icons` | Verified Lucide icon name selection for UI concepts and placements. | Provides a small, independently routable icon-verification workflow. |
 | `systematic-debugging` | Active failures, regressions, crashes, flakes, performance issues, build failures, and evidence-driven fixes. | Owns active symptom diagnosis with detailed heuristics progressively disclosed. |
-| `technical-debt-audit` | Repository-wide or focused audits of accumulated maintainability debt, code-quality hotspots, dependency and upgrade friction, testing gaps, architecture erosion, documentation drift, quick wins, and blockers to future work or scaling. | Owns evidence-backed debt portfolio assessment and prioritization while focused review, security, language, testing, architecture, and documentation skills retain their specialist mechanics. |
+| `technical-debt-audit` | Repository-wide or focused audits of accumulated maintainability debt, code-quality hotspots, dependency and upgrade friction, testing gaps, architecture erosion, documentation drift, quick wins, and blockers to future work or scaling. | Owns evidence-backed debt portfolio assessment and prioritization, including safe approved evidence-command reporting when current authority permits it, while focused review, security, language, testing, architecture, and documentation skills retain their specialist mechanics. |
 | `test-driven-development` | Red-Green-Refactor, regression tests, test-level selection, and behavior-first implementation. | Owns the concise test-first implementation method used by language and workflow skills. |
 | `testing-strategy` | Risk-focused review of test plans and suites, confidence gaps, flaky tests, boundary coverage, test levels, and maintainability. | Owns test-strategy assessment while test writing and TDD implementation remain separate. |
 | `threat-modeling` | Threat models, abuse cases, actors, assets, data flows, trust boundaries, attack surface, security requirements, mitigations, assumptions, and residual risk. | Owns design-time security analysis and hands implemented-control findings to security review. |
@@ -480,7 +480,7 @@ existing skill.
 | Required Topic | Covering Skill(s) | Status | Notes |
 | --- | --- | --- | --- |
 | Code review | `code-review`, `review-verification-protocol`, `adversarial-review`, `architecture-review`, `domain-modeling`, `performance-review`, `testing-strategy`, `ux-accessibility-review`, `rust-code-review` | Baseline complete | Generic review and evidence gates plus focused final, architecture, domain, performance, test, UX/accessibility, and Rust review lenses. |
-| Technical-debt audit | `technical-debt-audit`, `review-verification-protocol`, `architecture-review`, `testing-strategy`, `dependency-supply-chain-review`, `security-review`, `security-review-evidence`, `documentation-engineering`, language review skills | Baseline complete | Repository overview, evidence-gated systemic debt findings, qualitative test coverage when measured output is unavailable, dependency-health evidence, quick wins, strategic blockers, effort, benefit, sequencing, and residual risk are covered without conflating defects or cosmetic smells with debt. |
+| Technical-debt audit | `technical-debt-audit`, `review-verification-protocol`, `architecture-review`, `testing-strategy`, `rust-async-web`, `rust-testing-quality`, `rust-antipatterns`, `dependency-supply-chain-review`, `security-review`, `security-review-evidence`, `documentation-engineering`, language review skills | Baseline complete | Repository overview, evidence-gated systemic debt findings, authorized tool output with command/exit/excerpt provenance, qualitative test coverage when measured output is unavailable, dependency-health evidence, target-aware Axum + Leptos SSR guidance, quick wins, strategic blockers, effort, benefit, sequencing, and residual risk are covered without conflating defects or cosmetic smells with debt. |
 | Security review and audit | `threat-modeling`, `security-review`, `security-review-evidence`, `dependency-supply-chain-review`, `code-review`, language/data skills | Baseline complete | Design-time modeling, implemented-control review, supply-chain review, generic audit routing, and sanitized evidence are covered. |
 | Public web research and source retrieval | `hound-web-research`, `github-mcp-operations`, `security-review`, `security-review-evidence`, `agent-browser`, `playwright-e2e` | Baseline complete | Covers sanitized public search, authoritative-source retrieval, known URLs and PDFs, bounded same-domain crawling, OCR and screenshots, GitHub-object separation, prompt-injection resistance, cache/version diagnostics, authenticated-browser and durable-test boundaries, and security handoffs. |
 | GitHub platform operations | `github-mcp-operations`, `git-workflows`, `hound-web-research`, `security-review`, `security-review-evidence` | Baseline complete | Covers official-server provenance, structured remote GitHub reads, explicitly authorized mutations, local-Git and public-web boundaries, least-privilege operation, untrusted GitHub content, and distinct-gap combination with Hound. |
@@ -578,6 +578,18 @@ Scenario: Technical-debt audits separate systemic debt from defects
   And uses qualitative test coverage unless observed tooling provides numeric coverage
   And verifies current dependency status before claiming deprecation, abandonment, or vulnerability
   And prioritizes quick wins, strategic blockers, and longer-term remediation without padding categories
+```
+
+```gherkin
+Scenario: Axum and Leptos debt audits use executable target-aware evidence
+  Given a user explicitly requests shell-backed technical-debt evidence for an Axum and Leptos SSR repository
+  When the Engineering Review Board routes the audit
+  Then the technical-debt auditor remains read-only and requests approval only for its canonical evidence commands
+  And it reports tool availability, exact command, exit status, and a short sanitized relevant excerpt
+  And it never installs missing tools, updates dependencies, applies fixes, redirects output, or composes shell commands
+  And it identifies islands versus full-page hydration before classifying hydration risk
+  And it validates SSR and wasm32 hydration lanes without assuming all features are mutually compatible
+  And it treats ordinary manual Axum routes outside the generated Leptos route list as expected unless wiring, collision, or reachability evidence proves drift
 ```
 
 ```gherkin

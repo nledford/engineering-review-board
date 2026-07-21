@@ -27,6 +27,15 @@ diff, pull request, or completed change rather than accumulated repository debt.
 - Remain read-only unless the user separately requests remediation and the
   active agent has edit authority. Loading this skill grants no permission,
   delegation, planning, or execution authority.
+- When the user explicitly requests tooling evidence and the active role permits
+  it, use only approved evidence commands. Prefer documented repository recipes,
+  inspect their command surface first, and remember that builds, procedural
+  macros, tests, and repository-defined tools can execute repository-controlled
+  code. Do not install or update missing tools or dependencies, apply automatic
+  fixes, or broaden an audit into remediation.
+- Ordinary ignored build and cache output is compatible with a read-only audit
+  only when the role permits the command. Never modify tracked inputs, lockfiles,
+  checked-in generated output, or durable plans as part of evidence collection.
 - Derive languages, frameworks, modules, entry points, conventions, commands,
   and validation lanes from the repository. Do not impose a preferred
   architecture or toolchain.
@@ -58,6 +67,10 @@ diff, pull request, or completed change rather than accumulated repository debt.
    - Prefer repository-native static analysis, coverage, dependency, and audit
      output when execution is authorized and safe. Otherwise name the exact
      unrun check and the uncertainty it leaves.
+   - For every attempted tool check, record tool availability, the exact command,
+     exit status, and a short sanitized excerpt that supports the interpretation.
+     A failed command can establish a tooling, environment, or invocation
+     limitation without establishing a product-code finding.
    - Search references and registrations before claiming code, exports,
      dependencies, routes, configuration, or compatibility paths are unused.
 
@@ -87,6 +100,12 @@ diff, pull request, or completed change rather than accumulated repository debt.
      flakiness, test levels, or module coverage.
    - Use language engineering or anti-pattern skills for ecosystem-specific
      code, package-manager, and static-analysis semantics.
+   - For Rust async web applications, use
+     [`rust-async-web`](../rust-async-web/SKILL.md),
+     [`rust-testing-quality`](../rust-testing-quality/SKILL.md), and
+     [`rust-antipatterns`](../rust-antipatterns/SKILL.md) as the evidence
+     warrants. The Rust async web skill routes Axum + Leptos SSR audits to its
+     focused setup, feature-matrix, hydration, routing, and runtime reference.
    - Use
      [`dependency-supply-chain-review`](../dependency-supply-chain-review/SKILL.md),
      [`security-review`](../security-review/SKILL.md), and
@@ -99,6 +118,9 @@ diff, pull request, or completed change rather than accumulated repository debt.
      workload or measurement evidence makes performance debt decision-relevant.
 
 6. **Control evidence quality.**
+   - Quote only the smallest relevant sanitized output excerpt, normally one to
+     five lines. Do not paste full logs when an exit status and focused excerpt
+     establish the claim.
    - Cite numeric coverage only from observed coverage output. Without it,
      provide a qualitative module or boundary map such as strong, partial, weak,
      or absent and cite the tests inspected.

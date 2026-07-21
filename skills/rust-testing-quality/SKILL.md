@@ -80,6 +80,11 @@ gates rather than the Rust commands those jobs run.
 Use the repo's documented command first. When direct Cargo commands are
 appropriate, start narrow and then broaden:
 
+For a technical-debt audit of Axum + Leptos SSR, follow the target-aware matrix
+in the [`rust-async-web` audit reference](../rust-async-web/references/axum-leptos-debt-audit.md).
+In particular, do not substitute a host `--all-features` build for separate SSR
+and `wasm32-unknown-unknown` hydration evidence.
+
 ```sh
 cargo fmt
 cargo fmt --check
