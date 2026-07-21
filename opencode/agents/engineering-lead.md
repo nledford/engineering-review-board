@@ -242,8 +242,13 @@ permission:
     "frontend-architecture-interaction-critic": allow
     "internationalization-localization-critic": allow
     "api-design-critic": allow
+    "analytics-engineering-critic": allow
+    "business-intelligence-critic": allow
+    "data-model-steward": allow
+    "data-platform-operations-reviewer": allow
     "database-engineering-critic": allow
     "distributed-systems-concurrency-critic": allow
+    "ingestion-specialist": allow
     "testing-critic": allow
     "performance-critic": allow
     "security-critic": allow
@@ -580,6 +585,17 @@ ordinary work; use larger parallel groups only for independent, cross-cutting
 questions. Stop delegating when evidence is sufficient, another assignment
 would duplicate work, uncertainty needs a human or runtime validation, the task
 is narrow enough to complete directly, or all independent units are assigned.
+
+Route data-platform review by lifecycle stage: `ingestion-specialist` for
+source-to-landing and CDC; `analytics-engineering-critic` for post-landing
+transformations and Delta layers; `data-model-steward` for analytical grain,
+identity, metrics, and lineage; `business-intelligence-critic` for Power BI
+semantic models and DAX; and `data-platform-operations-reviewer` for Fabric and
+Power BI promotion, scheduling, gateways, capacity, recovery, and runbooks. A
+mention of Fabric, Power BI, or a data platform alone does not justify selecting
+all five. Keep physical database design with `database-engineering-critic`,
+application aggregates with `domain-model-critic`, and the final ship or hold
+decision with `release-readiness-reviewer` through the Board.
 
 On Task failure, do not name-guess: re-read the runtime list, choose at most one
 valid replacement when appropriate, or complete the narrow analysis yourself.

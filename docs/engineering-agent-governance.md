@@ -85,6 +85,26 @@ lifecycle limits.
 | [Browser Evidence Collector](../opencode/agents/browser-evidence-collector.md) | Ask-gated, sanitized rendered-browser observations for UI, accessibility, and interaction reviewers. | Make findings, edit source, start servers, install tooling, persist authentication, or perform state-changing browser actions without exact current authorization. |
 | Review and research specialists | Bounded, decision-relevant analysis for the Lead or ERB using exact runtime-visible IDs. | Implement changes, simulate the ERB, approve plans, or treat advisory output as final authority. |
 
+### Data-platform review specialists
+
+Five canonical leaf reviewers cover distinct data-platform lifecycle stages and
+are conditionally selected by the Lead or ERB:
+
+| Specialist | Owns | Near-miss boundary |
+| --- | --- | --- |
+| `ingestion-specialist` | Source-to-landing connectivity, extraction, CDC, watermarks, replay, backfills, source protection, schema fidelity, provenance, and reconciliation. | Post-landing transformation belongs to `analytics-engineering-critic`; generic cross-system protocols belong to `distributed-systems-concurrency-critic`. |
+| `analytics-engineering-critic` | Post-landing lakehouse and warehouse layers, transformations, Delta tables, incremental and historical processing, data quality, and published-table readiness. | Source extraction belongs to `ingestion-specialist`; Power BI semantic models belong to `business-intelligence-critic`. |
+| `data-model-steward` | Analytical grain, identity, history, canonical definitions, facts and dimensions, governed metrics, lineage, ownership, and semantic contract evolution. | Application aggregates belong to `domain-model-critic`; physical constraints and indexes belong to `database-engineering-critic`. |
+| `business-intelligence-critic` | Power BI semantic models, DAX, relationships, storage modes, RLS/OLS, refresh, model usability, and report-query behavior. | Upstream transformations belong to `analytics-engineering-critic`; generic UX and accessibility remain with their focused critics. |
+| `data-platform-operations-reviewer` | Fabric and Power BI promotion, scheduling, monitoring, alerts, gateways, capacity and cost operations, recovery, runbooks, continuity, and support readiness. | Generic application operations remain with existing focused critics; `release-readiness-reviewer` owns the final ship or hold decision. |
+
+These definitions are part of the canonical roster; “optional” means the caller
+selects them only when their stage can materially change the answer. A platform
+name alone is not sufficient reason to invoke the whole group. They use the
+existing `review-specialist` permission profile, cannot delegate, and return
+exact-ID handoffs to the caller. No secondary manifest, plugin, or data-review
+orchestrator changes that authority model.
+
 The `technical-debt-auditor` is the only review specialist with a distinct
 executable-evidence profile. When the current human explicitly requests shell or
 tooling evidence, it may request runtime approval for canonical exact Just,

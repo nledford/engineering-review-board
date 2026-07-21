@@ -3197,7 +3197,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "update-plan.md": "plan-orchestrator",
         }
 
-        self.assertEqual(len(manifest["agents"]), 24)
+        self.assertEqual(len(manifest["agents"]), 29)
         self.assertEqual(tuple(manifest["commands"]), expected_commands)
         self.assertEqual(set(manifest), {"agents", "commands", "support_files"})
         command_root = project_root / "opencode/commands"
@@ -4183,7 +4183,142 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
             review_specialists - STANDARD_CRITIC_STAGE_REVIEWER_IDS,
             STANDARD_CRITIC_AGENT_IDS,
         )
-        self.assertEqual(15, len(STANDARD_CRITIC_AGENT_IDS))
+        self.assertEqual(20, len(STANDARD_CRITIC_AGENT_IDS))
+
+    def test_data_review_specialists_are_canonical_leaf_reviewers(self) -> None:
+        expected_skills = {
+            "analytics-engineering-critic": (
+                "code-review",
+                "review-verification-protocol",
+                "architecture-review",
+                "sql-engineering",
+                "performance-review",
+                "testing-strategy",
+                "observability-engineering",
+                "documentation-engineering",
+                "security-review",
+                "security-review-evidence",
+            ),
+            "business-intelligence-critic": (
+                "code-review",
+                "review-verification-protocol",
+                "performance-review",
+                "testing-strategy",
+                "ux-accessibility-review",
+                "internationalization-localization",
+                "documentation-engineering",
+                "security-review",
+                "security-review-evidence",
+            ),
+            "data-model-steward": (
+                "code-review",
+                "review-verification-protocol",
+                "architecture-review",
+                "documentation-engineering",
+                "testing-strategy",
+                "security-review",
+                "security-review-evidence",
+            ),
+            "ingestion-specialist": (
+                "code-review",
+                "review-verification-protocol",
+                "api-design",
+                "sql-engineering",
+                "performance-review",
+                "testing-strategy",
+                "observability-engineering",
+                "security-review",
+                "security-review-evidence",
+            ),
+            "data-platform-operations-reviewer": (
+                "code-review",
+                "review-verification-protocol",
+                "observability-engineering",
+                "performance-review",
+                "ci-release-engineering",
+                "documentation-engineering",
+                "testing-strategy",
+                "security-review",
+                "security-review-evidence",
+            ),
+        }
+        policies = {
+            policy.agent_id: policy for policy in CANONICAL_AGENT_TOPOLOGY.agents
+        }
+
+        for agent_id, skill_ids in expected_skills.items():
+            with self.subTest(agent_id=agent_id):
+                self.assertIn(agent_id, policies)
+                policy = policies[agent_id]
+                self.assertEqual("subagent", policy.mode)
+                self.assertEqual((), policy.task_targets)
+                self.assertEqual("review-specialist", policy.permission_profile)
+                self.assertEqual(skill_ids, CANONICAL_AGENT_SKILL_IDS[agent_id])
+
+        data_review_ids = set(expected_skills)
+        for caller_id in ("engineering-lead", "engineering-review-board"):
+            with self.subTest(caller_id=caller_id):
+                self.assertLessEqual(
+                    data_review_ids,
+                    set(policies[caller_id].task_targets),
+                )
+
+    def test_data_review_routing_contract_distinguishes_lifecycle_stages(self) -> None:
+        project_root = Path(__file__).parents[1]
+        agent_ids = {
+            "analytics-engineering-critic",
+            "business-intelligence-critic",
+            "data-model-steward",
+            "data-platform-operations-reviewer",
+            "ingestion-specialist",
+        }
+        board = (
+            project_root / "opencode/agents/engineering-review-board.md"
+        ).read_text(encoding="utf-8")
+        lead = (
+            project_root / "opencode/agents/engineering-lead.md"
+        ).read_text(encoding="utf-8")
+        governance = (
+            project_root / "docs/engineering-agent-governance.md"
+        ).read_text(encoding="utf-8")
+        cross_reference = (
+            project_root / "docs/cross-reference-map.md"
+        ).read_text(encoding="utf-8")
+
+        selection_guard = (
+            "A mention of Fabric, Power BI, or a data platform alone does not "
+            "justify selecting all five."
+        )
+        for name, text in (("Board", board), ("Lead", lead)):
+            with self.subTest(definition=name):
+                self.assertIn(selection_guard, " ".join(text.split()))
+                for agent_id in agent_ids:
+                    self.assertIn(f"`{agent_id}`", text)
+
+        for name, text in (
+            ("governance", governance),
+            ("cross-reference", cross_reference),
+        ):
+            with self.subTest(document=name):
+                for agent_id in agent_ids:
+                    self.assertIn(f"`{agent_id}`", text)
+
+        corpus = json.loads(
+            (project_root / "evals/routing/v1.json").read_text(encoding="utf-8")
+        )
+        case_ids = {case["id"] for case in corpus["cases"]}
+        self.assertLessEqual(
+            {
+                "data-ingestion-cdc-review",
+                "analytics-medallion-transformation-review",
+                "power-bi-semantic-model-review",
+                "analytical-grain-governance-review",
+                "data-platform-operations-review",
+                "physical-database-design-near-miss",
+                "application-domain-model-near-miss",
+            },
+            case_ids,
+        )
 
     def test_technical_debt_auditor_uses_ask_gated_evidence_profile(self) -> None:
         policy = next(
@@ -4623,7 +4758,7 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
         assert inventory is not None
         self.assertEqual(CANONICAL_AGENT_TOPOLOGY.agent_filenames, inventory.agents)
         self.assertEqual(CANONICAL_AGENT_TOPOLOGY.command_filenames, inventory.commands)
-        self.assertEqual(24, len(CANONICAL_AGENT_TOPOLOGY.agents))
+        self.assertEqual(29, len(CANONICAL_AGENT_TOPOLOGY.agents))
 
         metadata = service._agent_metadata(inventory)
         expected_agents = {

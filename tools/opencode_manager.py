@@ -111,6 +111,7 @@ CANONICAL_AGENT_TOPOLOGY = CanonicalAgentTopology(
     agents=(
         CanonicalAgentPolicy("accessibility-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("adversarial-reviewer", "subagent", (), "review-specialist"),
+        CanonicalAgentPolicy("analytics-engineering-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("api-design-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("architecture-strategy-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy(
@@ -119,7 +120,10 @@ CANONICAL_AGENT_TOPOLOGY = CanonicalAgentTopology(
             (),
             "browser-evidence-collector",
         ),
+        CanonicalAgentPolicy("business-intelligence-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("change-verifier", "subagent", (), "review-specialist"),
+        CanonicalAgentPolicy("data-model-steward", "subagent", (), "review-specialist"),
+        CanonicalAgentPolicy("data-platform-operations-reviewer", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("database-engineering-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("design-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("distributed-systems-concurrency-critic", "subagent", (), "review-specialist"),
@@ -139,8 +143,13 @@ CANONICAL_AGENT_TOPOLOGY = CanonicalAgentTopology(
                 "frontend-architecture-interaction-critic",
                 "internationalization-localization-critic",
                 "api-design-critic",
+                "analytics-engineering-critic",
+                "business-intelligence-critic",
+                "data-model-steward",
+                "data-platform-operations-reviewer",
                 "database-engineering-critic",
                 "distributed-systems-concurrency-critic",
+                "ingestion-specialist",
                 "testing-critic",
                 "performance-critic",
                 "security-critic",
@@ -161,6 +170,11 @@ CANONICAL_AGENT_TOPOLOGY = CanonicalAgentTopology(
                 "documentation-critic",
                 "performance-critic",
                 "api-design-critic",
+                "analytics-engineering-critic",
+                "business-intelligence-critic",
+                "data-model-steward",
+                "data-platform-operations-reviewer",
+                "ingestion-specialist",
                 "testing-critic",
                 "accessibility-critic",
                 "prompt-critic",
@@ -179,6 +193,7 @@ CANONICAL_AGENT_TOPOLOGY = CanonicalAgentTopology(
         ),
         CanonicalAgentPolicy("frontend-architecture-interaction-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("implementation-worker", "subagent", (), "implementation-worker"),
+        CanonicalAgentPolicy("ingestion-specialist", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("internationalization-localization-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("performance-critic", "subagent", (), "review-specialist"),
         CanonicalAgentPolicy("plan-orchestrator", "primary", ("implementation-worker",), "plan-orchestrator"),
@@ -1618,6 +1633,17 @@ CANONICAL_AGENT_SKILL_IDS = {
         "security-review-evidence",
         "release-readiness",
     ),
+    "analytics-engineering-critic": REVIEW_BASE_SKILLS
+    + (
+        "architecture-review",
+        "sql-engineering",
+        "performance-review",
+        "testing-strategy",
+        "observability-engineering",
+        "documentation-engineering",
+        "security-review",
+        "security-review-evidence",
+    ),
     "api-design-critic": REVIEW_BASE_SKILLS
     + (
         "api-design",
@@ -1645,6 +1671,16 @@ CANONICAL_AGENT_SKILL_IDS = {
         "playwright-e2e",
         "internationalization-localization",
     ),
+    "business-intelligence-critic": REVIEW_BASE_SKILLS
+    + (
+        "performance-review",
+        "testing-strategy",
+        "ux-accessibility-review",
+        "internationalization-localization",
+        "documentation-engineering",
+        "security-review",
+        "security-review-evidence",
+    ),
     "change-verifier": REVIEW_BASE_SKILLS
     + (
         "adversarial-review",
@@ -1653,6 +1689,24 @@ CANONICAL_AGENT_SKILL_IDS = {
         "security-review",
         "security-review-evidence",
         "documentation-engineering",
+    ),
+    "data-model-steward": REVIEW_BASE_SKILLS
+    + (
+        "architecture-review",
+        "documentation-engineering",
+        "testing-strategy",
+        "security-review",
+        "security-review-evidence",
+    ),
+    "data-platform-operations-reviewer": REVIEW_BASE_SKILLS
+    + (
+        "observability-engineering",
+        "performance-review",
+        "ci-release-engineering",
+        "documentation-engineering",
+        "testing-strategy",
+        "security-review",
+        "security-review-evidence",
     ),
     "database-engineering-critic": REVIEW_BASE_SKILLS
     + (
@@ -1729,6 +1783,16 @@ CANONICAL_AGENT_SKILL_IDS = {
         "performance-review",
     ),
     "implementation-worker": ALL_FIRST_PARTY_SKILL_IDS,
+    "ingestion-specialist": REVIEW_BASE_SKILLS
+    + (
+        "api-design",
+        "sql-engineering",
+        "performance-review",
+        "testing-strategy",
+        "observability-engineering",
+        "security-review",
+        "security-review-evidence",
+    ),
     "internationalization-localization-critic": REVIEW_BASE_SKILLS
     + (
         "internationalization-localization",

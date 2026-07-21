@@ -33,6 +33,11 @@ permission:
     "documentation-critic": allow
     "performance-critic": allow
     "api-design-critic": allow
+    "analytics-engineering-critic": allow
+    "business-intelligence-critic": allow
+    "data-model-steward": allow
+    "data-platform-operations-reviewer": allow
+    "ingestion-specialist": allow
     "testing-critic": allow
     "accessibility-critic": allow
     "prompt-critic": allow
@@ -185,6 +190,26 @@ cross-cutting changes, broad audits, or releases. Independent assignments may
 run in parallel. Do not use the full roster unless the user requests and the
 scope warrants a full-board audit.
 
+Route data-platform questions by the affected lifecycle stage:
+
+- `ingestion-specialist` owns source-to-landing connectivity, CDC, watermarks,
+  replay, backfills, source protection, and reconciliation.
+- `analytics-engineering-critic` owns post-landing lakehouse or warehouse
+  transformations, Delta tables, layer contracts, and consumption readiness.
+- `data-model-steward` owns analytical grain, identity, history, canonical
+  definitions, governed metrics, lineage, and semantic ownership.
+- `business-intelligence-critic` owns Power BI semantic models, DAX,
+  relationships, storage modes, RLS/OLS, refresh, and report-query behavior.
+- `data-platform-operations-reviewer` owns Fabric and Power BI promotion,
+  scheduling, gateways, monitoring, capacity, recovery, runbooks, and support
+  readiness; `release-readiness-reviewer` still owns the final ship or hold
+  decision.
+
+A mention of Fabric, Power BI, or a data platform alone does not justify
+selecting all five. Select only the stages that could materially change the
+answer, and keep physical database design with `database-engineering-critic`
+and application aggregates with `domain-model-critic`.
+
 When rendered behavior could materially change a UI, accessibility, or
 interaction conclusion, delegate one bounded observation packet to
 `browser-evidence-collector` before asking the interpreting critic to finalize.
@@ -209,6 +234,11 @@ dependency direction); `domain-model-critic` (aggregates and invariants);
 assistive technology); `frontend-architecture-interaction-critic` (client state
 and lifecycle); `internationalization-localization-critic` (locales and
 formatting); `api-design-critic` (contracts and compatibility);
+`ingestion-specialist` (source-to-landing reliability);
+`analytics-engineering-critic` (post-landing analytical transformations);
+`data-model-steward` (analytical semantics and metric governance);
+`business-intelligence-critic` (Power BI semantic models and DAX);
+`data-platform-operations-reviewer` (Fabric and Power BI operations);
 `database-engineering-critic` (schema and migrations);
 `distributed-systems-concurrency-critic` (races and partial failure);
 `testing-critic` (confidence and regression protection); `performance-critic`
@@ -220,8 +250,12 @@ formatting); `api-design-critic` (contracts and compatibility);
 `release-readiness-reviewer` (rollout readiness); and `technical-researcher`
 (authoritative version-sensitive evidence).
 
-Useful combinations include database, testing, and security/release review for
-a migration; frontend, concurrency, and testing review for optimistic UI;
+Useful combinations include ingestion and concurrency review for CDC state;
+analytics engineering and data stewardship for a reusable analytical product;
+business intelligence and data stewardship for a governed semantic model;
+data-platform operations and release readiness for a production rollout;
+database, testing, and security/release review for a migration; frontend,
+concurrency, and testing review for optimistic UI;
 browser evidence followed by design, accessibility, and localization review for
 a rendered localized user flow; and
 change-verifier followed by focused critics then adversarial review for

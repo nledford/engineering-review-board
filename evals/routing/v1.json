@@ -209,6 +209,152 @@
           "implementation-worker"
         ]
       }
+    },
+    {
+      "id": "data-ingestion-cdc-review",
+      "synthetic": true,
+      "prompt": "Review a synthetic source-to-landing pipeline that captures database changes with a composite watermark, retries partial Copy jobs, protects the source, and reconciles landed batches. The scope excludes post-landing transformations and source-database tuning.",
+      "expected": {
+        "agent": "engineering-review-board",
+        "skills": [
+          "code-review",
+          "review-verification-protocol"
+        ],
+        "handoffs": [
+          "ingestion-specialist"
+        ]
+      },
+      "forbidden": {
+        "handoffs": [
+          "analytics-engineering-critic",
+          "business-intelligence-critic",
+          "data-model-steward"
+        ]
+      }
+    },
+    {
+      "id": "analytics-medallion-transformation-review",
+      "synthetic": true,
+      "prompt": "Review synthetic already-landed data transformations from Bronze through Silver and Gold, including Delta merge and restatement behavior, layer contracts, data-quality quarantine, and reusable published tables. Do not review extraction or Power BI models.",
+      "expected": {
+        "agent": "engineering-review-board",
+        "skills": [
+          "code-review",
+          "review-verification-protocol"
+        ],
+        "handoffs": [
+          "analytics-engineering-critic"
+        ]
+      },
+      "forbidden": {
+        "handoffs": [
+          "ingestion-specialist",
+          "business-intelligence-critic"
+        ]
+      }
+    },
+    {
+      "id": "power-bi-semantic-model-review",
+      "synthetic": true,
+      "prompt": "Review a synthetic Power BI semantic model for DAX totals, relationship direction, Direct Lake trade-offs, RLS behavior, refresh evidence, and representative report-query performance. Upstream tables and visual design are out of scope.",
+      "expected": {
+        "agent": "engineering-review-board",
+        "skills": [
+          "code-review",
+          "review-verification-protocol"
+        ],
+        "handoffs": [
+          "business-intelligence-critic"
+        ]
+      },
+      "forbidden": {
+        "handoffs": [
+          "analytics-engineering-critic",
+          "design-critic"
+        ]
+      }
+    },
+    {
+      "id": "analytical-grain-governance-review",
+      "synthetic": true,
+      "prompt": "Review synthetic analytical contracts for canonical definitions, row grain, cross-source identity, slowly changing history, conformed dimensions, metric ownership, lineage, and semantic compatibility. Do not review application aggregates or physical indexes.",
+      "expected": {
+        "agent": "engineering-review-board",
+        "skills": [
+          "code-review",
+          "review-verification-protocol"
+        ],
+        "handoffs": [
+          "data-model-steward"
+        ]
+      },
+      "forbidden": {
+        "handoffs": [
+          "domain-model-critic",
+          "database-engineering-critic"
+        ]
+      }
+    },
+    {
+      "id": "data-platform-operations-review",
+      "synthetic": true,
+      "prompt": "Review synthetic Fabric and Power BI operational evidence for workspace promotion, schedules, gateways, alerts, capacity thresholds, replay, recovery, and operator runbooks. Assess operability only; do not make the final release decision.",
+      "expected": {
+        "agent": "engineering-review-board",
+        "skills": [
+          "code-review",
+          "review-verification-protocol"
+        ],
+        "handoffs": [
+          "data-platform-operations-reviewer"
+        ]
+      },
+      "forbidden": {
+        "handoffs": [
+          "release-readiness-reviewer",
+          "ingestion-specialist"
+        ]
+      }
+    },
+    {
+      "id": "physical-database-design-near-miss",
+      "synthetic": true,
+      "prompt": "Review a synthetic PostgreSQL migration that adds a unique constraint, changes an index, and alters transaction locking. This is physical relational design, not analytical metric or grain governance.",
+      "expected": {
+        "agent": "engineering-review-board",
+        "skills": [
+          "code-review",
+          "review-verification-protocol"
+        ],
+        "handoffs": [
+          "database-engineering-critic"
+        ]
+      },
+      "forbidden": {
+        "handoffs": [
+          "data-model-steward"
+        ]
+      }
+    },
+    {
+      "id": "application-domain-model-near-miss",
+      "synthetic": true,
+      "prompt": "Review a synthetic application's aggregate boundary, value objects, invariant enforcement, and domain state transitions. No analytical fact, dimension, metric, or lineage contract is involved.",
+      "expected": {
+        "agent": "engineering-review-board",
+        "skills": [
+          "code-review",
+          "review-verification-protocol"
+        ],
+        "handoffs": [
+          "domain-model-critic"
+        ]
+      },
+      "forbidden": {
+        "handoffs": [
+          "data-model-steward"
+        ]
+      }
     }
   ]
 }
