@@ -326,10 +326,11 @@ session remains unchanged.
 
 ## Canonical Topology, Permissions, and Evidence
 
-`tools/opencode_manager.py` contains the canonical topology policy for all
+`tools/opencode_contracts.py` contains the canonical topology policy for all
 tracked agent IDs, primary/subagent modes, exact Task edges, command owners, and
-permission-profile assignments. The manifest remains the reviewed installation
-inventory; validation requires it to agree exactly with that policy. Roster
+permission-profile assignments. `tools/opencode_manager.py` is the thin CLI entry
+point. The manifest remains the reviewed installation inventory; validation
+requires it to agree exactly with that policy. Roster
 drift fails closed and does not disable lifecycle checks.
 
 The eight permission profiles cover the Lead, ERB, Plan Orchestrator, Worker,

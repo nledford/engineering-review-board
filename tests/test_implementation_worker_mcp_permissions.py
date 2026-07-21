@@ -1,9 +1,7 @@
 import unittest
 
-from tools.opencode_manager import (
-    OpenCodeInstallService,
-    STATE_PATH_EDIT_RULE,
-)
+from tools.opencode_contracts import STATE_PATH_EDIT_RULE
+from tools.opencode_install import OpenCodeInstallService
 
 
 CONFIGURED_MCP_TOOL_PATTERNS = (
