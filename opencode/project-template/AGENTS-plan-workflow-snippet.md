@@ -40,12 +40,20 @@ The Plan Orchestrator is the exclusive durable-plan and state writer. The
 Engineering Review Board remains separate, optional, and read-only advisory. The
 Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit. Each new
 Worker Task receives a self-contained packet with numbered acceptance criteria;
-the Plan Orchestrator reconciles each criterion against fresh evidence and
-resumes the same Task child for safe in-scope corrections before checking a
-TODO. Every resumed correction prompt enumerates its evidence gaps, blocked
-criteria, observed and required results, exact correction scope, validation to
-rerun, and unchanged constraints; a status-only reference to `these findings`
-is incomplete, and the Worker blocks rather than guesses.
+the Plan Orchestrator derives the full TODO obligation set, partitions it into
+active-slice, evidenced-complete, and unresolved work, and assigns one bounded
+active slice at a time. Worker status is evidence: `COMPLETED` closes only the
+slice, and `BLOCKED` requires a genuine blocker that prevents every safe slice
+action. The Orchestrator resumes the same Task child for one evidence-first
+correction when no criterion changes classification. Strict criterion-level
+progress creates a smaller residual slice and resets that consecutive no-progress
+allowance; a second unsupported no-progress return becomes an execution-channel
+failure and leaves the TODO unchecked. Every correction is delta-focused and
+independently actionable, preserves relevant completed state without repeating
+it, stops when prior result or replay safety is uncertain, and includes exact
+gaps, required results, scope, validation, constraints, and stop conditions. The
+Orchestrator checks the TODO only after every canonical obligation and TODO-level
+integration validation are evidenced.
 
 After the Plan Orchestrator creates and validates a plan, an explicit current
 human commit request may authorize the Engineering Lead to stage and commit only

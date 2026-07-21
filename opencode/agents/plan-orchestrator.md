@@ -312,6 +312,21 @@ derive a scannable assignment from the full selected plan and fresh repository
 evidence. Sanitize sensitive values under the existing evidence contract; stop
 if a safe, complete packet cannot be formed.
 
+Before delegation and before every mutable continuation, derive the full
+canonical TODO obligation set from the exact TODO, the relevant plan sections,
+and fresh repository evidence. Partition those obligations into three disjoint
+and collectively exhaustive sets: active slice, evidenced complete, and
+unresolved or deferred. Re-derive and reconcile the partition after a restart or
+later `/start-plan`; never persist it in the plan or state file. Any obligation
+without fresh completion evidence remains unresolved.
+
+Select one bounded active slice: one criterion or a tightly coupled set with
+attainable acceptance criteria, explicit owned boundaries, and focused
+validation. No active criterion may also be deferred or prohibited. If an
+inconsistency belongs to the canonical plan, stop under the material-plan-change
+rule. If the generated packet introduced it, correct the packet before
+delegation.
+
 Give the Worker all of the following in Markdown sections with bullets where
 appropriate:
 
@@ -322,7 +337,11 @@ appropriate:
   interfaces that must not change;
 - dependencies already satisfied, known evidence, and applicable repository
   guidance;
-- numbered acceptance criteria that jointly define completion;
+- numbered acceptance criteria that jointly define active-slice completion;
+- a concise unresolved or deferred summary marked as context only, not active
+  acceptance criteria;
+- `Satisfied dependencies / preserved state` when completed work constrains the
+  active slice, marked out of scope and not to be repeated;
 - required focused and repository-native validation, including any checks the
   Orchestrator will run during integration;
 - expected output, completion conditions, stop conditions, and material
@@ -335,23 +354,70 @@ to fresh source, diff, and validation evidence. Independently inspect
 integration boundaries and run the required validation; do not accept a
 completion label as proof.
 
+A Worker `COMPLETED` report closes only the active slice; it never advances the
+plan TODO by itself. Deferred or unassigned obligations are not blockers. Keep
+the TODO unchecked until every canonical obligation is evidenced complete and
+TODO-level integration validation passes. Reconcile fresh evidence before
+interpreting either Worker status.
+
+If the active slice is evidenced complete, close only that transient slice
+regardless of an incorrect label, record the protocol mismatch, and issue the
+next unresolved slice without repeating completed actions.
+
+For an incomplete slice, classify criterion-level evidence before deciding
+whether to continue. Strict progress means fresh evidence moves at least one
+previously unresolved active-slice criterion to evidenced complete. Re-partition
+strict progress into preserved completed criteria and a strictly smaller
+residual active slice. Reset the consecutive no-progress allowance only after
+strict progress. Because each reset strictly shrinks the finite unresolved
+obligation set, progress cannot create an unbounded corrective loop.
+
+Treat a false `COMPLETED` with unmet criteria the same as an unsupported
+`BLOCKED`, but let fresh evidence control the transition. Before any
+continuation, apply the replay-safety gate. Never repeat an action whose prior
+result or replay safety cannot be established from fresh evidence. Stop for
+reconciliation instead. If no criterion changes classification, allow one
+same-`task_id` correction with the same semantic residual obligations when safe
+work remains and no admissible blocker exists; remove only non-active clutter. A
+second consecutive unsupported no-progress terminal return for the same residual
+slice is an execution-channel failure, not a plan or product blocker. Stop the
+corrective loop, leave the TODO unchecked, and report the smallest safe recovery
+action.
+
+If a genuine permission, tooling, validation, material-scope, or contract blocker
+prevents every remaining safe action in the residual active slice, stop with the
+TODO unchecked and report the exact need.
+
 If safe in-scope work remains or a criterion is unmet, resume the same Worker
 child session by passing its `task_id` together with the exact evidence gap and
 required correction. Do not start a fresh Worker Task for an in-scope correction
-when that child session can be resumed. Continue this corrective loop until
-every criterion is evidenced or a genuine permission, tooling, validation,
-material-scope, or contract blocker requires a human decision. Check the TODO
-only after that reconciliation succeeds.
+when that child session can be resumed. Continue under the evidence-aware return
+rules until every obligation is evidenced or a genuine blocker or bounded
+execution-channel failure stops the loop. Before checking the TODO, re-derive the
+full obligation partition from the canonical plan and fresh worktree evidence,
+then run TODO-level integration validation without beginning a separately listed
+plan Verification step.
+
+If the runtime cannot resume that child after an interruption, re-derive the
+full obligation partition and create one fresh self-contained Task for the
+current unresolved slice. Never infer completion from the lost session; the
+same replay-safety rule applies before creating the replacement Task.
 
 For every resumed correction, send a complete correction packet, not merely a
-progress sentence. Include the current plan path and TODO; numbered evidence
-gaps; the acceptance criterion each gap blocks; the observed evidence and
-required result; the exact correction requested with owned files or boundaries;
-validation to rerun; unchanged exclusions and stable interfaces; and the stop
-condition. A status-only preamble or a reference such as `these findings`,
-`the gaps above`, or `fix the remaining issues` is incomplete unless the same
-Task prompt immediately enumerates the actionable gaps. Inspect the final prompt
-before invoking Task and do not send it until every section is non-empty.
+progress sentence. Include the current plan path, TODO number and concise
+identity; numbered evidence gaps; the acceptance criterion each gap blocks; the
+observed evidence and required result; the exact correction requested with owned
+files or boundaries; validation to rerun; unchanged exclusions and stable
+interfaces; and the stop condition. A status-only preamble or a reference such
+as `these findings`, `the gaps above`, or `fix the remaining issues` is
+incomplete unless the same Task prompt immediately enumerates the actionable
+gaps. Inspect the final prompt before invoking Task and do not send it until
+every section is non-empty. Keep a continuation delta-focused: omit the full
+plan, resolved sections, exact TODO prose, stale logs, and completed actions
+unless one is necessary for the active slice or preserved-state boundary.
+Retain concise fresh resulting state under
+`Satisfied dependencies / preserved state` when it affects the active slice.
+Do not repeat evidenced completed actions.
 
 ## Native TODO Projection
 

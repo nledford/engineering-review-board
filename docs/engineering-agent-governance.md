@@ -387,6 +387,32 @@ explicit trace contains only the synthetic prompt and bounded routing fields.
 Never use real repository secrets, user data, private URLs, or machine-local
 paths in eval prompts or traces.
 
+### Synthetic Worker continuation observation
+
+Static prompt validation cannot prove multi-turn model behavior. After changing
+the planned Worker handoff contract, fully restart OpenCode and run a bounded,
+opt-in observation in a disposable synthetic repository. Record the model and
+configuration plus sanitized fields for the canonical obligation partition,
+active slice, returned status, fresh evidence, Task-session reuse when available,
+and resulting TODO state. Do not retain source text, machine-local paths, or raw
+tool output.
+
+Use separate synthetic cases for an intermediate valid `COMPLETED`, a false
+`COMPLETED`, a genuine blocker, unsupported `BLOCKED` with a complete slice,
+unsupported `BLOCKED` with an incomplete slice, strict criterion-level progress
+between returns, a second invalid no-progress return, a canonical-plan
+inconsistency, and an unavailable prior Task session. For the unavailable-session
+case, observe a fresh self-contained Task, re-derived obligations, preserved
+evidence, unchanged TODO state, and a stop rather than replay when prior action
+safety is uncertain.
+
+For every case, observe that completed actions are not repeated, incomplete retry
+obligations do not silently narrow, and the TODO stays unchecked until the
+exhaustive obligation map and TODO-level integration validation pass. Report
+unobserved branches as unverified. This observation is non-deterministic
+evidence, not a CI gate or proof of future model compliance; deterministic
+mutation tests remain the source validation control.
+
 ## Handoffs
 
 For ordinary work, start with the Engineering Lead. The available handoffs are
@@ -437,15 +463,27 @@ remains authoritative for durable-plan details:
    [`/start-plan <existing-plan-path>`](../opencode/commands/start-plan.md), or a
    valid no-argument state pointer,
    executes existing planned work. The Plan Orchestrator then executes bounded
-   Worker units and records only observed plan checkbox and state evidence. Each
-   new Worker Task receives a self-contained packet derived from the plan and
-   fresh repository evidence. One at a time means one active Worker and one
-   current TODO, not one attempt. The Orchestrator maps every acceptance
-   criterion to fresh evidence and resumes the same Task child for safe in-scope
-   corrections before advancing the checkbox. Each correction prompt enumerates
-   its evidence gaps, blocked criteria, observed and required results, exact
-   correction scope, validation to rerun, and unchanged constraints; a
-   status-only reference to findings is not an actionable Task packet.
+    Worker units and records only observed plan checkbox and state evidence. The
+    Orchestrator re-derives each current TODO's full obligation set and partitions
+    it into three disjoint and collectively exhaustive sets: active slice,
+    evidenced complete, and unresolved or deferred. Each new Worker Task is
+    self-contained; every invocation or continuation assigns one bounded active
+    slice with attainable criteria and focused validation. `COMPLETED` closes
+    only that slice, while `BLOCKED` requires a genuine blocker that prevents
+    every remaining safe slice action. The Orchestrator reconciles evidence
+    before status. Criterion-level completion is strict progress: the
+    Orchestrator preserves it, derives a strictly smaller residual slice, and
+    resets the consecutive no-progress allowance. With no classification change,
+    it resumes the same Task child for one correction and treats a second
+    consecutive unsupported no-progress return as an execution-channel failure.
+    It stops rather than replaying an action whose result or replay safety lacks
+    fresh evidence. The TODO advances only after every canonical obligation and
+    TODO-level integration validation are evidenced; a status-only reference to
+    findings is not an actionable packet.
+    If an interrupted runtime cannot resume the prior Task child, the
+    Orchestrator re-derives the obligation partition and starts one fresh
+    self-contained Task for the unresolved slice without inferring completion or
+    replaying an action whose safety lacks fresh evidence.
 
 Active plan content is immutable by default and during execution except for
 evidenced checkbox advancement. A material discovery requires a new human

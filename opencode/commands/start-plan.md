@@ -82,9 +82,25 @@ a later explicit `/start-plan` request is required to resume after amendment.
 
 Use the Plan Orchestrator's self-contained delegation and
 corrective-continuation contract. A Worker return does not end the current TODO.
-Reconcile every acceptance criterion against fresh source, diff, and validation
-evidence, and continue the same Task child for safe in-scope corrections until
-the TODO is complete or a genuine blocker requires a human decision.
+Before each Worker call, derive and reconcile the full canonical TODO obligation
+set, partition it into active, evidenced-complete, and unresolved work, and
+delegate one bounded active slice. Reconcile fresh slice evidence before
+interpreting `COMPLETED` or `BLOCKED`. A valid slice completion does not check the
+TODO; all canonical obligations and TODO-level integration validation must pass
+first.
+
+Continue the same Task child for safe in-scope corrections. Strict progress
+moves at least one previously unresolved active-slice criterion to evidenced
+complete. On strict progress, preserve completed criteria, form a strictly
+smaller residual active slice, and reset the consecutive no-progress allowance.
+If no criterion changes classification, allow one correction with the same
+semantic residual obligations when no admissible blocker exists. A second
+consecutive unsupported no-progress terminal return for the same residual slice
+is an execution-channel failure, not a plan blocker; leave the TODO unchecked
+and stop the loop. Never repeat an action whose prior result or replay safety
+cannot be established from fresh evidence. Preserve relevant completed state as
+a satisfied dependency when forming the next slice.
+
 Each resumed correction prompt must enumerate the evidence gaps, blocked
 criteria, required corrections, and validation to rerun. Never send only a TODO
 status sentence or a deictic reference to findings that the prompt does not

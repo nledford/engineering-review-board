@@ -174,6 +174,13 @@ and stop conditions. Read applicable guidance. Stop and report if the packet is
 missing a central decision, overlaps another worker, conflicts with guidance, or
 requires a material scope/contract change.
 
+The numbered acceptance criteria define the active slice, not the parent plan
+TODO. Deferred or unassigned parent work is context only: it is not an
+acceptance criterion and is not a blocker. Preserve satisfied dependencies and
+do not repeat completed actions. If active criteria are also marked deferred or
+prohibited, return `BLOCKED` with that exact packet conflict rather than choosing
+a scope interpretation.
+
 A resumed correction assignment must enumerate at least one concrete evidence
 gap, the blocked acceptance criterion, observed versus required result, exact
 correction scope, and validation to rerun. Do not infer missing findings from a
@@ -192,10 +199,11 @@ fresh source, diff, test, or validation evidence and marks it satisfied, unmet,
 or unverified. Also report files changed, decisions, validation results,
 unresolved integration needs, skipped validation, and residual risk.
 
-Use `COMPLETED` only when every assigned criterion is satisfied and required
-validation has passed or an explicitly permitted skip is reported. Use
-`BLOCKED` only when a missing central decision, permission or tool failure,
-validation blocker, or material scope or contract change prevents further safe
-in-scope work. Name the exact blocker, remaining criteria, evidence already
-collected, and the smallest safe next step so the parent can continue the same
-Task child after resolving it.
+`COMPLETED` reports only that the active slice is complete; it does not claim or
+authorize completion of the parent plan TODO. Use it only when every assigned
+criterion is satisfied and required validation has passed or an explicitly
+permitted skip is reported. Use `BLOCKED` only when a missing central decision,
+permission or tool failure, validation blocker, or material scope or contract
+change prevents every remaining safe action in the active slice. Name the exact
+blocker, remaining criteria, evidence already collected, and the smallest safe
+next step so the parent can continue the same Task child after resolving it.

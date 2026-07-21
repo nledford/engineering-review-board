@@ -545,12 +545,29 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "Treat every new Task child as context-isolated; its prompt must be self-contained",
             "canonical plan path, current TODO number and exact text",
             "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
+            "derive the full canonical TODO obligation set",
+            "three disjoint and collectively exhaustive sets: active slice, evidenced complete, and unresolved or deferred",
+            "Select one bounded active slice",
+            "No active criterion may also be deferred or prohibited.",
             "numbered acceptance criteria",
+            "Satisfied dependencies / preserved state",
             "One at a time means one active Worker and one current implementation TODO, not one attempt.",
             "A Worker return is evidence, not a terminal event.",
             "Map every acceptance criterion to fresh source, diff, and validation evidence.",
+            "A Worker `COMPLETED` report closes only the active slice",
+            "TODO-level integration validation",
+            "Reconcile fresh evidence before interpreting either Worker status.",
+            "close only that transient slice regardless of an incorrect label",
+            "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
+            "Re-partition strict progress into preserved completed criteria and a strictly smaller residual active slice.",
+            "Reset the consecutive no-progress allowance only after strict progress.",
+            "If no criterion changes classification, allow one same-`task_id` correction",
+            "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
             "resume the same Worker child session by passing its `task_id`",
             "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
+            "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
+            "If the runtime cannot resume that child after an interruption",
+            "Keep a continuation delta-focused",
             "For every resumed correction, send a complete correction packet",
             "numbered evidence gaps",
             "the acceptance criterion each gap blocks",
@@ -562,7 +579,12 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         worker_requirements = (
             "Make the smallest durable change that satisfies every assigned acceptance criterion.",
             "Do not return partial progress while safe, in-scope work remains executable.",
+            "The numbered acceptance criteria define the active slice, not the parent plan TODO.",
+            "Deferred or unassigned parent work is context only",
+            "Preserve satisfied dependencies and do not repeat completed actions.",
             "Return exactly one status: `COMPLETED` or `BLOCKED`.",
+            "`COMPLETED` reports only that the active slice is complete",
+            "prevents every remaining safe action in the active slice",
             "requirement-to-evidence table",
             "A resumed correction assignment must enumerate at least one concrete evidence gap",
             "Do not infer missing findings from a status-only preamble",
@@ -570,6 +592,13 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         command_requirements = (
             "Use the Plan Orchestrator's self-contained delegation and corrective-continuation contract.",
             "A Worker return does not end the current TODO.",
+            "derive and reconcile the full canonical TODO obligation set",
+            "one bounded active slice",
+            "Reconcile fresh slice evidence before interpreting `COMPLETED` or `BLOCKED`.",
+            "Strict progress moves at least one previously unresolved active-slice criterion to evidenced complete.",
+            "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
+            "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
+            "TODO-level integration validation",
             "Each resumed correction prompt must enumerate the evidence gaps, blocked criteria, required corrections, and validation to rerun.",
         )
         lead_requirements = (
@@ -590,6 +619,88 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         for phrase in lead_requirements:
             with self.subTest(agent="engineering-lead", phrase=phrase):
                 self.assertIn(phrase, lead)
+
+    def test_validate_rejects_planned_worker_slice_contract_drift(self) -> None:
+        """Require production validation for sliced evidence-first handoffs."""
+        mutations = (
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "three disjoint and collectively exhaustive sets: active slice, evidenced complete, and unresolved or deferred",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "Reset the consecutive no-progress allowance only after strict progress.",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "close only that transient slice regardless of an incorrect label",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "Keep a continuation delta-focused",
+            ),
+            (
+                "opencode/agents/implementation-worker.md",
+                "Deferred or unassigned parent work is context only",
+            ),
+            (
+                "opencode/agents/implementation-worker.md",
+                "prevents every remaining safe action in the active slice",
+            ),
+            (
+                "opencode/commands/start-plan.md",
+                "TODO-level integration validation",
+            ),
+            (
+                "docs/engineering-agent-governance.md",
+                "an unavailable prior Task session",
+            ),
+        )
+
+        for index, (relative_path, token) in enumerate(mutations):
+            with self.subTest(path=relative_path, token=token):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    root = Path(temp_dir) / str(index)
+                    repo = create_canonical_active_workflow_repo(root)
+                    baseline = OpenCodeInstallService(repo, root / "config").validate()
+                    self.assertTrue(baseline.ok, baseline.errors)
+
+                    definition = repo / relative_path
+                    original = definition.read_text(encoding="utf-8")
+                    self.assertIn(token, " ".join(original.split()))
+                    pattern = r"\s+".join(re.escape(part) for part in token.split())
+                    mutation, replacements = re.subn(
+                        pattern,
+                        "slice contract removed",
+                        original,
+                        count=1,
+                    )
+                    self.assertEqual(1, replacements)
+                    definition.write_text(
+                        mutation,
+                        encoding="utf-8",
+                    )
+
+                    result = OpenCodeInstallService(repo, root / "config").validate()
+                    self.assertTrue(
+                        any(
+                            "contract is incomplete" in error
+                            for error in result.errors
+                        ),
+                        result.errors,
+                    )
 
     def test_checked_in_update_plan_requires_exact_plan_only_authority(self) -> None:
         """Pin active-plan amendment, checkbox reconciliation, and resume separation."""
@@ -879,12 +990,29 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                     "Treat every new Task child as context-isolated; its prompt must be self-contained",
                     "canonical plan path, current TODO number and exact text",
                     "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
+                    "derive the full canonical TODO obligation set",
+                    "three disjoint and collectively exhaustive sets: active slice, evidenced complete, and unresolved or deferred",
+                    "Select one bounded active slice",
+                    "No active criterion may also be deferred or prohibited.",
                     "numbered acceptance criteria",
+                    "Satisfied dependencies / preserved state",
                     "One at a time means one active Worker and one current implementation TODO, not one attempt.",
                     "A Worker return is evidence, not a terminal event.",
                     "Map every acceptance criterion to fresh source, diff, and validation evidence.",
+                    "A Worker `COMPLETED` report closes only the active slice",
+                    "TODO-level integration validation",
+                    "Reconcile fresh evidence before interpreting either Worker status.",
+                    "close only that transient slice regardless of an incorrect label",
+                    "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
+                    "Re-partition strict progress into preserved completed criteria and a strictly smaller residual active slice.",
+                    "Reset the consecutive no-progress allowance only after strict progress.",
+                    "If no criterion changes classification, allow one same-`task_id` correction",
+                    "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
                     "resume the same Worker child session by passing its `task_id`",
                     "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
+                    "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
+                    "If the runtime cannot resume that child after an interruption",
+                    "Keep a continuation delta-focused",
                     "For every resumed correction, send a complete correction packet",
                     "numbered evidence gaps",
                     "the acceptance criterion each gap blocks",
@@ -896,7 +1024,12 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 "implementation-worker.md": (
                     "Make the smallest durable change that satisfies every assigned acceptance criterion.",
                     "Do not return partial progress while safe, in-scope work remains executable.",
+                    "The numbered acceptance criteria define the active slice, not the parent plan TODO.",
+                    "Deferred or unassigned parent work is context only",
+                    "Preserve satisfied dependencies and do not repeat completed actions.",
                     "Return exactly one status: `COMPLETED` or `BLOCKED`.",
+                    "`COMPLETED` reports only that the active slice is complete",
+                    "prevents every remaining safe action in the active slice",
                     "requirement-to-evidence table",
                     "A resumed correction assignment must enumerate at least one concrete evidence gap",
                     "Do not infer missing findings from a status-only preamble",

@@ -169,20 +169,55 @@ plus the smallest proposed amendment. The human may then choose
 resume only after a later explicit `/start-plan` request.
 
 The Plan Orchestrator may delegate one bounded implementation TODO at a time to
-the Implementation Worker. Each new Task receives a self-contained packet with
-the current plan context, owned scope, numbered acceptance criteria, validation,
-and stop conditions. One at a time limits active concurrency, not attempts. The
-Orchestrator maps every criterion to fresh source, diff, and validation evidence
-and resumes the same Task child for safe in-scope corrections before checking
-the TODO. The Worker cannot edit plans or `.erb/plan-state.json`, delegate,
-stage, or commit.
+the Implementation Worker. It derives that TODO's full canonical obligation set
+from the plan and fresh evidence, then partitions the obligations into three
+disjoint and collectively exhaustive sets: active slice, evidenced complete,
+and unresolved or deferred. The partition is transient and is re-derived after
+a restart; it never enters the plan or state file.
 
-Every resumed correction prompt is independently actionable. It enumerates each
-evidence gap, the blocked acceptance criterion, observed versus required result,
-exact correction scope, validation to rerun, unchanged constraints, and stop
-condition. A TODO-status sentence or a phrase such as `these findings` is never
-a substitute for the findings themselves. The Worker must block rather than
-guess when a correction packet omits those details.
+Each new Task receives a self-contained packet. Each invocation or continuation
+assigns one bounded active slice with attainable acceptance criteria, owned
+scope, focused validation, and stop conditions. Unresolved or deferred work is
+context only, not active acceptance criteria or a blocker. Relevant completed
+state appears under `Satisfied dependencies / preserved state`, marked out of
+scope and not to be repeated. A Worker `COMPLETED` report closes only the active
+slice; only the Orchestrator may reconcile the full TODO and advance its
+checkbox.
+
+The Orchestrator uses evidence-first return handling. It closes an
+evidenced-complete slice regardless of an incorrect status, retries an incomplete
+slice when no genuine blocker exists, and stops on a genuine blocker that
+prevents every remaining safe slice action. A false `COMPLETED` is handled like
+an unsupported `BLOCKED`, but evidence controls the transition.
+
+Strict progress means fresh evidence moves at least one unresolved active-slice
+criterion to evidenced complete. The Orchestrator preserves those completed
+criteria, forms a strictly smaller residual active slice, and resets the
+consecutive no-progress allowance. With no criterion classification change, it
+allows one same-session correction for the residual slice. A second consecutive
+unsupported no-progress terminal return is an execution-channel failure, not a
+plan blocker; the TODO stays unchecked. The finite obligation set bounds progress
+resets.
+
+Every resumed correction prompt is independently actionable and delta-focused.
+It enumerates each evidence gap, the blocked slice criterion, observed versus
+required result, exact correction scope, validation to rerun, unchanged
+constraints, and stop condition. It omits stale logs and completed actions while
+retaining relevant preserved state. A TODO-status sentence or a phrase such as
+`these findings` is never a substitute for the findings themselves. Before
+checking the TODO, the Orchestrator re-derives the full obligation partition and
+runs TODO-level integration validation without beginning a separately listed
+Verification step. The Worker cannot edit plans or `.erb/plan-state.json`,
+delegate, stage, or commit.
+
+Before every continuation, the Orchestrator stops for reconciliation rather than
+repeating an action whose prior result or replay safety cannot be established
+from fresh evidence.
+
+If an interrupted runtime cannot resume the prior Task child, the Orchestrator
+re-derives the obligation partition and creates one fresh self-contained Task for
+the current unresolved slice. It does not infer completion from the lost session
+or replay an action whose prior result or replay safety lacks fresh evidence.
 
 ## Security And Validation
 
