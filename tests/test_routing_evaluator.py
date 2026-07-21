@@ -1,3 +1,4 @@
+import copy
 import json
 import sys
 import tempfile
@@ -123,6 +124,42 @@ class RoutingCorpusTests(unittest.TestCase):
 
         self.assertTrue(any("prompt" in error and "4000" in error for error in errors))
         self.assertTrue(any("expected.agent" in error for error in errors))
+
+    def test_corpus_rejects_each_bounded_schema_violation(self) -> None:
+        mutations = (
+            ("root", lambda _corpus: [], "corpus root must be an object"),
+            ("version", lambda corpus: corpus.update(version=2), "version must be 1"),
+            ("suite", lambda corpus: corpus.update(suite="Invalid Suite"), "suite must be a lowercase"),
+            ("score-type", lambda corpus: corpus.update(minimum_score=True), "minimum_score must be a number"),
+            ("score-range", lambda corpus: corpus.update(minimum_score=1.1), "minimum_score must be a number"),
+            ("cases", lambda corpus: corpus.update(cases=[]), "cases must be a non-empty array"),
+            ("case-object", lambda corpus: corpus.update(cases=[None]), "cases[0] must be an object"),
+            (
+                "expected-field",
+                lambda corpus: corpus["cases"][0]["expected"].update(extra="value"),
+                "expected has unsupported fields: extra",
+            ),
+            (
+                "forbidden-field",
+                lambda corpus: corpus["cases"][0]["forbidden"].update(agent=["reviewer"]),
+                "forbidden has unsupported fields: agent",
+            ),
+            (
+                "duplicate-list-item",
+                lambda corpus: corpus["cases"][0]["expected"].update(skills=["skill", "skill"]),
+                "unique lowercase routing identifiers",
+            ),
+        )
+
+        for label, mutate, expected_error in mutations:
+            with self.subTest(label=label):
+                corpus = copy.deepcopy(sample_corpus())
+                replacement = mutate(corpus)
+                errors = validate_corpus(corpus if replacement is None else replacement)
+                self.assertTrue(
+                    any(expected_error in error for error in errors),
+                    errors,
+                )
 
 
 if __name__ == "__main__":

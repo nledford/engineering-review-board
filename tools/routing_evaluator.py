@@ -10,7 +10,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Mapping, Sequence
 
 
 CORPUS_VERSION = 1
@@ -83,101 +83,167 @@ def load_corpus(path: Path) -> dict:
 def validate_corpus(corpus: object) -> list[str]:
     if not isinstance(corpus, dict):
         return ["corpus root must be an object"]
+    errors = _validate_corpus_header(corpus)
+    cases = corpus.get("cases")
+    if not isinstance(cases, list) or not cases:
+        return [*errors, "cases must be a non-empty array"]
+    errors.extend(_validate_cases(cases))
+    return errors
+
+
+def _validate_corpus_header(corpus: dict) -> list[str]:
     errors: list[str] = []
     if corpus.get("version") != CORPUS_VERSION:
         errors.append(f"version must be {CORPUS_VERSION}")
-    if not isinstance(corpus.get("suite"), str) or not corpus["suite"].strip():
-        errors.append("suite must be a non-empty routing identifier")
-    elif ROUTING_ID_RE.fullmatch(corpus["suite"]) is None:
-        errors.append("suite must be a lowercase routing identifier of at most 128 characters")
+    errors.extend(
+        _routing_id_errors(
+            corpus.get("suite"),
+            "suite",
+        )
+    )
     minimum_score = corpus.get("minimum_score")
-    if not isinstance(minimum_score, (int, float)) or isinstance(minimum_score, bool):
+    if not isinstance(minimum_score, (int, float)) or isinstance(
+        minimum_score,
+        bool,
+    ):
         errors.append("minimum_score must be a number from 0 through 1")
     elif not 0 <= float(minimum_score) <= 1:
         errors.append("minimum_score must be a number from 0 through 1")
+    return errors
 
-    cases = corpus.get("cases")
-    if not isinstance(cases, list) or not cases:
-        errors.append("cases must be a non-empty array")
-        return errors
 
+def _validate_cases(cases: list[object]) -> list[str]:
+    errors: list[str] = []
     seen_ids: set[str] = set()
     for index, case in enumerate(cases):
         prefix = f"cases[{index}]"
         if not isinstance(case, dict):
             errors.append(f"{prefix} must be an object")
             continue
-        case_id = case.get("id")
-        if not isinstance(case_id, str) or not case_id.strip():
-            errors.append(f"{prefix}.id must be a non-empty routing identifier")
-        elif ROUTING_ID_RE.fullmatch(case_id) is None:
-            errors.append(
-                f"{prefix}.id must be a lowercase routing identifier of at most 128 characters"
-            )
-        elif case_id in seen_ids:
-            errors.append(f"{prefix}: duplicate case id: {case_id}")
-        else:
-            seen_ids.add(case_id)
-        if case.get("synthetic") is not True:
-            errors.append(f"{prefix}.synthetic must be true")
-        prompt = case.get("prompt")
-        if not isinstance(prompt, str) or not prompt.strip():
-            errors.append(f"{prefix}.prompt must be a non-empty string")
-        elif len(prompt) > MAX_PROMPT_CHARS:
-            errors.append(
-                f"{prefix}.prompt must contain at most {MAX_PROMPT_CHARS} characters"
-            )
-        expected = case.get("expected")
-        forbidden = case.get("forbidden", {})
-        if not isinstance(expected, dict) or not expected:
-            errors.append(f"{prefix}.expected must be a non-empty object")
-            continue
-        if not isinstance(forbidden, dict):
-            errors.append(f"{prefix}.forbidden must be an object")
-            continue
-        unexpected_expected = sorted(set(expected) - set(ROUTING_FIELDS))
-        unexpected_forbidden = sorted(set(forbidden) - set(LIST_ROUTING_FIELDS))
-        if unexpected_expected:
-            errors.append(
-                f"{prefix}.expected has unsupported fields: {', '.join(unexpected_expected)}"
-            )
-        if unexpected_forbidden:
-            errors.append(
-                f"{prefix}.forbidden has unsupported fields: {', '.join(unexpected_forbidden)}"
-            )
-        for field in ("agent", "command"):
-            if field not in expected:
-                continue
-            value = expected[field]
-            if not isinstance(value, str) or not value.strip():
-                errors.append(
-                    f"{prefix}.expected.{field} must be a non-empty routing identifier"
-                )
-            elif ROUTING_ID_RE.fullmatch(value) is None:
-                errors.append(
-                    f"{prefix}.expected.{field} must be a lowercase routing identifier "
-                    "of at most 128 characters"
-                )
-        for container_name, container in (("expected", expected), ("forbidden", forbidden)):
-            for field in LIST_ROUTING_FIELDS:
-                if field not in container:
-                    continue
-                value = container[field]
-                if (
-                    not isinstance(value, list)
-                    or len(value) > MAX_ROUTING_ITEMS
-                    or any(
-                        not isinstance(item, str)
-                        or ROUTING_ID_RE.fullmatch(item) is None
-                        for item in value
-                    )
-                    or len(value) != len(set(value))
-                ):
-                    errors.append(
-                        f"{prefix}.{container_name}.{field} must be an array of at most "
-                        f"{MAX_ROUTING_ITEMS} unique lowercase routing identifiers"
-                    )
+        errors.extend(_validate_case(case, prefix, seen_ids))
     return errors
+
+
+def _validate_case(
+    case: dict,
+    prefix: str,
+    seen_ids: set[str],
+) -> list[str]:
+    errors = _validate_case_identity(case, prefix, seen_ids)
+    if case.get("synthetic") is not True:
+        errors.append(f"{prefix}.synthetic must be true")
+    errors.extend(_validate_case_prompt(case.get("prompt"), prefix))
+
+    expected = case.get("expected")
+    forbidden = case.get("forbidden", {})
+    if not isinstance(expected, dict) or not expected:
+        return [*errors, f"{prefix}.expected must be a non-empty object"]
+    if not isinstance(forbidden, dict):
+        return [*errors, f"{prefix}.forbidden must be an object"]
+
+    errors.extend(
+        _unsupported_field_errors(
+            expected,
+            ROUTING_FIELDS,
+            f"{prefix}.expected",
+        )
+    )
+    errors.extend(
+        _unsupported_field_errors(
+            forbidden,
+            LIST_ROUTING_FIELDS,
+            f"{prefix}.forbidden",
+        )
+    )
+    errors.extend(_validate_expected_route_ids(expected, prefix))
+    errors.extend(_validate_route_item_fields(expected, f"{prefix}.expected"))
+    errors.extend(_validate_route_item_fields(forbidden, f"{prefix}.forbidden"))
+    return errors
+
+
+def _validate_case_identity(
+    case: dict,
+    prefix: str,
+    seen_ids: set[str],
+) -> list[str]:
+    case_id = case.get("id")
+    errors = _routing_id_errors(case_id, f"{prefix}.id")
+    if errors or not isinstance(case_id, str):
+        return errors
+    if case_id in seen_ids:
+        return [f"{prefix}: duplicate case id: {case_id}"]
+    seen_ids.add(case_id)
+    return []
+
+
+def _routing_id_errors(value: object, label: str) -> list[str]:
+    if not isinstance(value, str) or not value.strip():
+        return [f"{label} must be a non-empty routing identifier"]
+    if ROUTING_ID_RE.fullmatch(value) is None:
+        return [
+            f"{label} must be a lowercase routing identifier of at most 128 characters"
+        ]
+    return []
+
+
+def _validate_case_prompt(prompt: object, prefix: str) -> list[str]:
+    if not isinstance(prompt, str) or not prompt.strip():
+        return [f"{prefix}.prompt must be a non-empty string"]
+    if len(prompt) > MAX_PROMPT_CHARS:
+        return [
+            f"{prefix}.prompt must contain at most {MAX_PROMPT_CHARS} characters"
+        ]
+    return []
+
+
+def _unsupported_field_errors(
+    container: Mapping[str, object],
+    supported_fields: Sequence[str],
+    label: str,
+) -> list[str]:
+    unexpected = sorted(set(container) - set(supported_fields))
+    if not unexpected:
+        return []
+    return [f"{label} has unsupported fields: {', '.join(unexpected)}"]
+
+
+def _validate_expected_route_ids(expected: Mapping[str, object], prefix: str) -> list[str]:
+    errors: list[str] = []
+    for field in ("agent", "command"):
+        if field in expected:
+            errors.extend(
+                _routing_id_errors(
+                    expected[field],
+                    f"{prefix}.expected.{field}",
+                )
+            )
+    return errors
+
+
+def _validate_route_item_fields(
+    container: Mapping[str, object],
+    label: str,
+) -> list[str]:
+    errors: list[str] = []
+    for field in LIST_ROUTING_FIELDS:
+        if field in container and not _valid_route_items(container[field]):
+            errors.append(
+                f"{label}.{field} must be an array of at most "
+                f"{MAX_ROUTING_ITEMS} unique lowercase routing identifiers"
+            )
+    return errors
+
+
+def _valid_route_items(value: object) -> bool:
+    return (
+        isinstance(value, list)
+        and len(value) <= MAX_ROUTING_ITEMS
+        and all(
+            isinstance(item, str) and ROUTING_ID_RE.fullmatch(item) is not None
+            for item in value
+        )
+        and len(value) == len(set(value))
+    )
 
 
 def _bounded_actual(actual: object) -> dict[str, object]:
