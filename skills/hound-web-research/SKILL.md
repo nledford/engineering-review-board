@@ -1,6 +1,6 @@
 ---
 name: hound-web-research
-description: Use the Hound MCP server for public web research, source discovery, URL or PDF retrieval, bounded same-domain crawling, OCR, and evidence capture with smart_search, smart_fetch, smart_crawl, screenshot, cache_clear, or version. Use when current external evidence is needed. Do not use for repository-local facts, signed-in browser interaction, checked-in Playwright tests, private or sensitive resources, or Hound installation and upgrades unless explicitly requested.
+description: Use the Hound MCP server for public web research, source discovery, URL or PDF retrieval, bounded same-domain crawling, OCR, and evidence capture with smart_search, smart_fetch, smart_crawl, screenshot, cache_clear, or version. Use when current external evidence is needed. Do not use for repository-local facts, structured GitHub platform objects, signed-in browser interaction, checked-in Playwright tests, private or sensitive resources, or Hound installation and upgrades unless explicitly requested.
 ---
 
 # Hound Web Research
@@ -13,6 +13,11 @@ server. Hound discovers and extracts evidence; it is not itself an authority.
 
 - Inspect repository source, tests, lockfiles, configuration, and local docs
   before searching for facts the repository can establish.
+- Use [`github-mcp-operations`](../github-mcp-operations/SKILL.md) for structured
+  GitHub platform objects such as repositories, commits, issues, pull requests,
+  reviews, Actions, releases, security findings, organizations, and users. A
+  GitHub hostname alone does not require GitHub MCP when the page is only public
+  web evidence, but do not use Hound as an authenticated GitHub API substitute.
 - Use the third-party `agent-browser` runtime skill, when installed, for
   signed-in or interactive browser work and manual web-app QA. Use
   [`playwright-e2e`](../playwright-e2e/SKILL.md) for checked-in Playwright tests,
@@ -53,6 +58,9 @@ server. Hound discovers and extracts evidence; it is not itself an authority.
 7. Report citations to the underlying sources, relevant limits or conflicts,
    and any experiment still needed. Never cite Hound or a search-result summary
    as the substantive authority.
+8. Combine Hound with GitHub MCP only when each closes a distinct evidence gap.
+   Keep Hound inputs public and sanitized, and never copy private GitHub content,
+   identifiers, queries, or URLs into Hound.
 
 ## Safe Operation
 

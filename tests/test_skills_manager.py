@@ -512,6 +512,29 @@ class SkillRegistryTests(unittest.TestCase):
                 result.warnings,
             )
 
+    def test_github_and_hound_skills_require_cross_routing_links(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            write_skill(repo / "skills", "github-mcp-operations")
+            write_skill(repo / "skills", "hound-web-research")
+            write_taxonomy(
+                repo,
+                ["github-mcp-operations", "hound-web-research"],
+            )
+
+            result = SkillRegistry.load(repo).validate_first_party()
+
+            self.assertTrue(result.ok)
+            self.assertEqual(
+                [
+                    "github-mcp-operations: SKILL.md should link to security-review for security-sensitive work",
+                    "github-mcp-operations: SKILL.md should link to security-review-evidence for security-sensitive work",
+                    "github-mcp-operations: SKILL.md should link to hound-web-research for MCP server selection",
+                    "hound-web-research: SKILL.md should link to github-mcp-operations for MCP server selection",
+                ],
+                result.warnings,
+            )
+
     def test_ci_and_container_skills_require_security_links(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

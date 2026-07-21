@@ -40,6 +40,7 @@ SECURITY_LINK_REQUIRED_SKILLS = frozenset(
         "container-engineering",
         "git-commit",
         "git-workflows",
+        "github-mcp-operations",
         "javascript-typescript-engineering",
         "justfiles",
         "postgresql-sql-engineering",
@@ -57,6 +58,11 @@ REQUIRED_SECURITY_LINKS = ("security-review", "security-review-evidence")
 REQUIRED_API_SECURITY_LINKS = ("security-review",)
 GIT_SKILLS = frozenset({"git-commit", "git-workflows"})
 REQUIRED_GIT_SKILL_LINKS = ("git-commit", "git-workflows")
+MCP_ROUTING_SKILLS = frozenset({"github-mcp-operations", "hound-web-research"})
+REQUIRED_MCP_ROUTING_SKILL_LINKS = (
+    "github-mcp-operations",
+    "hound-web-research",
+)
 FORBIDDEN_SKILL_SOURCE_PROJECT_IDENTIFIERS = (
     "engineering-review-board",
     "chidori",
@@ -102,6 +108,11 @@ REQUIRED_RELATED_SKILL_LINK_RULES = (
         required_links=REQUIRED_GIT_SKILL_LINKS,
         reason="related Git operations",
         skill_names=GIT_SKILLS,
+    ),
+    RelatedSkillLinkRule(
+        required_links=REQUIRED_MCP_ROUTING_SKILL_LINKS,
+        reason="MCP server selection",
+        skill_names=MCP_ROUTING_SKILLS,
     ),
 )
 
