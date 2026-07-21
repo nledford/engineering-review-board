@@ -114,6 +114,11 @@ list-third-party:
 validate-third-party:
     @{{python}} {{manager}} validate --kind third-party
 
+# Print deterministic digests used by third-party-skills.json.
+[group('third-party')]
+third-party-digests:
+    @{{python}} {{manager}} third-party-digests
+
 # Update third-party skills with npx skills or SKILLS_UPDATE_COMMAND.
 [group('third-party')]
 update-third-party:

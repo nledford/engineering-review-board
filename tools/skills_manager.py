@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -9,7 +10,9 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
+from pathlib import PurePosixPath
 from typing import Iterable, Sequence
 from urllib.parse import unquote, urlsplit
 
@@ -22,7 +25,10 @@ except ImportError:  # Direct script execution.
 GLOBAL_SKILLS_PATH = Path.home() / ".agents" / "skills"
 SKILLS_DIR_NAME = "skills"
 LOCKFILE_NAME = ".skill-lock.json"
+THIRD_PARTY_PROVENANCE_NAME = "third-party-skills.json"
+THIRD_PARTY_PROVENANCE_VERSION = 1
 REQUIRED_SKILL_METADATA = ("name", "description")
+HOST_SPECIFIC_SKILL_METADATA = ("allowed-tools", "hidden", "user-invocable")
 LOCAL_LINK_RE = re.compile(r"(?<![A-Za-z0-9_`])!?\[[^\]]+\]\(([^)]+)\)")
 TAXONOMY_DOC = Path("docs") / "skill-taxonomy.md"
 TAXONOMY_CATEGORY_HEADING = "## Taxonomy"
@@ -223,6 +229,7 @@ class SkillRegistry:
                 self._validate_required_related_skill_links(),
                 self._validate_taxonomy_inventory(),
                 self._validate_locked_installs(),
+                self._validate_third_party_provenance(),
                 self._validate_non_empty(),
             ]
         )
@@ -243,6 +250,7 @@ class SkillRegistry:
                 self._validate_lockfile(),
                 self._validate_skills(self.third_party(), label="third-party skill"),
                 self._validate_locked_installs(),
+                self._validate_third_party_provenance(),
             ]
         )
 
@@ -265,6 +273,102 @@ class SkillRegistry:
             for name in sorted(self.locked_skills)
             if name not in present_names
         ]
+        return ValidationResult(errors=errors)
+
+    def _validate_third_party_provenance(self) -> ValidationResult:
+        provenance_path = self.repo_root / THIRD_PARTY_PROVENANCE_NAME
+        third_party = {skill.name: skill for skill in self.third_party()}
+        if not third_party and not provenance_path.exists():
+            return ValidationResult()
+        if not provenance_path.is_file():
+            return ValidationResult(
+                errors=[
+                    f"{THIRD_PARTY_PROVENANCE_NAME}: missing provenance manifest for "
+                    "installed third-party skills"
+                ]
+            )
+
+        data, error = _read_third_party_provenance(provenance_path)
+        if error is not None:
+            return ValidationResult(errors=[error])
+        assert data is not None
+
+        entries = data["skills"]
+        errors: list[str] = []
+        installed_names = set(third_party)
+        entry_names = set(entries)
+        errors.extend(
+            f"{THIRD_PARTY_PROVENANCE_NAME}: installed third-party skill missing provenance: {name}"
+            for name in sorted(installed_names - entry_names)
+        )
+
+        for name in sorted(entry_names):
+            entry = entries[name]
+            prefix = f"{THIRD_PARTY_PROVENANCE_NAME}: {name}"
+            if not isinstance(entry, dict):
+                errors.append(f"{prefix}: entry must be an object")
+                continue
+            required = (
+                "source",
+                "source_path",
+                "revision",
+                "license",
+                "reviewed_on",
+                "sha256",
+            )
+            missing = [field for field in required if not isinstance(entry.get(field), str) or not entry[field]]
+            if missing:
+                errors.append(f"{prefix}: missing non-empty string fields: {', '.join(missing)}")
+                continue
+
+            source = entry["source"]
+            parsed_source = urlsplit(source)
+            if (
+                parsed_source.scheme != "https"
+                or not parsed_source.netloc
+                or parsed_source.username is not None
+                or parsed_source.password is not None
+            ):
+                errors.append(
+                    f"{prefix}: source must be an HTTPS URL without embedded credentials"
+                )
+
+            source_path = PurePosixPath(entry["source_path"])
+            if (
+                not source_path.parts
+                or entry["source_path"] == "."
+                or "\\" in entry["source_path"]
+                or source_path.is_absolute()
+                or any(part in ("", ".", "..") for part in source_path.parts)
+            ):
+                errors.append(f"{prefix}: source_path must be a safe repository-relative POSIX path")
+
+            revision = entry["revision"]
+            if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+                errors.append(f"{prefix}: revision must be a full lowercase 40-character Git commit")
+
+            try:
+                date.fromisoformat(entry["reviewed_on"])
+            except ValueError:
+                errors.append(f"{prefix}: reviewed_on must be an ISO date")
+
+            expected_digest = entry["sha256"]
+            if re.fullmatch(r"[0-9a-f]{64}", expected_digest) is None:
+                errors.append(f"{prefix}: sha256 must be 64 lowercase hexadecimal characters")
+                continue
+            if name not in third_party:
+                continue
+            try:
+                actual_digest = skill_tree_sha256(third_party[name].path)
+            except (OSError, ValueError) as digest_error:
+                errors.append(f"{prefix}: cannot hash installed content: {digest_error}")
+                continue
+            if actual_digest != expected_digest:
+                errors.append(
+                    f"{prefix}: content digest mismatch; expected {expected_digest}, "
+                    f"found {actual_digest}"
+                )
+
         return ValidationResult(errors=errors)
 
     def _validate_skills(self, skills: Sequence[Skill], *, label: str) -> ValidationResult:
@@ -441,6 +545,13 @@ def validate_skill(skill: Skill, *, label: str) -> ValidationResult:
         errors.append(
             f"{skill.name}: SKILL.md name is {metadata_name!r}, expected {skill.name!r}"
         )
+
+    warnings.extend(
+        f"{skill.name}: SKILL.md front matter '{key}' is cross-host metadata and "
+        "is not enforced by OpenCode; use agent permission maps for runtime authority"
+        for key in HOST_SPECIFIC_SKILL_METADATA
+        if key in metadata
+    )
 
     if skill.kind == "first-party":
         resource_result = _validate_skill_resources(skill)
@@ -640,6 +751,51 @@ def _read_lockfile(path: Path) -> tuple[dict[str, dict], str | None]:
     return locked_skills, None
 
 
+def _read_third_party_provenance(path: Path) -> tuple[dict | None, str | None]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        return None, f"{THIRD_PARTY_PROVENANCE_NAME}: invalid JSON: {error}"
+    if not isinstance(data, dict):
+        return None, f"{THIRD_PARTY_PROVENANCE_NAME}: root must be an object"
+    if data.get("version") != THIRD_PARTY_PROVENANCE_VERSION:
+        return None, (
+            f"{THIRD_PARTY_PROVENANCE_NAME}: version must be "
+            f"{THIRD_PARTY_PROVENANCE_VERSION}"
+        )
+    if not isinstance(data.get("skills"), dict):
+        return None, f"{THIRD_PARTY_PROVENANCE_NAME}: skills must be an object"
+    if any(not isinstance(name, str) or not name for name in data["skills"]):
+        return None, f"{THIRD_PARTY_PROVENANCE_NAME}: skill names must be non-empty strings"
+    return data, None
+
+
+def skill_tree_sha256(skill_path: Path) -> str:
+    """Hash visible regular files with stable relative-path framing."""
+    if skill_path.is_symlink():
+        raise ValueError("symbolic links are not supported: .")
+    visible_paths = [
+        path
+        for path in skill_path.rglob("*")
+        if not _is_hidden_path(path, skill_path)
+    ]
+    symlinks = [path for path in visible_paths if path.is_symlink()]
+    if symlinks:
+        relative_path = symlinks[0].relative_to(skill_path)
+        raise ValueError(f"symbolic links are not supported: {relative_path}")
+    files = [path for path in visible_paths if path.is_file()]
+    if not files:
+        raise ValueError("skill directory contains no visible regular files")
+    digest = hashlib.sha256()
+    for path in sorted(files, key=lambda candidate: candidate.relative_to(skill_path).as_posix()):
+        relative_path = path.relative_to(skill_path).as_posix().encode("utf-8")
+        digest.update(relative_path)
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _read_ignored_skill_names(path: Path) -> set[str]:
     if not path.exists():
         return set()
@@ -784,6 +940,20 @@ def print_inspection(skill: Skill) -> int:
     return 0
 
 
+def print_third_party_digests(skills: Sequence[Skill]) -> int:
+    if not skills:
+        print("No third-party skills found.")
+        return 0
+    for skill in skills:
+        try:
+            digest = skill_tree_sha256(skill.path)
+        except (OSError, ValueError) as error:
+            print(f"error: {skill.name}: {error}", file=sys.stderr)
+            return 1
+        print(f"{skill.name}\t{digest}")
+    return 0
+
+
 def emit_validation(result: ValidationResult) -> int:
     for warning in result.warnings:
         print(f"warning: {warning}", file=sys.stderr)
@@ -871,6 +1041,11 @@ def build_parser() -> argparse.ArgumentParser:
     inspect_parser = subcommands.add_parser("inspect", help="Inspect one skill.")
     inspect_parser.add_argument("name", help="Skill name to inspect.")
 
+    subcommands.add_parser(
+        "third-party-digests",
+        help="Print deterministic content digests for installed third-party skills.",
+    )
+
     validate_parser = subcommands.add_parser("validate", help="Validate skills.")
     validate_parser.add_argument(
         "--kind",
@@ -928,6 +1103,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"error: skill not found: {args.name}", file=sys.stderr)
             return 1
         return print_inspection(skill)
+
+    if args.command == "third-party-digests":
+        return print_third_party_digests(registry.third_party())
 
     if args.command == "validate":
         if args.kind == "first-party":

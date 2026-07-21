@@ -11,6 +11,7 @@ from tools.skills_manager import (
     SkillRegistry,
     ValidationResult,
     emit_validation,
+    skill_tree_sha256,
 )
 
 
@@ -108,7 +109,7 @@ class SkillRegistryTests(unittest.TestCase):
             bad_skill.mkdir()
             (bad_skill / "SKILL.md").write_text("# Missing metadata\n", encoding="utf-8")
 
-            result = SkillRegistry.load(repo).validate_all()
+            result = SkillRegistry.load(repo).validate_first_party()
 
             self.assertFalse(result.ok)
             self.assertIn("bad-skill: SKILL.md must start with YAML front matter", result.errors)
@@ -290,8 +291,10 @@ class SkillRegistryTests(unittest.TestCase):
             references.mkdir()
             (references / "unused.md").write_text("# Unused\n", encoding="utf-8")
             (repo / ".gitignore").write_text("/skills/ignored-third-party/\n", encoding="utf-8")
+            write_skill(repo / "skills", "first-party")
+            write_taxonomy(repo, ["first-party"])
 
-            result = SkillRegistry.load(repo).validate_all()
+            result = SkillRegistry.load(repo).validate_first_party()
 
             self.assertTrue(result.ok)
 
@@ -677,16 +680,17 @@ class SkillRegistryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))
             write_skill(repo / "skills", "custom-security-skill")
+            write_skill(repo / "skills", "first-party")
             write_taxonomy(
                 repo,
-                [],
+                ["first-party"],
                 categories={"Security review": ["custom-security-skill"]},
             )
             (repo / ".gitignore").write_text(
                 "/skills/custom-security-skill/\n", encoding="utf-8"
             )
 
-            result = SkillRegistry.load(repo).validate_all()
+            result = SkillRegistry.load(repo).validate_first_party()
 
             self.assertTrue(result.ok)
             self.assertEqual([], result.warnings)
@@ -947,6 +951,162 @@ class GlobalInstallServiceTests(unittest.TestCase):
             self.assertFalse(result.ok)
             self.assertFalse((global_link.parent / ".skill-lock.json").exists())
             self.assertIn("does not exist", result.errors[0])
+class ThirdPartyProvenanceContractTests(unittest.TestCase):
+    @staticmethod
+    def _write_provenance(repo: Path, skill_name: str, digest: str) -> None:
+        (repo / "third-party-skills.json").write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "skills": {
+                        skill_name: {
+                            "source": "https://example.test/upstream",
+                            "source_path": f"skills/{skill_name}",
+                            "revision": "a" * 40,
+                            "license": "MIT",
+                            "reviewed_on": "2026-07-21",
+                            "sha256": digest,
+                        }
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def test_third_party_validation_rejects_missing_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            write_skill(repo / "skills", "vendor-skill")
+            (repo / ".gitignore").write_text(
+                "/skills/vendor-skill/\n", encoding="utf-8"
+            )
+
+            result = SkillRegistry.load(repo).validate_third_party()
+
+            self.assertFalse(result.ok)
+            self.assertIn(
+                "third-party-skills.json: missing provenance manifest for installed third-party skills",
+                result.errors,
+            )
+
+    def test_third_party_validation_accepts_reviewed_optional_skill_when_absent(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            self._write_provenance(repo, "vendor-skill", "a" * 64)
+
+            result = SkillRegistry.load(repo).validate_third_party()
+
+            self.assertTrue(result.ok, result.errors)
+
+    def test_third_party_validation_still_checks_absent_skill_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            self._write_provenance(repo, "vendor-skill", "a" * 64)
+            provenance_path = repo / "third-party-skills.json"
+            provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+            provenance["skills"]["vendor-skill"]["revision"] = "main"
+            provenance_path.write_text(
+                json.dumps(provenance) + "\n", encoding="utf-8"
+            )
+
+            result = SkillRegistry.load(repo).validate_third_party()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(any("full lowercase" in error for error in result.errors))
+
+    def test_third_party_validation_rejects_content_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            (repo / ".gitignore").write_text(
+                "/skills/vendor-skill/\n", encoding="utf-8"
+            )
+            self._write_provenance(repo, "vendor-skill", skill_tree_sha256(skill))
+            (skill / "SKILL.md").write_text(
+                (skill / "SKILL.md").read_text(encoding="utf-8") + "\nDrift.\n",
+                encoding="utf-8",
+            )
+
+            result = SkillRegistry.load(repo).validate_third_party()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any("content digest mismatch" in error for error in result.errors),
+                result.errors,
+            )
+
+    def test_skill_tree_digest_rejects_visible_directory_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            outside = repo / "outside-references"
+            outside.mkdir()
+            (outside / "instructions.md").write_text("Unreviewed.\n", encoding="utf-8")
+            (skill / "references").symlink_to(outside, target_is_directory=True)
+
+            with self.assertRaisesRegex(ValueError, "symbolic links"):
+                skill_tree_sha256(skill)
+
+    def test_third_party_validation_rejects_unpinned_or_unsafe_source_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            (repo / ".gitignore").write_text(
+                "/skills/vendor-skill/\n", encoding="utf-8"
+            )
+            self._write_provenance(repo, "vendor-skill", skill_tree_sha256(skill))
+            provenance_path = repo / "third-party-skills.json"
+            provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+            entry = provenance["skills"]["vendor-skill"]
+            entry["source"] = "https://token@example.test/upstream"
+            entry["source_path"] = "../skills/vendor-skill"
+            entry["revision"] = "main"
+            provenance_path.write_text(
+                json.dumps(provenance) + "\n", encoding="utf-8"
+            )
+
+            result = SkillRegistry.load(repo).validate_third_party()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(any("embedded credentials" in error for error in result.errors))
+            self.assertTrue(any("source_path" in error for error in result.errors))
+            self.assertTrue(any("full lowercase" in error for error in result.errors))
+
+    def test_host_specific_metadata_warns_without_granting_opencode_authority(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            skill_file = skill / "SKILL.md"
+            skill_file.write_text(
+                skill_file.read_text(encoding="utf-8").replace(
+                    "description: Test skill.\n",
+                    "description: Test skill.\nallowed-tools: Bash(example:*)\n",
+                ),
+                encoding="utf-8",
+            )
+            (repo / ".gitignore").write_text(
+                "/skills/vendor-skill/\n", encoding="utf-8"
+            )
+            self._write_provenance(repo, "vendor-skill", skill_tree_sha256(skill))
+
+            result = SkillRegistry.load(repo).validate_third_party()
+
+            self.assertTrue(result.ok, result.errors)
+            self.assertTrue(
+                any("not enforced by OpenCode" in warning for warning in result.warnings),
+                result.warnings,
+            )
+
+    def test_checked_in_third_party_skills_have_verified_provenance(self) -> None:
+        project_root = Path(__file__).parents[1]
+        self.assertTrue((project_root / "third-party-skills.json").is_file())
+
+        result = SkillRegistry.load(project_root).validate_third_party()
+
+        self.assertEqual([], result.errors)
 
 
 if __name__ == "__main__":
