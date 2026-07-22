@@ -516,6 +516,10 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "If an interrupted runtime cannot resume the prior Task child",
         "an unavailable prior Task session",
         "Criterion-level completion is strict progress",
+        "Plan and Task scope do not satisfy that runtime gate",
+        "A policy denial or rejected approval never enters the unsupported no-progress allowance.",
+        "approved success",
+        "unknown result",
     ),
     "docs/cross-reference-map.md": (
         "## OpenCode Runtime Handoff Overlay",
@@ -547,6 +551,8 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "execution-channel failure",
         "strict criterion-level progress creates a smaller residual slice",
         "replay-uncertain actions stop for reconciliation",
+        "Plan and Task scope never satisfy an `ask` permission",
+        "pending approval retains one waiting child",
     ),
     "docs/implementation-plans/README.md": (
         "## Human-Controlled Lifecycle",
@@ -566,6 +572,9 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "If an interrupted runtime cannot resume the prior Task child",
         "Strict progress means fresh evidence moves at least one unresolved active-slice criterion to evidenced complete.",
         "repeating an action whose prior result or replay safety cannot be established from fresh evidence",
+        "never satisfy an `ask` permission",
+        "Permission-state and replay-safety gates run before no-progress handling.",
+        "unknown or interrupted execution stops without replay.",
     ),
     "opencode/project-template/AGENTS-plan-workflow-snippet.md": (
         "Only an explicit human `/create-plan` request creates and persists a plan",
@@ -581,6 +590,8 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "execution-channel failure",
         "Strict criterion-level progress creates a smaller residual slice",
         "stops when prior result or replay safety is uncertain",
+        "Plan and Task scope never satisfy an `ask` permission.",
+        "pending approval retains one waiting child",
     ),
     "opencode/project-template/docs/implementation-plans/README.md": (
         "## Human-Controlled Lifecycle",
@@ -600,6 +611,9 @@ HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS = {
         "If an interrupted runtime cannot resume the prior Task child",
         "Strict progress means fresh evidence moves at least one unresolved active-slice criterion to evidenced complete.",
         "repeating an action whose prior result or replay safety cannot be established from fresh evidence",
+        "never satisfy an `ask` permission",
+        "Permission-state and replay-safety gates run before no-progress handling.",
+        "unknown or interrupted execution stops without replay.",
     ),
 }
 EXTERNAL_DIRECTORY_DOC_TOKENS = {
@@ -795,6 +809,10 @@ COMMAND_PROMPT_CONTRACTS = {
         "Strict progress moves at least one previously unresolved active-slice criterion to evidenced complete.",
         "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
         "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
+        "Plan and Task scope never satisfy an `ask` permission.",
+        "Do not continue or create another Task while runtime approval is pending.",
+        "A policy denial or rejected approval for a command known not to have started stops the current `/start-plan` invocation immediately.",
+        "Approval alone does not prove execution.",
         "TODO-level integration validation",
         "Each resumed correction prompt must enumerate the evidence gaps, blocked criteria, required corrections, and validation to rerun.",
         "Direct human-authorized plan creation to `/create-plan`",

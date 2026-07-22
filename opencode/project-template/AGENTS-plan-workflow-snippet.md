@@ -44,9 +44,13 @@ the Plan Orchestrator derives the full TODO obligation set, partitions it into
 active-slice, evidenced-complete, and unresolved work, and assigns one bounded
 active slice at a time. Worker status is evidence: `COMPLETED` closes only the
 slice, and `BLOCKED` requires a genuine blocker that prevents every safe slice
-action. The Orchestrator resumes the same Task child for one evidence-first
-correction when no criterion changes classification. Strict criterion-level
-progress creates a smaller residual slice and resets that consecutive no-progress
+action. Plan and Task scope never satisfy an `ask` permission. Known denial or
+rejected approval stops without a correction; pending approval retains one
+waiting child; approval alone does not prove execution; and unknown execution
+stops without replay. Only after those permission-state and replay-safety gates
+may the Orchestrator resume the same Task child for one evidence-first correction
+when no criterion changes classification. Strict criterion-level progress
+creates a smaller residual slice and resets that consecutive no-progress
 allowance; a second unsupported no-progress return becomes an execution-channel
 failure and leaves the TODO unchecked. Every correction is delta-focused and
 independently actionable, preserves relevant completed state without repeating

@@ -184,11 +184,26 @@ scope and not to be repeated. A Worker `COMPLETED` report closes only the active
 slice; only the Orchestrator may reconcile the full TODO and advance its
 checkbox.
 
+Plan and Task scope authorize the bounded work but never satisfy an `ask`
+permission. Before delegation, classify each required operation as allowed,
+ask-gated, or denied. Do not delegate a known denied operation. For an ask-gated
+or destructive operation, the packet names the exact contained target, expected
+runtime gate, and evidence needed to distinguish not-started, terminal, and
+uncertain execution.
+
 The Orchestrator uses evidence-first return handling. It closes an
 evidenced-complete slice regardless of an incorrect status, retries an incomplete
 slice when no genuine blocker exists, and stops on a genuine blocker that
 prevents every remaining safe slice action. A false `COMPLETED` is handled like
 an unsupported `BLOCKED`, but evidence controls the transition.
+
+Permission-state and replay-safety gates run before no-progress handling. A
+policy denial or rejected approval for a command known not to have started stops
+the current `/start-plan` invocation immediately and never consumes the
+unsupported no-progress allowance. Pending approval retains one waiting child
+without polling, continuation, or another Task. Approval alone does not prove
+execution. A known terminal result is reconciled against fresh evidence; unknown
+or interrupted execution stops without replay.
 
 Strict progress means fresh evidence moves at least one unresolved active-slice
 criterion to evidenced complete. The Orchestrator preserves those completed

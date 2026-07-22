@@ -344,8 +344,17 @@ appropriate:
   active slice, marked out of scope and not to be repeated;
 - required focused and repository-native validation, including any checks the
   Orchestrator will run during integration;
+- every approval-gated or destructive operation, its exact contained target,
+  whether runtime approval is expected, and the evidence needed to distinguish
+  not-started, terminal, and uncertain execution;
 - expected output, completion conditions, stop conditions, and material
   decisions that must return to the Orchestrator.
+
+Plan and Task scope authorize the bounded work; they never satisfy an `ask`
+permission. Classify every required operation as allowed, ask-gated, or denied
+before delegation. Do not delegate an operation known to be denied. For an
+ask-gated operation, identify the exact target and expected runtime gate in the
+packet without presenting plan text as approval.
 
 One at a time means one active Worker and one current implementation TODO, not
 one attempt. Retain the returned Task `task_id` until that TODO is reconciled. A
@@ -365,10 +374,24 @@ regardless of an incorrect label, record the protocol mismatch, and issue the
 next unresolved slice without repeating completed actions.
 
 For an incomplete slice, classify criterion-level evidence before deciding
-whether to continue. Strict progress means fresh evidence moves at least one
-previously unresolved active-slice criterion to evidenced complete. Re-partition
-strict progress into preserved completed criteria and a strictly smaller
-residual active slice. Reset the consecutive no-progress allowance only after
+whether to continue. Apply the permission-state and replay-safety gates before
+the unsupported no-progress allowance. A policy denial or rejected approval for
+a command known not to have started is a genuine blocker: leave the TODO
+unchecked, stop the current `/start-plan` invocation, and do not continue the
+child or delegate the same action again. While runtime approval is pending,
+retain the same waiting child; do not poll it, resume it, create another Task, or
+expect a terminal Worker status. Approval alone is not evidence that the
+operation ran. Reconcile a known terminal result against fresh worktree evidence,
+and stop without replay when execution or its result is unknown after an
+interruption. For every approval-gated operation, require and reconcile the
+Worker's exact `approval_state`, `execution_state`, and `replay_safe` fields
+before choosing a transition.
+
+After those gates, continue with progress handling. Strict progress means fresh
+evidence moves at least one previously unresolved active-slice criterion to
+evidenced complete. Re-partition strict progress into preserved completed
+criteria and a strictly smaller residual active slice. Reset the consecutive
+no-progress allowance only after
 strict progress. Because each reset strictly shrinks the finite unresolved
 obligation set, progress cannot create an unbounded corrective loop.
 
@@ -384,11 +407,13 @@ slice is an execution-channel failure, not a plan or product blocker. Stop the
 corrective loop, leave the TODO unchecked, and report the smallest safe recovery
 action.
 
-If a genuine permission, tooling, validation, material-scope, or contract blocker
-prevents every remaining safe action in the residual active slice, stop with the
-TODO unchecked and report the exact need.
+If a genuine permission, tooling, validation, material-scope, or contract
+blocker prevents every remaining safe action in the residual active slice, stop
+with the TODO unchecked and report the exact need. Permission denial and
+approval rejection never consume the unsupported no-progress allowance.
 
-If safe in-scope work remains or a criterion is unmet, resume the same Worker
+Only when none of those permission or replay gates requires a stop, safe
+in-scope work remains, and a criterion is unmet may you resume the same Worker
 child session by passing its `task_id` together with the exact evidence gap and
 required correction. Do not start a fresh Worker Task for an in-scope correction
 when that child session can be resumed. Continue under the evidence-aware return

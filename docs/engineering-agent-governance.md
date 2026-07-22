@@ -352,7 +352,8 @@ particular:
   rather than findings;
 - the Worker's staging, commit, push, destructive Git, privilege, plan, and
   state denies remain effective against later overrides; ordinary `rm` commands
-  are ask-gated and cannot override those restrictions; and
+  are ask-gated, Plan and Task scope do not satisfy that runtime gate, and
+  approval cannot override those restrictions; and
 - bare Worker `git status`, `git diff`, `git log`, and `git show` are allowed,
   while argument-bearing forms require approval.
 
@@ -402,10 +403,15 @@ Use separate synthetic cases for an intermediate valid `COMPLETED`, a false
 `COMPLETED`, a genuine blocker, unsupported `BLOCKED` with a complete slice,
 unsupported `BLOCKED` with an incomplete slice, strict criterion-level progress
 between returns, a second invalid no-progress return, a canonical-plan
-inconsistency, and an unavailable prior Task session. For the unavailable-session
-case, observe a fresh self-contained Task, re-derived obligations, preserved
-evidence, unchanged TODO state, and a stop rather than replay when prior action
-safety is uncertain.
+inconsistency, and an unavailable prior Task session. Add approval-gated deletion
+cases for policy denial, pending approval, rejected approval before execution,
+approved success, known terminal failure, and interrupted or unknown execution.
+Assert zero continuation after denial or rejection, one waiting child while
+pending, exactly one deletion after approved success, and no replay after an
+unknown result. A policy denial or rejected approval never enters the unsupported
+no-progress allowance. For the unavailable-session case, observe a fresh
+self-contained Task, re-derived obligations, preserved evidence, unchanged TODO
+state, and a stop rather than replay when prior action safety is uncertain.
 
 For every case, observe that completed actions are not repeated, incomplete retry
 obligations do not silently narrow, and the TODO stays unchecked until the

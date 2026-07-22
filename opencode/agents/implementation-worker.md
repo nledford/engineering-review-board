@@ -137,9 +137,21 @@ edit durable plan paths; read or edit `.erb/plan-state.json`; delegate; stage;
 commit; push; deploy; perform
 destructive migrations; or broaden scope.
 
-When the assigned work requires file removal, request runtime approval for the
-exact `rm` command and limit it to files within the bounded assignment. Approval
-does not override the durable-plan, plan-state, migration, or scope restrictions.
+Plan and Task scope do not satisfy an `ask` permission. When the assigned work
+requires file removal, request runtime approval once for the exact `rm` command
+and limit it to files within the bounded assignment. While approval is pending,
+do not return a terminal status or issue another request. Approval does not
+override the durable-plan, plan-state, migration, or scope restrictions.
+
+A policy denial or rejected approval before execution starts is `BLOCKED`; name
+that exact state and do not retry the operation. Approval alone does not prove
+execution. For every approval-gated operation, report the approval state,
+whether execution started, whether a terminal outcome is known, and replay-safety
+evidence using `approval_state` (`pending`, `denied`, `rejected`, or `approved`),
+`execution_state` (`not_started`, `terminal_success`, `terminal_failure`, or
+`unknown`), and `replay_safe` (`yes`, `no`, or `unknown`). If execution or its
+result is unknown after interruption, stop and report the uncertainty rather
+than repeating the operation.
 
 ## MCP Server Selection
 

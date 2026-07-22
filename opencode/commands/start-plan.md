@@ -89,7 +89,18 @@ interpreting `COMPLETED` or `BLOCKED`. A valid slice completion does not check t
 TODO; all canonical obligations and TODO-level integration validation must pass
 first.
 
-Continue the same Task child for safe in-scope corrections. Strict progress
+Plan and Task scope never satisfy an `ask` permission. Before delegation,
+classify each required operation as allowed, ask-gated, or denied. Do not
+delegate a known denied operation. For an ask-gated operation, the packet must
+name its exact contained target and expected runtime gate. Do not continue or
+create another Task while runtime approval is pending. A policy denial or
+rejected approval for a command known not to have started stops the current
+`/start-plan` invocation immediately. Approval alone does not prove execution.
+Reconcile a known terminal result from fresh evidence; when execution or its
+result is unknown, stop without replay.
+
+Continue the same Task child only for safe in-scope corrections after the
+permission-state and replay-safety gates permit it. Strict progress
 moves at least one previously unresolved active-slice criterion to evidenced
 complete. On strict progress, preserve completed criteria, form a strictly
 smaller residual active slice, and reset the consecutive no-progress allowance.
