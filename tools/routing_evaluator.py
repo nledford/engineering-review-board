@@ -12,6 +12,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
+try:
+    from .opencode_contracts import (
+        ALL_FIRST_PARTY_SKILL_IDS,
+        CANONICAL_AGENT_SKILL_IDS,
+        CANONICAL_AGENT_TOPOLOGY,
+    )
+except ImportError:
+    from opencode_contracts import (
+        ALL_FIRST_PARTY_SKILL_IDS,
+        CANONICAL_AGENT_SKILL_IDS,
+        CANONICAL_AGENT_TOPOLOGY,
+    )
+
 
 CORPUS_VERSION = 1
 ROUTING_FIELDS = ("agent", "command", "skills", "handoffs")
@@ -20,6 +33,19 @@ MAX_PROMPT_CHARS = 4000
 MAX_ROUTING_ITEMS = 64
 MAX_RUN_LABEL_CHARS = 200
 ROUTING_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,127}$")
+CANONICAL_AGENTS_BY_ID = {
+    policy.agent_id: policy for policy in CANONICAL_AGENT_TOPOLOGY.agents
+}
+CANONICAL_PRIMARY_AGENT_IDS = frozenset(
+    policy.agent_id
+    for policy in CANONICAL_AGENT_TOPOLOGY.agents
+    if policy.mode == "primary"
+)
+CANONICAL_COMMAND_OWNERS = {
+    policy.filename.removesuffix(".md"): policy.owner
+    for policy in CANONICAL_AGENT_TOPOLOGY.commands
+}
+CANONICAL_FIRST_PARTY_SKILL_IDS = frozenset(ALL_FIRST_PARTY_SKILL_IDS)
 
 
 @dataclass(frozen=True)
@@ -217,7 +243,90 @@ def _validate_expected_route_ids(expected: Mapping[str, object], prefix: str) ->
                     f"{prefix}.expected.{field}",
                 )
             )
+
+    expected_agent = _canonical_expected_agent_id(expected)
+    agent_value = expected.get("agent")
+    if isinstance(agent_value, str) and not _routing_id_errors(
+        agent_value,
+        f"{prefix}.expected.agent",
+    ):
+        policy = CANONICAL_AGENTS_BY_ID.get(agent_value)
+        if policy is None:
+            errors.append(
+                f"{prefix}.expected.agent must name a canonical registered primary agent: "
+                f"{agent_value!r}"
+            )
+        elif policy.mode != "primary":
+            errors.append(
+                f"{prefix}.expected.agent must name a canonical primary agent; "
+                f"{agent_value!r} is a registered subagent"
+            )
+
+    command = expected.get("command")
+    if isinstance(command, str) and not _routing_id_errors(
+        command,
+        f"{prefix}.expected.command",
+    ):
+        command_owner = CANONICAL_COMMAND_OWNERS.get(command)
+        if command_owner is None:
+            errors.append(
+                f"{prefix}.expected.command must name a canonical command: {command!r}"
+            )
+        elif expected_agent is None:
+            errors.append(
+                f"{prefix}.expected.command requires a canonical primary expected.agent"
+            )
+        elif command_owner != expected_agent:
+            errors.append(
+                f"{prefix}.expected.command {command!r} is owned by {command_owner!r}, "
+                f"not expected.agent {expected_agent!r}"
+            )
+
+    skills = expected.get("skills")
+    if isinstance(skills, list) and _valid_route_items(skills):
+        if skills and expected_agent is None:
+            errors.append(
+                f"{prefix}.expected.skills requires a canonical primary expected.agent"
+            )
+        for skill in skills:
+            if skill not in CANONICAL_FIRST_PARTY_SKILL_IDS:
+                errors.append(
+                    f"{prefix}.expected.skills contains unknown canonical skill {skill!r}"
+                )
+            elif expected_agent is not None and skill not in CANONICAL_AGENT_SKILL_IDS[
+                expected_agent
+            ]:
+                errors.append(
+                    f"{prefix}.expected.skills contains skill {skill!r} not allowed for "
+                    f"expected.agent {expected_agent!r}"
+                )
+
+    handoffs = expected.get("handoffs")
+    if isinstance(handoffs, list) and _valid_route_items(handoffs):
+        for handoff in handoffs:
+            if not isinstance(handoff, str):
+                continue
+            if handoff not in CANONICAL_AGENTS_BY_ID:
+                errors.append(
+                    f"{prefix}.expected.handoffs contains unknown registered agent {handoff!r}"
+                )
+            elif expected_agent is None:
+                errors.append(
+                    f"{prefix}.expected.handoffs requires a canonical primary expected.agent"
+                )
+            elif handoff not in CANONICAL_AGENTS_BY_ID[expected_agent].task_targets:
+                errors.append(
+                    f"{prefix}.expected.handoffs contains handoff {handoff!r} not permitted "
+                    f"for expected.agent {expected_agent!r}"
+                )
     return errors
+
+
+def _canonical_expected_agent_id(expected: Mapping[str, object]) -> str | None:
+    agent = expected.get("agent")
+    if isinstance(agent, str) and agent in CANONICAL_PRIMARY_AGENT_IDS:
+        return agent
+    return None
 
 
 def _validate_route_item_fields(

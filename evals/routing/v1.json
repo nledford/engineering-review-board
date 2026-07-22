@@ -127,9 +127,6 @@
       "prompt": "Review a running local synthetic preview for responsive layout, keyboard focus, and loading/error states. Collect sanitized browser observations; do not change the application or create tests.",
       "expected": {
         "agent": "engineering-review-board",
-        "skills": [
-          "ux-accessibility-review"
-        ],
         "handoffs": [
           "browser-evidence-collector",
           "accessibility-critic"

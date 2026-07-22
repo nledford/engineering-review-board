@@ -125,6 +125,113 @@ class RoutingCorpusTests(unittest.TestCase):
         self.assertTrue(any("prompt" in error and "4000" in error for error in errors))
         self.assertTrue(any("expected.agent" in error for error in errors))
 
+    def test_corpus_rejects_unknown_and_nonprimary_expected_agents(self) -> None:
+        mutations = (
+            (
+                "unknown",
+                {"agent": "missing-agent"},
+                "expected.agent must name a canonical registered primary agent",
+            ),
+            (
+                "subagent",
+                {"agent": "technical-debt-auditor"},
+                "expected.agent must name a canonical primary agent",
+            ),
+        )
+
+        for label, expected, expected_error in mutations:
+            with self.subTest(label=label):
+                corpus = sample_corpus()
+                corpus["cases"][0]["expected"] = expected
+
+                errors = validate_corpus(corpus)
+
+                self.assertTrue(any(expected_error in error for error in errors), errors)
+
+    def test_corpus_rejects_unknown_misowned_and_agentless_expected_commands(self) -> None:
+        mutations = (
+            (
+                "unknown",
+                {"agent": "engineering-review-board", "command": "missing-command"},
+                "expected.command must name a canonical command",
+            ),
+            (
+                "misowned",
+                {"agent": "engineering-lead", "command": "audit-technical-debt"},
+                "expected.command 'audit-technical-debt' is owned by",
+            ),
+            (
+                "agentless",
+                {"command": "audit-technical-debt"},
+                "expected.command requires a canonical primary expected.agent",
+            ),
+        )
+
+        for label, expected, expected_error in mutations:
+            with self.subTest(label=label):
+                corpus = sample_corpus()
+                corpus["cases"][0]["expected"] = expected
+
+                errors = validate_corpus(corpus)
+
+                self.assertTrue(any(expected_error in error for error in errors), errors)
+
+    def test_corpus_rejects_unknown_unauthorized_and_agentless_expected_skills(self) -> None:
+        mutations = (
+            (
+                "unknown",
+                {"agent": "engineering-review-board", "skills": ["missing-skill"]},
+                "expected.skills contains unknown canonical skill 'missing-skill'",
+            ),
+            (
+                "unauthorized",
+                {"agent": "engineering-review-board", "skills": ["clean-architecture"]},
+                "expected.skills contains skill 'clean-architecture' not allowed",
+            ),
+            (
+                "agentless",
+                {"skills": ["clean-architecture"]},
+                "expected.skills requires a canonical primary expected.agent",
+            ),
+        )
+
+        for label, expected, expected_error in mutations:
+            with self.subTest(label=label):
+                corpus = sample_corpus()
+                corpus["cases"][0]["expected"] = expected
+
+                errors = validate_corpus(corpus)
+
+                self.assertTrue(any(expected_error in error for error in errors), errors)
+
+    def test_corpus_rejects_unknown_unauthorized_and_agentless_expected_handoffs(self) -> None:
+        mutations = (
+            (
+                "unknown",
+                {"agent": "engineering-review-board", "handoffs": ["missing-agent"]},
+                "expected.handoffs contains unknown registered agent 'missing-agent'",
+            ),
+            (
+                "unauthorized",
+                {"agent": "engineering-lead", "handoffs": ["release-readiness-reviewer"]},
+                "expected.handoffs contains handoff 'release-readiness-reviewer' not permitted",
+            ),
+            (
+                "agentless",
+                {"handoffs": ["technical-debt-auditor"]},
+                "expected.handoffs requires a canonical primary expected.agent",
+            ),
+        )
+
+        for label, expected, expected_error in mutations:
+            with self.subTest(label=label):
+                corpus = sample_corpus()
+                corpus["cases"][0]["expected"] = expected
+
+                errors = validate_corpus(corpus)
+
+                self.assertTrue(any(expected_error in error for error in errors), errors)
+
     def test_corpus_rejects_each_bounded_schema_violation(self) -> None:
         mutations = (
             ("root", lambda _corpus: [], "corpus root must be an object"),
