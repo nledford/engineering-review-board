@@ -68,6 +68,17 @@ permission-disclosure, prerequisite-ordering, and finite-progress contract.
 `/update-plan` may re-sequence the smallest affected set when dependency
 correctness requires it; planning-time permission disclosure never grants
 runtime approval.
+
+During `/start-plan`, every Worker assignment has exactly one mode:
+implementation or validation-only. Validation-only mode runs one exact command
+only for command-backed TODO integration validation or the first unchecked
+dedicated Verification that the Orchestrator cannot execute or directly observe.
+Fresh recipe evidence must establish replay and duplicate/concurrent safety
+before dispatch; all maintained-state mutation, install, update, publication,
+deployment, irreversible cleanup, or unknown effects block. The Worker cannot
+edit or fix in this mode, and its return is evidence rather than checkbox
+authority.
+
 A current conversational split-or-replace request may create at least two
 successors and retire one unambiguous source after every successor is re-read;
 no registry or retained contract history is required. The Plan Orchestrator is

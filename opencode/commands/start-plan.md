@@ -68,11 +68,32 @@ same completed result.
 
 If active, resume at the current step. Execute TODOs in document order before
 dedicated Verification steps. Before each mutable phase, re-read the plan and
-fresh worktree evidence. Delegate at most one bounded implementation TODO at a
-time to `implementation-worker`; the Worker may not edit the plan or state file.
-Check a TODO only after observed implementation or individual-validation
-evidence authorizes it. Check a Verification step only after its own observed
-evidence. A blocked, failed, or uncertain step remains unchecked and current.
+fresh worktree evidence. Every Worker assignment has exactly one mode:
+`implementation` or `validation-only`, and only one Worker may be active at a
+time. Delegate bounded implementation TODO slices in implementation mode.
+Delegate command-backed evidence that the Orchestrator cannot execute or
+directly observe as one `validation-only` Worker assignment. The Worker may not
+edit the plan or state file. Check a TODO only after observed implementation or
+individual-validation evidence authorizes it. Check a Verification step only
+after its own observed evidence. A blocked, failed, or uncertain step remains
+unchecked and current.
+
+Directly observable Verification evidence creates no Worker Task. Use the
+Orchestrator's own read, search, LSP, and allowed Git tools for it. Use
+validation-only mode for one exact command needed by command-backed TODO-level
+integration validation or, after every TODO is checked, the first unchecked
+dedicated Verification step.
+
+Before validation-only dispatch, establish that the exact command is replay-safe
+and safe under duplicate or concurrent execution. Inspect its recipe and
+relevant transitive scripts; never infer safety from a command name or
+interpolate plan text into a shell command. Permit only bounded regenerable local
+artifacts, including ephemeral test databases, that are safe to overwrite,
+repeat, and produce concurrently. If the command may mutate maintained files,
+plans, state, persistent databases, media, remote or external state; install or
+update; publish or deploy; perform irreversible cleanup; or has unknown repeat
+or concurrent safety, leave the checkbox unchecked and route the human to a
+safer `/update-plan <exact-plan-path>` amendment.
 
 When fresh evidence shows that the plan contract requires a material update,
 leave the current checkbox unchecked, stop execution, and report the exact
@@ -82,12 +103,20 @@ a later explicit `/start-plan` request is required to resume after amendment.
 
 Use the Plan Orchestrator's self-contained delegation and
 corrective-continuation contract. A Worker return does not end the current TODO.
-Before each Worker call, derive and reconcile the full canonical TODO obligation
-set, partition it into active, evidenced-complete, and unresolved work, and
-delegate one bounded active slice. Reconcile fresh slice evidence before
-interpreting `COMPLETED` or `BLOCKED`. A valid slice completion does not check the
-TODO; all canonical obligations and TODO-level integration validation must pass
-first.
+This rule applies in implementation mode. Before each implementation Worker
+call, derive and reconcile the full canonical TODO obligation set, partition it
+into active, evidenced-complete, and unresolved work, and delegate one bounded
+active slice. Reconcile fresh slice evidence before interpreting `COMPLETED` or
+`BLOCKED`. A valid slice completion does not check the TODO; all canonical
+obligations and TODO-level integration validation must pass first.
+
+A validation-only packet names its mode, current TODO integration-validation
+purpose or first unchecked Verification number and exact text, one exact command,
+permission gate, replay and duplicate/concurrent safety evidence, bounded
+expected effects, numbered completion evidence, prohibited effects, and stop
+conditions. It forbids edits, fixes, installs, updates, cleanup, retries,
+corrective implementation, plan or state access, staging, commits, and later
+work. A validation-only Worker return is evidence, never checkbox authority.
 
 Plan and Task scope never satisfy an `ask` permission. Before delegation,
 classify each required operation as allowed, ask-gated, or denied. Do not
@@ -99,8 +128,8 @@ rejected approval for a command known not to have started stops the current
 Reconcile a known terminal result from fresh evidence; when execution or its
 result is unknown, stop without replay.
 
-Continue the same Task child only for safe in-scope corrections after the
-permission-state and replay-safety gates permit it. Strict progress
+Continue the same Task child only for safe in-scope implementation corrections
+after the permission-state and replay-safety gates permit it. Strict progress
 moves at least one previously unresolved active-slice criterion to evidenced
 complete. On strict progress, preserve completed criteria, form a strictly
 smaller residual active slice, and reset the consecutive no-progress allowance.
@@ -112,10 +141,20 @@ and stop the loop. Never repeat an action whose prior result or replay safety
 cannot be established from fresh evidence. Preserve relevant completed state as
 a satisfied dependency when forming the next slice.
 
+Do not use the implementation correction or no-progress loop for validation-only
+work. Denial, rejection, terminal failure, unknown execution or result, replay
+uncertainty, missing evidence, or unexpected effects leaves the current checkbox
+unchecked and stops later work without retry. Pending approval retains the same
+waiting child and creates no other Task. Terminal success advances exactly the
+current checkbox only after the Orchestrator reconciles the complete obligation,
+sanitized terminal evidence, expected effects, and fresh plan and worktree state.
+After uncertainty, a later `/start-plan` invocation may reconsider the command
+only after freshly establishing its replay and duplicate/concurrent safety.
+
 Each resumed correction prompt must enumerate the evidence gaps, blocked
 criteria, required corrections, and validation to rerun. Never send only a TODO
 status sentence or a deictic reference to findings that the prompt does not
-contain.
+contain. This correction path is implementation-only.
 
 The pointer selects a plan; it is not an exclusivity mechanism. The last valid
 explicit selection wins. Never block because another plan is selected or may be

@@ -46,8 +46,9 @@ or retained contract history is required.
 
 The Plan Orchestrator is the exclusive durable-plan and state writer. The
 Engineering Review Board remains separate, optional, and read-only advisory. The
-Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit. Each new
-Worker Task receives a self-contained packet with numbered acceptance criteria;
+Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit. In
+implementation mode, each new Worker Task receives a self-contained packet with
+numbered acceptance criteria;
 the Plan Orchestrator derives the full TODO obligation set, partitions it into
 active-slice, evidenced-complete, and unresolved work, and assigns one bounded
 active slice at a time. Worker status is evidence: `COMPLETED` closes only the
@@ -66,6 +67,18 @@ it, stops when prior result or replay safety is uncertain, and includes exact
 gaps, required results, scope, validation, constraints, and stop conditions. The
 Orchestrator checks the TODO only after every canonical obligation and TODO-level
 integration validation are evidenced.
+
+Every Worker assignment has exactly one mode: implementation or validation-only.
+Use validation-only mode only for one exact command needed by command-backed TODO
+integration validation or the first unchecked dedicated Verification when the
+Orchestrator cannot execute or directly observe the evidence. Directly observable
+evidence creates no Worker Task. Before dispatch, inspect the recipe and relevant
+transitive scripts and establish replay and duplicate/concurrent safety. Permit
+only bounded regenerable local effects that are safe to overwrite, repeat, and
+produce concurrently; maintained-state mutation, install, update, publication,
+deployment, irreversible cleanup, or unknown effects block. Validation-only work
+cannot edit, fix, retry, or enter the implementation correction loop, and its
+return is evidence rather than checkbox authority.
 
 After the Plan Orchestrator creates and validates a plan, an explicit current
 human commit request may authorize the Engineering Lead to stage and commit only

@@ -1082,6 +1082,7 @@ class CanonicalAgentTopologyTests(unittest.TestCase):
             ("bare show", "git show", "allow"),
             ("show with arguments", "git show HEAD", "ask"),
             ("branch inspection", "git branch --show-current", "allow"),
+            ("project validation", "just verify", "ask"),
             ("staging", "git add -- src/example.py", "deny"),
             ("commit", "git commit", "deny"),
             ("push", "git push origin main", "deny"),

@@ -81,7 +81,7 @@ lifecycle limits.
 | [Engineering Lead](../opencode/agents/engineering-lead.md) | Request intake, process selection, direct or bounded unplanned delivery, integration, validation, and independent-review handoff. | Invoke the ERB as a Task child, claim a Board decision without its output, or write or execute a durable plan or plan state. |
 | [Engineering Review Board](../opencode/agents/engineering-review-board.md) | Optional independent read-only advice, specialist selection, evidence synthesis, and severity assessment. Invoke it as a separate primary agent. | Edit the repository, implement a fix, change plans or state, or control plan creation, updates, execution, or persistence. |
 | [Plan Orchestrator](../opencode/agents/plan-orchestrator.md) | Top-level read-only consultation, safe closed lean-plan creation, explicit active-plan updates, selected-plan state, planned execution, self-contained Worker handoffs, acceptance reconciliation, integration, validation, and native planned-work TODOs. | Act as a Task child, update a plan without exact current human authority, update a completed plan, mutate plan prose during execution, delegate to anything other than the Worker, or claim ERB advisory evidence controls planned work. |
-| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, complete against every assigned acceptance criterion, plus focused validation and a requirement-to-evidence report. It is the only implementation subagent. | Edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
+| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, or one Plan-Orchestrator validation-only command unit for otherwise inaccessible planned evidence. It reports every assigned criterion and remains the only execution subagent. | In validation-only mode, edit or fix anything; in either mode, edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
 | [Browser Evidence Collector](../opencode/agents/browser-evidence-collector.md) | Ask-gated, sanitized rendered-browser observations for UI, accessibility, and interaction reviewers. | Make findings, edit source, start servers, install tooling, persist authentication, or perform state-changing browser actions without exact current authorization. |
 | Review and research specialists | Bounded, decision-relevant analysis for the Lead or ERB using exact runtime-visible IDs. | Implement changes, simulate the ERB, approve plans, or treat advisory output as final authority. |
 
@@ -429,6 +429,18 @@ unobserved branches as unverified. This observation is non-deterministic
 evidence, not a CI gate or proof of future model compliance; deterministic
 mutation tests remain the source validation control.
 
+Add disposable validation-only cases after any change to planned validation
+routing. Observe one exact command for approved success, denial or rejection
+before start, pending approval, terminal failure, unknown execution followed by
+a fresh `/start-plan`, unsafe replay or duplicate/concurrent classification, and
+directly observable evidence that must create no Worker Task. Before dispatch,
+require fresh inspection of the recipe and relevant transitive scripts plus
+replay and duplicate/concurrent safety. Approved success advances exactly the
+current checkbox only after Orchestrator reconciliation; every other case leaves
+it unchecked and performs no correction, retry, or later work. Record only
+sanitized command identity, safety classification, expected and observed effect
+classes, approval/execution/replay fields, Task count, and checkbox outcome.
+
 ## Handoffs
 
 For ordinary work, start with the Engineering Lead. The available handoffs are
@@ -478,11 +490,14 @@ remains authoritative for durable-plan details:
 11. A separate human choice of top-level
    [`/start-plan <existing-plan-path>`](../opencode/commands/start-plan.md), or a
    valid no-argument state pointer,
-   executes existing planned work. The Plan Orchestrator then executes bounded
-    Worker units and records only observed plan checkbox and state evidence. The
-    Orchestrator re-derives each current TODO's full obligation set and partitions
-    it into three disjoint and collectively exhaustive sets: active slice,
-    evidenced complete, and unresolved or deferred. Each new Worker Task is
+    executes existing planned work. The Plan Orchestrator then executes bounded
+    Worker units and records only observed plan checkbox and state evidence. Every
+    assignment has exactly one mode: an implementation slice or a validation-only
+    command for evidence the Orchestrator cannot execute or directly observe.
+    Directly observable evidence creates no Worker Task. The Orchestrator
+    re-derives each current TODO's full obligation set and partitions it into
+    three disjoint and collectively exhaustive sets: active slice, evidenced
+    complete, and unresolved or deferred. Each new implementation Task is
     self-contained; every invocation or continuation assigns one bounded active
     slice with attainable criteria and focused validation. `COMPLETED` closes
     only that slice, while `BLOCKED` requires a genuine blocker that prevents
@@ -496,10 +511,20 @@ remains authoritative for durable-plan details:
     fresh evidence. The TODO advances only after every canonical obligation and
     TODO-level integration validation are evidenced; a status-only reference to
     findings is not an actionable packet.
-    If an interrupted runtime cannot resume the prior Task child, the
-    Orchestrator re-derives the obligation partition and starts one fresh
+    If an interrupted runtime cannot resume the prior implementation Task child,
+    the Orchestrator re-derives the obligation partition and starts one fresh
     self-contained Task for the unresolved slice without inferring completion or
     replaying an action whose safety lacks fresh evidence.
+
+    A validation-only unit contains one exact command and requires fresh recipe
+    and transitive-script inspection plus replay and duplicate/concurrent safety
+    before dispatch. It permits only bounded regenerable local artifacts that are
+    safe to overwrite, repeat, and produce concurrently; maintained-state
+    mutation, install, update, publication, deployment, irreversible cleanup, and
+    unknown effects block. Validation-only work never edits, fixes, retries, or
+    enters the implementation correction loop. Its result is evidence, not
+    checkbox authority, and a later invocation may reconsider uncertain work
+    only after freshly re-establishing both safety classifications.
 
 Active plan content is immutable by default and during execution except for
 evidenced checkbox advancement. A material discovery requires a new human

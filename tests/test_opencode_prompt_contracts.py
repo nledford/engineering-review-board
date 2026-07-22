@@ -592,6 +592,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         )
 
         orchestrator_requirements = (
+            "Every Worker assignment has exactly one mode: `implementation` or `validation-only`.",
             "Treat every new Task child as context-isolated; its prompt must be self-contained",
             "canonical plan path, current TODO number and exact text",
             "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
@@ -608,6 +609,12 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "Map every acceptance criterion to fresh source, diff, and validation evidence.",
             "A Worker `COMPLETED` report closes only the active slice",
             "TODO-level integration validation",
+            "Use `validation-only` mode only for command-backed evidence that your effective permissions cannot execute or directly observe.",
+            "Before validation-only dispatch, establish from fresh repository evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
+            "Directly observable Verification evidence stays with the Orchestrator and creates no Worker Task.",
+            "ephemeral test databases",
+            "A validation-only Worker return is evidence, never checkbox authority.",
+            "Do not use the implementation correction or no-progress loop for validation-only work.",
             "Reconcile fresh evidence before interpreting either Worker status.",
             "close only that transient slice regardless of an incorrect label",
             "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
@@ -634,9 +641,11 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "A status-only preamble or a reference such as `these findings`",
         )
         worker_requirements = (
-            "Make the smallest durable change that satisfies every assigned acceptance criterion.",
+            "Every assignment must name exactly one mode: `implementation` or `validation-only`.",
+            "`validation-only` is available only for a Plan Orchestrator assignment",
+            "In implementation mode, make the smallest durable change that satisfies every assigned acceptance criterion.",
             "Do not return partial progress while safe, in-scope work remains executable.",
-            "The numbered acceptance criteria define the active slice, not the parent plan TODO.",
+            "In implementation mode, they define the active slice, not the parent plan TODO.",
             "Deferred or unassigned parent work is context only",
             "Preserve satisfied dependencies and do not repeat completed actions.",
             "Plan and Task scope do not satisfy an `ask` permission.",
@@ -650,6 +659,10 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "requirement-to-evidence table",
             "A resumed correction assignment must enumerate at least one concrete evidence gap",
             "Do not infer missing findings from a status-only preamble",
+            "In validation-only mode, do not edit, fix, install, update, clean up, regenerate snapshots or lockfiles, stage, commit, or perform corrective implementation.",
+            "Before requesting approval, require fresh packet evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
+            "ephemeral test databases",
+            "Terminal success does not authorize a plan checkbox change.",
         )
         command_requirements = (
             "Use the Plan Orchestrator's self-contained delegation and corrective-continuation contract.",
@@ -664,10 +677,17 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "Do not continue or create another Task while runtime approval is pending.",
             "A policy denial or rejected approval for a command known not to have started stops the current `/start-plan` invocation immediately.",
             "Approval alone does not prove execution.",
-            "TODO-level integration validation",
+            "A valid slice completion does not check the TODO; all canonical obligations and TODO-level integration validation must pass first.",
+            "Delegate command-backed evidence that the Orchestrator cannot execute or directly observe as one `validation-only` Worker assignment.",
+            "Directly observable Verification evidence creates no Worker Task.",
+            "Before validation-only dispatch, establish that the exact command is replay-safe and safe under duplicate or concurrent execution.",
+            "including ephemeral test databases",
             "Each resumed correction prompt must enumerate the evidence gaps, blocked criteria, required corrections, and validation to rerun.",
         )
         lead_requirements = (
+            "Every Engineering Lead assignment to `implementation-worker` must state `mode: implementation`.",
+            "Never assign `validation-only`; that mode belongs exclusively to Plan Orchestrator `/start-plan` validation.",
+            "When `subagent_type` is `implementation-worker`, add a `## Mode` section containing exactly `implementation`",
             "When resuming the same Worker for a correction, send a complete actionable packet",
             "enumerate each evidence gap, the acceptance criterion it blocks",
             "Never send only a status preamble or references such as `these findings`",
@@ -719,6 +739,22 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             ),
             (
                 "opencode/agents/plan-orchestrator.md",
+                "Every Worker assignment has exactly one mode: `implementation` or `validation-only`.",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "Before validation-only dispatch, establish from fresh repository evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "Directly observable Verification evidence stays with the Orchestrator and creates no Worker Task.",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
+                "A validation-only Worker return is evidence, never checkbox authority.",
+            ),
+            (
+                "opencode/agents/plan-orchestrator.md",
                 "Apply the permission-state and replay-safety gates before the unsupported no-progress allowance.",
             ),
             (
@@ -734,8 +770,24 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 "prevents every remaining safe action in the active slice",
             ),
             (
+                "opencode/agents/implementation-worker.md",
+                "Every assignment must name exactly one mode: `implementation` or `validation-only`.",
+            ),
+            (
+                "opencode/agents/implementation-worker.md",
+                "In validation-only mode, do not edit, fix, install, update, clean up, regenerate snapshots or lockfiles, stage, commit, or perform corrective implementation.",
+            ),
+            (
+                "opencode/agents/engineering-lead.md",
+                "Every Engineering Lead assignment to `implementation-worker` must state `mode: implementation`.",
+            ),
+            (
                 "opencode/commands/start-plan.md",
-                "TODO-level integration validation",
+                "A valid slice completion does not check the TODO; all canonical obligations and TODO-level integration validation must pass first.",
+            ),
+            (
+                "opencode/commands/start-plan.md",
+                "Delegate command-backed evidence that the Orchestrator cannot execute or directly observe as one `validation-only` Worker assignment.",
             ),
             (
                 "opencode/commands/start-plan.md",
@@ -1058,6 +1110,9 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             } | {
                 "engineering-lead.md": (
                     "Use only `implementation-worker` for bounded implementation Tasks.",
+                    "Every Engineering Lead assignment to `implementation-worker` must state `mode: implementation`.",
+                    "Never assign `validation-only`; that mode belongs exclusively to Plan Orchestrator `/start-plan` validation.",
+                    "When `subagent_type` is `implementation-worker`, add a `## Mode` section containing exactly `implementation`",
                     "When resuming the same Worker for a correction, send a complete actionable packet",
                     "enumerate each evidence gap, the acceptance criterion it blocks",
                     "Never send only a status preamble or references such as `these findings`",
@@ -1119,9 +1174,13 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                     "A status-only preamble or a reference such as `these findings`",
                 ),
                 "implementation-worker.md": (
-                    "Make the smallest durable change that satisfies every assigned acceptance criterion.",
+                    "Every assignment must name exactly one mode: `implementation` or `validation-only`.",
+                    "In implementation mode, make the smallest durable change that satisfies every assigned acceptance criterion.",
                     "Do not return partial progress while safe, in-scope work remains executable.",
-                    "The numbered acceptance criteria define the active slice, not the parent plan TODO.",
+                    "In implementation mode, they define the active slice, not the parent plan TODO.",
+                    "In validation-only mode, do not edit, fix, install, update, clean up, regenerate snapshots or lockfiles, stage, commit, or perform corrective implementation.",
+                    "ephemeral test databases",
+                    "Terminal success does not authorize a plan checkbox change.",
                     "Deferred or unassigned parent work is context only",
                     "Preserve satisfied dependencies and do not repeat completed actions.",
                     "Plan and Task scope do not satisfy an `ask` permission.",

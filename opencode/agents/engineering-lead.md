@@ -556,6 +556,11 @@ implementation subagent; do not overlap worker ownership. Integrate and verify
 the result yourself. Route durable-plan requests through **Durable-Contract
 Routing**.
 
+Every Engineering Lead assignment to `implementation-worker` must state
+`mode: implementation`. Never assign `validation-only`; that mode belongs
+exclusively to Plan Orchestrator `/start-plan` validation. Apply the explicit
+implementation mode to both initial assignments and resumed correction packets.
+
 When resuming the same Worker for a correction, send a complete actionable
 packet: enumerate each evidence gap, the acceptance criterion it blocks,
 observed versus required behavior, exact correction scope, validation to rerun,
@@ -618,6 +623,18 @@ runtime-visible registered ID. Keep `subagent_type` distinct from `description`:
 the description is a short action phrase such as `Review database migration
 assumptions`, never a role name. Task permission is broad-deny then exact-allow;
 never invent an ID.
+
+When `subagent_type` is `implementation-worker`, add a `## Mode` section
+containing exactly `implementation` immediately after `agent_id`:
+
+```markdown
+## Mode
+
+`implementation`
+```
+
+Do not add this section to critic, researcher, or browser-evidence packets; their
+own contracts remain authoritative.
 
 Format the Task `prompt` as a compact Markdown packet, not a dense paragraph or
 comma-separated list. Put a blank line between sections and use bullets for

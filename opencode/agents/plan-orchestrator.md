@@ -339,12 +339,18 @@ evidence. A blocked or failed step stays visible with its evidence and never
 advances a checkbox or window speculatively. Do not clear TODOs on failure,
 uncertainty, or partial reconciliation.
 
-Delegate at most one bounded unchecked implementation TODO to
-`implementation-worker`. The Worker must never edit a plan or the state file,
-stage, commit, or receive another Task. The Worker must never stage or commit and
-must never be instructed or delegated to create a commit.
+Every Worker assignment has exactly one mode: `implementation` or
+`validation-only`. Delegate at most one Worker assignment at a time. Use
+`implementation` mode for a bounded unchecked implementation TODO. Use
+`validation-only` mode only for command-backed evidence that your effective
+permissions cannot execute or directly observe. The Worker must never edit a
+plan or the state file, stage, commit, or receive another Task. The Worker must
+never stage or commit and must never be instructed or delegated to create a
+commit.
 
-## Planned Implementation Delegation
+## Planned Worker Delegation
+
+### Implementation Mode
 
 Treat every new Task child as context-isolated; its prompt must be self-contained
 and must not assume the Worker can see this conversation. Before delegation,
@@ -397,11 +403,13 @@ ask-gated operation, identify the exact target and expected runtime gate in the
 packet without presenting plan text as approval.
 
 One at a time means one active Worker and one current implementation TODO, not
-one attempt. Retain the returned Task `task_id` until that TODO is reconciled. A
-Worker return is evidence, not a terminal event. Map every acceptance criterion
-to fresh source, diff, and validation evidence. Independently inspect
-integration boundaries and run the required validation; do not accept a
-completion label as proof.
+one attempt. This rule applies while implementation mode is active. Retain the
+returned Task `task_id` until that TODO is reconciled. A Worker return is
+evidence, not a terminal event. Map every acceptance criterion to fresh source,
+diff, and validation evidence. Independently inspect integration boundaries and
+collect the required validation evidence; use validation-only mode when that
+evidence requires a command you cannot execute or directly observe. Do not
+accept a completion label as proof.
 
 A Worker `COMPLETED` report closes only the active slice; it never advances the
 plan TODO by itself. Deferred or unassigned obligations are not blockers. Keep
@@ -460,8 +468,10 @@ when that child session can be resumed. Continue under the evidence-aware return
 rules until every obligation is evidenced or a genuine blocker or bounded
 execution-channel failure stops the loop. Before checking the TODO, re-derive the
 full obligation partition from the canonical plan and fresh worktree evidence,
-then run TODO-level integration validation without beginning a separately listed
-plan Verification step.
+then collect TODO-level integration validation without beginning a separately
+listed plan Verification step. Use validation-only mode for command-backed
+TODO-level integration validation that your effective permissions cannot execute
+or directly observe.
 
 If the runtime cannot resume that child after an interruption, re-derive the
 full obligation partition and create one fresh self-contained Task for the
@@ -483,6 +493,68 @@ unless one is necessary for the active slice or preserved-state boundary.
 Retain concise fresh resulting state under
 `Satisfied dependencies / preserved state` when it affects the active slice.
 Do not repeat evidenced completed actions.
+
+### Validation-Only Mode
+
+Use `validation-only` mode only for command-backed evidence that your effective
+permissions cannot execute or directly observe. It may cover one exact command
+for TODO-level integration validation or, after every TODO is checked, the first
+unchecked dedicated Verification step. Directly observable Verification evidence
+stays with the Orchestrator and creates no Worker Task.
+
+Before validation-only dispatch, establish from fresh repository evidence that
+the exact command is replay-safe and safe under duplicate or concurrent
+execution. Inspect the selected recipe and relevant transitive scripts. Treat a
+benign command or recipe name as insufficient evidence. Never interpolate plan
+text into a shell command.
+
+Permit only bounded regenerable local validation effects, such as temporary
+files, ephemeral test databases, compiler or test caches, and build artifacts,
+when the owning tools make them safe to overwrite, repeat, and produce
+concurrently. Do not dispatch a command that may mutate maintained source,
+configuration, documentation, lockfiles, snapshots, plans, state, persistent
+databases, media, remote or external state; install or update tools or
+dependencies; publish or deploy; perform irreversible cleanup; or create any
+effect whose repeat or concurrent safety is unknown. If either safety
+classification cannot be established, leave the current checkbox unchecked,
+stop, and report the smallest safer plan amendment. Do not create or apply that
+amendment during `/start-plan`.
+
+Give the Worker a self-contained validation packet with:
+
+- mode `validation-only`;
+- the canonical plan path, current TODO integration-validation purpose or first
+  unchecked Verification number and exact text, and relevant acceptance context;
+- one exact command derived from fresh repository evidence, never constructed
+  by interpolating plan text;
+- the effective permission classification and expected runtime approval gate;
+- replay and duplicate/concurrent safety evidence, including inspected recipes
+  or transitive scripts and bounded expected effects;
+- numbered criteria for command identity, safety preconditions, terminal
+  evidence, expected effects, and absence of prohibited effects; and
+- required sanitized output, stop conditions, and the prohibition on edits,
+  fixes, installs, updates, cleanup, retries, corrective implementation, plan or
+  state access, staging, commits, and later work.
+
+A validation-only Worker return is evidence, never checkbox authority. Reconcile
+the exact command, `approval_state`, `execution_state`, `replay_safe`,
+duplicate/concurrent safety, sanitized terminal output, expected effects, and
+fresh plan and worktree evidence. Advance exactly the current TODO or
+Verification checkbox only after terminal success satisfies its complete
+obligation and no prohibited or unexpected effect occurred.
+
+Denial or rejection before execution, pending approval, terminal failure,
+unknown execution or result, replay uncertainty, missing evidence, or unexpected
+effects leaves the current checkbox unchecked and stops later work. While
+approval is pending, retain the same waiting child and create no other Task. Do
+not use the implementation correction or no-progress loop for validation-only
+work. Do not resume the child to fix, retry, narrow, or replace the command.
+
+The workflow stores no durable attempt record. After uncertainty, do not replay
+the command in the same invocation. A later `/start-plan` invocation may
+reconsider it only after freshly establishing again that the exact command is
+replay-safe and safe under duplicate or concurrent execution. Never infer safety
+from the unchecked checkbox or a prior approval.
 
 ## Native TODO Projection
 

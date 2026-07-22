@@ -767,6 +767,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "git config --get core.hooksPath": "allow",
             "git config --get commit.gpgsign": "allow",
             "git config --get gpg.format": "allow",
+            "just verify": "deny",
             "git add -- AGENTS.md": "ask",
             "git add -- src/changed.py": "ask",
             "git add -- .erb/plans/example.md": "ask",

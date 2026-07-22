@@ -161,9 +161,10 @@ compatibility. It neither runs the installer nor updates skill contents. Use its
 The Engineering Lead is the normal entry point for direct delivery. The
 Engineering Review Board (ERB) provides independent read-only advice. The Plan
 Orchestrator owns durable-plan creation, active-plan updates, state, and
-execution. The
-Implementation Worker receives one bounded implementation unit and cannot
-delegate, edit plan state, stage, commit, push, or deploy.
+execution. The Implementation Worker receives one bounded implementation unit or
+one Plan-Orchestrator validation-only command unit and cannot delegate, edit plan
+state, stage, commit, push, or deploy. Validation-only work cannot edit or fix;
+the Orchestrator retains evidence adjudication and checkbox ownership.
 
 For reviews where rendered behavior materially changes the answer, the Lead or
 ERB may delegate a non-mutating observation packet to
