@@ -7,7 +7,7 @@
       "revision": "bd93bf0f820c027a50bf8c98f96d4e37a39c7e83",
       "license": "Apache-2.0",
       "reviewed_on": "2026-07-21",
-      "sha256": "ecc7641aea05f85ca3b11e7759d32aaf52fe05946ab4b63739c7bf78a41237a2"
+      "sha256": "cb9eb5ce320ca34d5d985ab0a44459fb44e85a8856abf1e0b19c8f80bebbe558"
     },
     "find-skills": {
       "source": "https://github.com/vercel-labs/skills",
@@ -15,7 +15,7 @@
       "revision": "ceea0088e483744887186fb911841bf5449b8324",
       "license": "MIT",
       "reviewed_on": "2026-07-21",
-      "sha256": "781bd6d3f9b19f8c9af6b53d8d0e4876d0183841b565db34ca7092ffa412d111"
+      "sha256": "33a0a1b3942274813ff7581329772d2841e09fb488ca58af3937a50230a8cc83"
     },
     "playwright-cli": {
       "source": "https://github.com/microsoft/playwright-cli",
@@ -23,7 +23,7 @@
       "revision": "eee5a185c98e6b04d88f580d45a854e9692ab50b",
       "license": "Apache-2.0",
       "reviewed_on": "2026-07-21",
-      "sha256": "657677c0087f56488b3773c0c8744cfba5ffab483be02337c1434b798081fcb6"
+      "sha256": "5225745814475494bbc5cf2d8142b79fca5c27955a68454df221cba9c81a81f9"
     }
   }
 }

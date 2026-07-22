@@ -1213,6 +1213,98 @@ class ThirdPartyProvenanceContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "symbolic links"):
                 skill_tree_sha256(skill)
 
+    def test_skill_tree_digest_includes_hidden_files_and_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            baseline_digest = skill_tree_sha256(skill)
+            (skill / ".metadata").write_text("Reviewed.\n", encoding="utf-8")
+            hidden_file_digest = skill_tree_sha256(skill)
+            (skill / ".metadata").write_text("Changed.\n", encoding="utf-8")
+            changed_hidden_file_digest = skill_tree_sha256(skill)
+            hidden_directory = skill / ".references"
+            hidden_directory.mkdir()
+            (hidden_directory / "instructions.md").write_text(
+                "Reviewed.\n", encoding="utf-8"
+            )
+            hidden_directory_digest = skill_tree_sha256(skill)
+
+            self.assertNotEqual(baseline_digest, hidden_file_digest)
+            self.assertNotEqual(hidden_file_digest, changed_hidden_file_digest)
+            self.assertNotEqual(changed_hidden_file_digest, hidden_directory_digest)
+
+    def test_skill_tree_digest_rejects_hidden_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            outside = repo / "outside-references"
+            outside.mkdir()
+            (outside / "instructions.md").write_text("Unreviewed.\n", encoding="utf-8")
+            hidden_directory = skill / ".references"
+            hidden_directory.mkdir()
+            (hidden_directory / "instructions").symlink_to(
+                outside / "instructions.md"
+            )
+
+            with self.assertRaisesRegex(
+                ValueError, r"symbolic links are not supported: \.references/instructions"
+            ):
+                skill_tree_sha256(skill)
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "mkfifo is not supported")
+    def test_skill_tree_digest_rejects_special_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            fifo = skill / ".metadata"
+            os.mkfifo(fifo)
+
+            with self.assertRaisesRegex(
+                ValueError, r"unsupported filesystem entry: \.metadata"
+            ):
+                skill_tree_sha256(skill)
+
+    def test_skill_tree_digest_distinguishes_binary_record_boundaries(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            one_file_tree = root / "one-file"
+            one_file_tree.mkdir()
+            (one_file_tree / "a").write_bytes(b"x\0b\0y")
+            two_file_tree = root / "two-files"
+            two_file_tree.mkdir()
+            (two_file_tree / "a").write_bytes(b"x")
+            (two_file_tree / "b").write_bytes(b"y")
+
+            self.assertNotEqual(
+                skill_tree_sha256(one_file_tree), skill_tree_sha256(two_file_tree)
+            )
+
+    def test_skill_tree_digest_redacts_read_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = create_repo(Path(temp_dir))
+            skill = write_skill(repo / "skills", "vendor-skill")
+            (repo / ".gitignore").write_text(
+                "/skills/vendor-skill/\n", encoding="utf-8"
+            )
+            self._write_provenance(repo, "vendor-skill", "a" * 64)
+            absolute_path = str(Path(temp_dir).resolve() / "machine-local-file")
+            read_error = OSError(13, "Permission denied", absolute_path)
+
+            with patch.object(Path, "read_bytes", side_effect=read_error):
+                with self.assertRaisesRegex(
+                    ValueError, r"cannot read regular file: SKILL.md"
+                ) as raised:
+                    skill_tree_sha256(skill)
+                result = SkillRegistry.load(repo).validate_third_party()
+
+            self.assertNotIn(absolute_path, str(raised.exception))
+            self.assertFalse(result.ok)
+            self.assertNotIn(absolute_path, "\n".join(result.errors))
+            self.assertTrue(
+                any("cannot read regular file: SKILL.md" in error for error in result.errors),
+                result.errors,
+            )
+
     def test_third_party_validation_rejects_unpinned_or_unsafe_source_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = create_repo(Path(temp_dir))

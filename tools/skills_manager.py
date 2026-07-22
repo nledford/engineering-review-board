@@ -28,6 +28,7 @@ SKILLS_DIR_NAME = "skills"
 LOCKFILE_NAME = ".skill-lock.json"
 THIRD_PARTY_PROVENANCE_NAME = "third-party-skills.json"
 THIRD_PARTY_PROVENANCE_VERSION = 1
+SKILL_TREE_DIGEST_PREFIX = b"ERB skill-tree SHA-256 v2\0"
 REQUIRED_SKILL_METADATA = ("name", "description")
 HOST_SPECIFIC_SKILL_METADATA = ("allowed-tools", "hidden", "user-invocable")
 LOCAL_LINK_RE = re.compile(r"(?<![A-Za-z0-9_`])!?\[[^\]]+\]\(([^)]+)\)")
@@ -759,28 +760,45 @@ def _read_third_party_provenance(path: Path) -> tuple[dict | None, str | None]:
 
 
 def skill_tree_sha256(skill_path: Path) -> str:
-    """Hash visible regular files with stable relative-path framing."""
-    if skill_path.is_symlink():
-        raise ValueError("symbolic links are not supported: .")
-    visible_paths = [
-        path
-        for path in skill_path.rglob("*")
-        if not _is_hidden_path(path, skill_path)
-    ]
-    symlinks = [path for path in visible_paths if path.is_symlink()]
-    if symlinks:
-        relative_path = symlinks[0].relative_to(skill_path)
-        raise ValueError(f"symbolic links are not supported: {relative_path}")
-    files = [path for path in visible_paths if path.is_file()]
+    """Hash all regular files with an unambiguous, versioned record format."""
+    try:
+        if skill_path.is_symlink():
+            raise ValueError("symbolic links are not supported: .")
+    except OSError:
+        raise ValueError("cannot inspect skill directory") from None
+    try:
+        paths = list(skill_path.rglob("*"))
+    except OSError:
+        raise ValueError("cannot enumerate skill directory") from None
+    files = []
+    for path in paths:
+        relative_path = path.relative_to(skill_path).as_posix()
+        try:
+            if path.is_symlink():
+                raise ValueError(f"symbolic links are not supported: {relative_path}")
+            if path.is_dir():
+                continue
+            if path.is_file():
+                files.append(path)
+                continue
+            raise ValueError(f"unsupported filesystem entry: {relative_path}")
+        except OSError:
+            raise ValueError(f"cannot inspect filesystem entry: {relative_path}") from None
     if not files:
-        raise ValueError("skill directory contains no visible regular files")
+        raise ValueError("skill directory contains no regular files")
     digest = hashlib.sha256()
+    digest.update(SKILL_TREE_DIGEST_PREFIX)
     for path in sorted(files, key=lambda candidate: candidate.relative_to(skill_path).as_posix()):
         relative_path = path.relative_to(skill_path).as_posix().encode("utf-8")
+        try:
+            content = path.read_bytes()
+        except OSError:
+            display_path = path.relative_to(skill_path).as_posix()
+            raise ValueError(f"cannot read regular file: {display_path}") from None
+        digest.update(len(relative_path).to_bytes(8, "big"))
         digest.update(relative_path)
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
+        digest.update(len(content).to_bytes(8, "big"))
+        digest.update(content)
     return digest.hexdigest()
 
 
