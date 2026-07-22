@@ -5,6 +5,7 @@ from pathlib import Path
 
 from tools.opencode_contracts import (
     ENGINEERING_LEAD_GIT_BASH_RULES,
+    ENGINEERING_LEAD_NON_GIT_BASH_RULES,
     ENGINEERING_LEAD_PLAN_STAGING_BASH_RULES,
 )
 from tools.opencode_install import (
@@ -61,18 +62,23 @@ def render_lead_permissions(
     todowrite_action: str = "allow",
 ) -> str:
     rendered_git_rules = "".join(
-        f'    "{pattern}": {action}\n' for pattern, action in git_rules
+        f"    {json.dumps(pattern)}: {action}\n" for pattern, action in git_rules
+    )
+    rendered_trusted_local_rules = "".join(
+        f"    {json.dumps(pattern)}: {action}\n"
+        for pattern, action in ENGINEERING_LEAD_NON_GIT_BASH_RULES
     )
     return (
         '  "*": ask\n'
         "  edit:\n"
-        '    "*": ask\n'
+        '    "*": allow\n'
         '    "docs/implementation-plans/plans/**": deny\n'
         '    ".erb/plans/**": deny\n'
         '    ".erb/plan-state.json": deny\n'
         "  bash:\n"
         '    "*": ask\n'
         f"{rendered_git_rules}"
+        f"{rendered_trusted_local_rules}"
         '    "*.erb/plans*": deny\n'
         + "".join(
             f'    "{pattern}": {action}\n'

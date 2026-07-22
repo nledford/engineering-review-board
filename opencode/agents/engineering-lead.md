@@ -9,7 +9,7 @@ permission:
   external_directory:
     "*": ask
   edit:
-    "*": ask
+    "*": allow
     "docs/implementation-plans/plans/**": deny
     ".erb/plans/**": deny
     ".erb/plan-state.json": deny
@@ -155,28 +155,84 @@ permission:
     "git push * :*": deny
     "git push -f*": deny
     "git push * -f*": deny
-    "rg *": ask
-    "cargo check": ask
-    "cargo check *": ask
-    "cargo test": ask
-    "cargo test *": ask
-    "cargo fmt --check": ask
-    "cargo fmt --check *": ask
-    "cargo nextest run": ask
-    "cargo nextest run *": ask
-    "cargo clippy": ask
-    "cargo clippy *": ask
-    "cargo metadata *": ask
-    "just *": ask
-    "npm run *": ask
-    "npm test": ask
-    "npm test *": ask
-    "npm run test": ask
-    "npm run test *": ask
+    "rg *": allow
+    "just *": allow
+    "cargo check *": allow
+    "cargo test *": allow
+    "cargo build *": allow
+    "cargo fmt --check *": allow
+    "cargo nextest run *": allow
+    "cargo clippy *": allow
+    "cargo metadata *": allow
+    "npm test": allow
+    "pnpm test": allow
+    "yarn test": allow
+    "bun test": allow
+    "npm test *": allow
+    "pnpm test *": allow
+    "yarn test *": allow
+    "bun test *": allow
+    "npm run test": allow
+    "npm run lint": allow
+    "npm run typecheck": allow
+    "npm run build": allow
+    "pnpm run test": allow
+    "pnpm run lint": allow
+    "pnpm run typecheck": allow
+    "pnpm run build": allow
+    "yarn run test": allow
+    "yarn run lint": allow
+    "yarn run typecheck": allow
+    "yarn run build": allow
+    "bun run test": allow
+    "bun run lint": allow
+    "bun run typecheck": allow
+    "bun run build": allow
+    "npm run test *": allow
+    "npm run lint *": allow
+    "npm run typecheck *": allow
+    "npm run build *": allow
+    "pnpm run test *": allow
+    "pnpm run lint *": allow
+    "pnpm run typecheck *": allow
+    "pnpm run build *": allow
+    "yarn run test *": allow
+    "yarn run lint *": allow
+    "yarn run typecheck *": allow
+    "yarn run build *": allow
+    "bun run test *": allow
+    "bun run lint *": allow
+    "bun run typecheck *": allow
+    "bun run build *": allow
     "npm install *": ask
     "npm uninstall *": ask
     "npm update *": ask
     "npx *": ask
+    "pnpm install *": ask
+    "pnpm add *": ask
+    "pnpm update *": ask
+    "pnpm remove *": ask
+    "pnpm exec *": ask
+    "pnpm dlx *": ask
+    "yarn install *": ask
+    "yarn add *": ask
+    "yarn up *": ask
+    "yarn remove *": ask
+    "yarn dlx *": ask
+    "bun install *": ask
+    "bun add *": ask
+    "bun update *": ask
+    "bun remove *": ask
+    "bunx *": ask
+    "cargo install *": ask
+    "cargo update *": ask
+    "cargo add *": ask
+    "cargo remove *": ask
+    "cargo clean *": ask
+    "bundle install *": ask
+    "bundle update *": ask
+    "bundle add *": ask
+    "bundle remove *": ask
     "python *": ask
     "python3 *": ask
     "node *": ask
@@ -206,6 +262,115 @@ permission:
     "docker image prune *": ask
     "docker rm *": ask
     "docker rmi *": ask
+    "just *--justfile*": ask
+    "just *--working-directory*": ask
+    "just *--shell*": ask
+    "just *--dotenv-path*": ask
+    "just -f *": ask
+    "just * -f *": ask
+    "just -d *": ask
+    "just * -d *": ask
+    "cargo *--manifest-path*": deny
+    "cargo *--config*": deny
+    "cargo *--target-dir*": deny
+    "cargo *--out-dir*": deny
+    "cargo *--lockfile-path*": deny
+    "cargo *--artifact-dir*": deny
+    "cargo fix *": deny
+    "npm audit fix*": deny
+    "just *--fix*": deny
+    "just *--updateSnapshot*": deny
+    "just *--update-snapshots*": deny
+    "just *--snapshot-update*": deny
+    "cargo *--fix*": deny
+    "cargo *--updateSnapshot*": deny
+    "cargo *--update-snapshots*": deny
+    "cargo *--snapshot-update*": deny
+    "npm *--fix*": deny
+    "npm *--updateSnapshot*": deny
+    "npm *--update-snapshots*": deny
+    "npm *--snapshot-update*": deny
+    "pnpm *--fix*": deny
+    "pnpm *--updateSnapshot*": deny
+    "pnpm *--update-snapshots*": deny
+    "pnpm *--snapshot-update*": deny
+    "yarn *--fix*": deny
+    "yarn *--updateSnapshot*": deny
+    "yarn *--update-snapshots*": deny
+    "yarn *--snapshot-update*": deny
+    "bun *--fix*": deny
+    "bun *--updateSnapshot*": deny
+    "bun *--update-snapshots*": deny
+    "bun *--snapshot-update*": deny
+    "just * -u*": deny
+    "cargo * -u*": deny
+    "npm * -u*": deny
+    "pnpm * -u*": deny
+    "yarn * -u*": deny
+    "bun * -u*": deny
+    "rg *>*": deny
+    "rg *<*": deny
+    "rg *|*": deny
+    "rg *&*": deny
+    "rg *;*": deny
+    "rg *\n*": deny
+    "rg *\r*": deny
+    "rg *$(*": deny
+    "rg *`*": deny
+    "just *>*": deny
+    "just *<*": deny
+    "just *|*": deny
+    "just *&*": deny
+    "just *;*": deny
+    "just *\n*": deny
+    "just *\r*": deny
+    "just *$(*": deny
+    "just *`*": deny
+    "cargo *>*": deny
+    "cargo *<*": deny
+    "cargo *|*": deny
+    "cargo *&*": deny
+    "cargo *;*": deny
+    "cargo *\n*": deny
+    "cargo *\r*": deny
+    "cargo *$(*": deny
+    "cargo *`*": deny
+    "npm *>*": deny
+    "npm *<*": deny
+    "npm *|*": deny
+    "npm *&*": deny
+    "npm *;*": deny
+    "npm *\n*": deny
+    "npm *\r*": deny
+    "npm *$(*": deny
+    "npm *`*": deny
+    "pnpm *>*": deny
+    "pnpm *<*": deny
+    "pnpm *|*": deny
+    "pnpm *&*": deny
+    "pnpm *;*": deny
+    "pnpm *\n*": deny
+    "pnpm *\r*": deny
+    "pnpm *$(*": deny
+    "pnpm *`*": deny
+    "yarn *>*": deny
+    "yarn *<*": deny
+    "yarn *|*": deny
+    "yarn *&*": deny
+    "yarn *;*": deny
+    "yarn *\n*": deny
+    "yarn *\r*": deny
+    "yarn *$(*": deny
+    "yarn *`*": deny
+    "bun *>*": deny
+    "bun *<*": deny
+    "bun *|*": deny
+    "bun *&*": deny
+    "bun *;*": deny
+    "bun *\n*": deny
+    "bun *\r*": deny
+    "bun *$(*": deny
+    "bun *`*": deny
     "*.erb/plans*": deny
     "git add -- .erb/plans/*.md": ask
     "git add -- .erb/plans/*/*.md": ask
@@ -547,26 +712,29 @@ approval evidence, or authority to change a plan. Keep exactly one item
 `in_progress` while work remains, update statuses as evidence is obtained, and
 clear or complete the list when the work ends.
 
-## Implementation Delegation
+## Implementation And Verification Delegation
 
-Use only `implementation-worker` for bounded implementation Tasks. Give it one
-objective, owned files/modules, stable interfaces, exclusions, acceptance
-criteria, required validation, and stop conditions. Do not use any other
-implementation subagent; do not overlap worker ownership. Integrate and verify
-the result yourself. Route durable-plan requests through **Durable-Contract
-Routing**.
+Use only `implementation-worker` for bounded unplanned implementation or
+non-editing verification Tasks. Give it one objective, owned files/modules,
+stable interfaces, exclusions, acceptance criteria, required validation, and
+stop conditions. Do not overlap Worker ownership. Integrate and verify the result
+yourself. Route durable-plan requests through **Durable-Contract Routing**; do
+not invoke or impersonate the Plan Orchestrator.
 
-Every Engineering Lead assignment to `implementation-worker` must state
-`mode: implementation`. Never assign `validation-only`; that mode belongs
-exclusively to Plan Orchestrator `/start-plan` validation. Apply the explicit
-implementation mode to both initial assignments and resumed correction packets.
+Every Engineering Lead assignment to `implementation-worker` states exactly one
+mode: `implementation` for maintained-file work or `verification` for a bounded
+non-editing evidence objective. A verification packet supplies the permitted
+local setup, diagnostic pass, owned disposable cleanup, wait deadline, effect
+class, and at-most-three start budget. It reports evidence only; the Lead must
+make any unplanned follow-up decision and must not create a durable-plan
+transition system.
 
-When resuming the same Worker for a correction, send a complete actionable
-packet: enumerate each evidence gap, the acceptance criterion it blocks,
-observed versus required behavior, exact correction scope, validation to rerun,
-and unchanged exclusions. Never send only a status preamble or references such
-as `these findings` or `the gaps above`; inspect the final Task prompt and stop
-if the concrete findings are absent.
+When resuming the same Worker for an implementation correction, send a complete
+actionable packet: enumerate each evidence gap, the acceptance criterion it
+blocks, observed versus required behavior, exact correction scope, validation to
+rerun, and unchanged exclusions. Never send only a status preamble or references
+such as `these findings` or `the gaps above`; inspect the final Task prompt and
+stop if the concrete findings are absent.
 
 ## Rendered Browser Evidence
 
@@ -625,12 +793,12 @@ assumptions`, never a role name. Task permission is broad-deny then exact-allow;
 never invent an ID.
 
 When `subagent_type` is `implementation-worker`, add a `## Mode` section
-containing exactly `implementation` immediately after `agent_id`:
+containing exactly one of the shared modes immediately after `agent_id`:
 
 ```markdown
 ## Mode
 
-`implementation`
+`implementation` or `verification`
 ```
 
 Do not add this section to critic, researcher, or browser-evidence packets; their

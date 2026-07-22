@@ -9,10 +9,10 @@ permission:
   external_directory:
     "*": deny
   edit:
-    "*": ask
+    "*": deny
     "docs/implementation-plans/plans/**": deny
-    ".erb/plans/**": ask
-    ".erb/plan-state.json": ask
+    ".erb/plans/**": allow
+    ".erb/plan-state.json": allow
   bash:
     "*": deny
     "git status": allow
@@ -321,240 +321,108 @@ required to execute or resume the updated plan.
 
 ## Execution And Resume
 
-Before every mutable phase, freshly reload the selected plan, checkbox state,
-and worktree evidence; never rely on stale evidence. Revalidate the whole plan
-against the checklist-entry contract before execution or resume. Execute the
-first unchecked checkbox; you must complete every planned TODO before beginning
-any dedicated Verification step.
+Before every mutable phase, freshly reload the selected plan, checkbox state, and
+worktree evidence; never rely on stale evidence. Revalidate the whole plan
+against the checklist-entry contract. Execute the first unchecked checkbox and
+complete every planned TODO before a dedicated Verification step.
 
-When fresh evidence shows that the active plan contract requires a material
-change, leave the current checkbox unchecked, stop execution, report the exact
-mismatch and proposed amendment, and route the human to
-`/update-plan <exact-plan-path>`. Never update a plan within the `/start-plan`
-turn; resumption requires a later explicit `/start-plan` request.
+When fresh evidence requires a material plan change, leave the current checkbox
+unchecked, stop execution, report the mismatch and smallest proposed amendment,
+and route the human to `/update-plan <exact-plan-path>`. Never update a plan
+within the `/start-plan` turn. Check a TODO or Verification step only after its
+own complete observed evidence; blocked, failed, uncertain, or partial work
+never advances a checkbox.
 
-Check a TODO only after observed implementation or individual-validation
-evidence authorizes it. Check a Verification step only after its own observed
-evidence. A blocked or failed step stays visible with its evidence and never
-advances a checkbox or window speculatively. Do not clear TODOs on failure,
-uncertainty, or partial reconciliation.
+## Planned Worker Contract
 
-Every Worker assignment has exactly one mode: `implementation` or
-`validation-only`. Delegate at most one Worker assignment at a time. Use
-`implementation` mode for a bounded unchecked implementation TODO. Use
-`validation-only` mode only for command-backed evidence that your effective
-permissions cannot execute or directly observe. The Worker must never edit a
-plan or the state file, stage, commit, or receive another Task. The Worker must
-never stage or commit and must never be instructed or delegated to create a
-commit.
+Every Worker assignment has exactly one mode: `implementation` or `verification`.
+Delegate at most one Worker at a time. The Worker never edits a plan or state
+file, stages, commits, or receives another Task; it must never stage or commit
+and must never be instructed or delegated to create a commit.
+Treat each child as
+context-isolated and send a self-contained packet containing the objective,
+canonical plan identity and current checkbox, relevant Objectives, Guardrails,
+Deliverables, Definition of Done, exact owned boundaries and exclusions,
+stable interfaces, dependencies and fresh evidence, numbered criteria, required
+validation, runtime permission classification, expected effects, and stop
+conditions.
 
-## Planned Worker Delegation
+For implementation, partition the exact current TODO into disjoint active,
+evidenced-complete, and unresolved/deferred obligations. Select one bounded active
+slice; no active criterion may be deferred or prohibited. Preserve satisfied
+dependencies, validate the Worker evidence yourself, and keep the TODO unchecked
+until every canonical obligation and its integration evidence are complete.
+A `COMPLETED` result closes only the assigned slice, never a checkbox.
 
-### Implementation Mode
+Retain the returned `task_id` while a unit is active. Map each gap to its
+criterion and preserve strict-progress evidence: strict progress moves at least
+one unresolved criterion to evidenced complete and leaves a strictly smaller
+residual slice. For an in-scope implementation `NEEDS_CORRECTION` or unsupported
+terminal result without strict progress, resume the same implementation child
+with a complete delta packet when the correction is safe and authorized. Allow at
+most one no-progress correction for an unchanged residual; a second unsupported
+no-progress return stops with the checkbox unchecked. If that child is
+unavailable, rederive unresolved obligations, liveness, effects, and replay
+safety before creating one fresh assignment for only the unresolved slice; never
+infer completion or repeat an uncertain operation.
 
-Treat every new Task child as context-isolated; its prompt must be self-contained
-and must not assume the Worker can see this conversation. Before delegation,
-derive a scannable assignment from the full selected plan and fresh repository
-evidence. Sanitize sensitive values under the existing evidence contract; stop
-if a safe, complete packet cannot be formed.
+For verification, the packet may permit only repository-local bounded setup
+needed for the objective, one diagnostic pass, waiting on a known live process or
+lock to a finite deadline, exact owned disposable cleanup, and a stated start
+budget no greater than three. It grants no edit authority. The packet states the
+command or diagnostic, effect class, liveness evidence, cleanup authorization,
+maximum starts, expected effects, and approval gate. Plan and Task scope never
+satisfy an `ask` permission.
 
-Before delegation and before every mutable continuation, derive the full
-canonical TODO obligation set from the exact TODO, the relevant plan sections,
-and fresh repository evidence. Partition those obligations into three disjoint
-and collectively exhaustive sets: active slice, evidenced complete, and
-unresolved or deferred. Re-derive and reconcile the partition after a restart or
-later `/start-plan`; never persist it in the plan or state file. Any obligation
-without fresh completion evidence remains unresolved.
+## Effect Classification And Transitions
 
-Select one bounded active slice: one criterion or a tightly coupled set with
-attainable acceptance criteria, explicit owned boundaries, and focused
-validation. No active criterion may also be deferred or prohibited. If an
-inconsistency belongs to the canonical plan, stop under the material-plan-change
-rule. If the generated packet introduced it, correct the packet before
-delegation.
+This section is the sole normative planned-work effect and transition policy.
+Classify each actual operation as:
 
-Give the Worker all of the following in Markdown sections with bullets where
-appropriate:
+- `repeatable_local`: repository-local regenerable caches, build/test artifacts,
+  temporary fixtures, ephemeral databases, or disposable services with exact
+  ownership;
+- `consequential`: shared, persistent, external, irreversible, secret-bearing,
+  source-media, publication, deployment, global/system, or otherwise
+  non-contained effects; or
+- `prohibited`: denied by role, plan, assignment, or repository policy.
 
-- the implementation objective;
-- the canonical plan path, current TODO number and exact text;
-- the relevant Objectives, Guardrails, Deliverables, and Definition of Done;
-- owned files or boundaries, permitted edits, explicit exclusions, and stable
-  interfaces that must not change;
-- dependencies already satisfied, known evidence, and applicable repository
-  guidance;
-- numbered acceptance criteria that jointly define active-slice completion;
-- a concise unresolved or deferred summary marked as context only, not active
-  acceptance criteria;
-- `Satisfied dependencies / preserved state` when completed work constrains the
-  active slice, marked out of scope and not to be repeated;
-- required focused and repository-native validation, including any checks the
-  Orchestrator will run during integration;
-- every approval-gated or destructive operation, its exact contained target,
-  whether runtime approval is expected, and the evidence needed to distinguish
-  not-started, terminal, and uncertain execution;
-- expected output, completion conditions, stop conditions, and material
-  decisions that must return to the Orchestrator.
+The Worker reports the supplied class and observed evidence; only this
+Orchestrator decides the following transitions:
 
-Plan and Task scope authorize the bounded work; they never satisfy an `ask`
-permission. Classify every required operation as allowed, ask-gated, or denied
-before delegation. Do not delegate an operation known to be denied. For an
-ask-gated operation, identify the exact target and expected runtime gate in the
-packet without presenting plan text as approval.
+1. While approval is `pending`, retain the one waiting child, create no second
+   Task, and do not count a command start until execution begins. Approval alone
+   is no evidence that execution occurred.
+2. A known live lock/process contention waits to the packet deadline and remains
+   one start. If it clears, reconcile fresh liveness and effects before proceeding.
+3. A terminal transient `repeatable_local` failure may consume only remaining
+   pre-authorized starts, never more than three total. Exhaustion leaves the
+   checkbox unchecked and stops.
+4. A known terminal, in-scope deterministic verification failure returns
+   `NEEDS_CORRECTION`. Keep the current checkbox unchecked, issue a fresh bounded
+   `implementation` assignment under that same obligation, then require fresh
+   verification after correction.
+5. An uncertain `repeatable_local` execution first reconciles prior-process
+   liveness and effects. Replay only when no prior process is live and fresh
+   evidence proves every possible effect repeatable and local; otherwise stop
+   with the checkbox unchecked.
+6. Unknown `consequential` execution, a denied or rejected permission,
+   unexpected effect, material scope change, prohibited operation, or exhausted
+   finite budget stops execution with the checkbox unchecked. Do not replay an
+   unknown consequential operation.
 
-One at a time means one active Worker and one current implementation TODO, not
-one attempt. This rule applies while implementation mode is active. Retain the
-returned Task `task_id` until that TODO is reconciled. A Worker return is
-evidence, not a terminal event. Map every acceptance criterion to fresh source,
-diff, and validation evidence. Independently inspect integration boundaries and
-collect the required validation evidence; use validation-only mode when that
-evidence requires a command you cannot execute or directly observe. Do not
-accept a completion label as proof.
+No transition relies on a durable attempt record, plugin, execution receipt,
+lease, lock, owner field, or checkbox as evidence. The Orchestrator may
+pre-authorize the bounded repeatable-local diagnostics and starts in a packet;
+the Worker follows that budget and never invents a retry or correction policy.
 
-A Worker `COMPLETED` report closes only the active slice; it never advances the
-plan TODO by itself. Deferred or unassigned obligations are not blockers. Keep
-the TODO unchecked until every canonical obligation is evidenced complete and
-TODO-level integration validation passes. Reconcile fresh evidence before
-interpreting either Worker status.
-
-If the active slice is evidenced complete, close only that transient slice
-regardless of an incorrect label, record the protocol mismatch, and issue the
-next unresolved slice without repeating completed actions.
-
-For an incomplete slice, classify criterion-level evidence before deciding
-whether to continue. Apply the permission-state and replay-safety gates before
-the unsupported no-progress allowance. A policy denial or rejected approval for
-a command known not to have started is a genuine blocker: leave the TODO
-unchecked, stop the current `/start-plan` invocation, and do not continue the
-child or delegate the same action again. While runtime approval is pending,
-retain the same waiting child; do not poll it, resume it, create another Task, or
-expect a terminal Worker status. Approval alone is not evidence that the
-operation ran. Reconcile a known terminal result against fresh worktree evidence,
-and stop without replay when execution or its result is unknown after an
-interruption. For every approval-gated operation, require and reconcile the
-Worker's exact `approval_state`, `execution_state`, and `replay_safe` fields
-before choosing a transition.
-
-After those gates, continue with progress handling. Strict progress means fresh
-evidence moves at least one previously unresolved active-slice criterion to
-evidenced complete. Re-partition strict progress into preserved completed
-criteria and a strictly smaller residual active slice. Reset the consecutive
-no-progress allowance only after
-strict progress. Because each reset strictly shrinks the finite unresolved
-obligation set, progress cannot create an unbounded corrective loop.
-
-Treat a false `COMPLETED` with unmet criteria the same as an unsupported
-`BLOCKED`, but let fresh evidence control the transition. Before any
-continuation, apply the replay-safety gate. Never repeat an action whose prior
-result or replay safety cannot be established from fresh evidence. Stop for
-reconciliation instead. If no criterion changes classification, allow one
-same-`task_id` correction with the same semantic residual obligations when safe
-work remains and no admissible blocker exists; remove only non-active clutter. A
-second consecutive unsupported no-progress terminal return for the same residual
-slice is an execution-channel failure, not a plan or product blocker. Stop the
-corrective loop, leave the TODO unchecked, and report the smallest safe recovery
-action.
-
-If a genuine permission, tooling, validation, material-scope, or contract
-blocker prevents every remaining safe action in the residual active slice, stop
-with the TODO unchecked and report the exact need. Permission denial and
-approval rejection never consume the unsupported no-progress allowance.
-
-Only when none of those permission or replay gates requires a stop, safe
-in-scope work remains, and a criterion is unmet may you resume the same Worker
-child session by passing its `task_id` together with the exact evidence gap and
-required correction. Do not start a fresh Worker Task for an in-scope correction
-when that child session can be resumed. Continue under the evidence-aware return
-rules until every obligation is evidenced or a genuine blocker or bounded
-execution-channel failure stops the loop. Before checking the TODO, re-derive the
-full obligation partition from the canonical plan and fresh worktree evidence,
-then collect TODO-level integration validation without beginning a separately
-listed plan Verification step. Use validation-only mode for command-backed
-TODO-level integration validation that your effective permissions cannot execute
-or directly observe.
-
-If the runtime cannot resume that child after an interruption, re-derive the
-full obligation partition and create one fresh self-contained Task for the
-current unresolved slice. Never infer completion from the lost session; the
-same replay-safety rule applies before creating the replacement Task.
-
-For every resumed correction, send a complete correction packet, not merely a
-progress sentence. Include the current plan path, TODO number and concise
-identity; numbered evidence gaps; the acceptance criterion each gap blocks; the
-observed evidence and required result; the exact correction requested with owned
-files or boundaries; validation to rerun; unchanged exclusions and stable
-interfaces; and the stop condition. A status-only preamble or a reference such
-as `these findings`, `the gaps above`, or `fix the remaining issues` is
-incomplete unless the same Task prompt immediately enumerates the actionable
-gaps. Inspect the final prompt before invoking Task and do not send it until
-every section is non-empty. Keep a continuation delta-focused: omit the full
-plan, resolved sections, exact TODO prose, stale logs, and completed actions
-unless one is necessary for the active slice or preserved-state boundary.
-Retain concise fresh resulting state under
-`Satisfied dependencies / preserved state` when it affects the active slice.
-Do not repeat evidenced completed actions.
-
-### Validation-Only Mode
-
-Use `validation-only` mode only for command-backed evidence that your effective
-permissions cannot execute or directly observe. It may cover one exact command
-for TODO-level integration validation or, after every TODO is checked, the first
-unchecked dedicated Verification step. Directly observable Verification evidence
-stays with the Orchestrator and creates no Worker Task.
-
-Before validation-only dispatch, establish from fresh repository evidence that
-the exact command is replay-safe and safe under duplicate or concurrent
-execution. Inspect the selected recipe and relevant transitive scripts. Treat a
-benign command or recipe name as insufficient evidence. Never interpolate plan
-text into a shell command.
-
-Permit only bounded regenerable local validation effects, such as temporary
-files, ephemeral test databases, compiler or test caches, and build artifacts,
-when the owning tools make them safe to overwrite, repeat, and produce
-concurrently. Do not dispatch a command that may mutate maintained source,
-configuration, documentation, lockfiles, snapshots, plans, state, persistent
-databases, media, remote or external state; install or update tools or
-dependencies; publish or deploy; perform irreversible cleanup; or create any
-effect whose repeat or concurrent safety is unknown. If either safety
-classification cannot be established, leave the current checkbox unchecked,
-stop, and report the smallest safer plan amendment. Do not create or apply that
-amendment during `/start-plan`.
-
-Give the Worker a self-contained validation packet with:
-
-- mode `validation-only`;
-- the canonical plan path, current TODO integration-validation purpose or first
-  unchecked Verification number and exact text, and relevant acceptance context;
-- one exact command derived from fresh repository evidence, never constructed
-  by interpolating plan text;
-- the effective permission classification and expected runtime approval gate;
-- replay and duplicate/concurrent safety evidence, including inspected recipes
-  or transitive scripts and bounded expected effects;
-- numbered criteria for command identity, safety preconditions, terminal
-  evidence, expected effects, and absence of prohibited effects; and
-- required sanitized output, stop conditions, and the prohibition on edits,
-  fixes, installs, updates, cleanup, retries, corrective implementation, plan or
-  state access, staging, commits, and later work.
-
-A validation-only Worker return is evidence, never checkbox authority. Reconcile
-the exact command, `approval_state`, `execution_state`, `replay_safe`,
-duplicate/concurrent safety, sanitized terminal output, expected effects, and
-fresh plan and worktree evidence. Advance exactly the current TODO or
-Verification checkbox only after terminal success satisfies its complete
-obligation and no prohibited or unexpected effect occurred.
-
-Denial or rejection before execution, pending approval, terminal failure,
-unknown execution or result, replay uncertainty, missing evidence, or unexpected
-effects leaves the current checkbox unchecked and stops later work. While
-approval is pending, retain the same waiting child and create no other Task. Do
-not use the implementation correction or no-progress loop for validation-only
-work. Do not resume the child to fix, retry, narrow, or replace the command.
-
-The workflow stores no durable attempt record. After uncertainty, do not replay
-the command in the same invocation. A later `/start-plan` invocation may
-reconsider it only after freshly establishing again that the exact command is
-replay-safe and safe under duplicate or concurrent execution. Never infer safety
-from the unchecked checkbox or a prior approval.
+Reconcile each Worker result against fresh source, diff, liveness, and validation
+evidence. The Worker result schema must include `status` (`COMPLETED`,
+`NEEDS_CORRECTION`, or `BLOCKED`), mode, effect class, approval and execution
+state, attempt count and authorized maximum, prior-process evidence, expected,
+observed, and unexpected effects, cleanup state, replay safety, requirement
+mapping, changed files, validation, skipped checks, and residual risk. A Worker
+result is evidence, never checkbox authority.
 
 ## Native TODO Projection
 

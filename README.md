@@ -161,10 +161,31 @@ compatibility. It neither runs the installer nor updates skill contents. Use its
 The Engineering Lead is the normal entry point for direct delivery. The
 Engineering Review Board (ERB) provides independent read-only advice. The Plan
 Orchestrator owns durable-plan creation, active-plan updates, state, and
-execution. The Implementation Worker receives one bounded implementation unit or
-one Plan-Orchestrator validation-only command unit and cannot delegate, edit plan
-state, stage, commit, push, or deploy. Validation-only work cannot edit or fix;
-the Orchestrator retains evidence adjudication and checkbox ownership.
+execution. The Implementation Worker receives one bounded `implementation` or
+non-editing `verification` unit and cannot delegate, edit plan state, stage,
+commit, push, or deploy. The Plan Orchestrator alone classifies planned effects
+and owns retry, correction, uncertain-result, and checkbox decisions; Worker
+results are evidence, not authority.
+
+In a human-owned repository, allowed checked-in project runners (Just recipes,
+package scripts, builds, tests, hooks, and binaries) run as trusted arbitrary
+local code with the OpenCode process's host authority. Static permission rules
+classify direct command forms, not transitive effects or a sandbox. Unknown direct
+command forms and consequential directly invoked operations remain ask/deny-gated.
+External-repository runners remain separately untrusted. Definition changes
+require quitting and fully restarting OpenCode before changed authority or prompts
+are active.
+
+After that restart, the Lead and Worker trusted-local profiles allow routine
+scoped in-repository edits and their canonical local quality, build, and test
+command families without runtime approval. Plan and state paths retain their
+existing boundaries. Native checked-in agent and command definitions plus the Plan
+Orchestrator remain
+authoritative. No plugin or secondary runtime may own, inject, or replace agents
+or commands; mutate plans or state; classify permissions, effects, or retries; or
+autonomously continue work. Reconsider plugins only for observational status or
+UX assistance after full-restart measurements show residual friction; observation
+never grants workflow authority.
 
 For reviews where rendered behavior materially changes the answer, the Lead or
 ERB may delegate a non-mutating observation packet to

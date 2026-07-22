@@ -202,110 +202,61 @@ plus the smallest proposed amendment. The human may then choose
 `/update-plan <exact-plan-path>`. Never update the plan during `/start-plan`;
 resume only after a later explicit `/start-plan` request.
 
-Every Worker assignment has exactly one mode: `implementation` or
-`validation-only`, and only one Worker may be active at a time. In implementation
-mode, the Plan Orchestrator delegates one bounded TODO slice, derives that TODO's
-full canonical obligation set from the plan and fresh evidence, then partitions
-the obligations into three disjoint and collectively exhaustive sets: active
-slice, evidenced complete, and unresolved or deferred. The partition is
-transient and is re-derived after a restart; it never enters the plan or state
-file.
+Every Worker assignment has exactly one mode: `implementation` or non-editing
+`verification`, and only one Worker may be active at a time. In implementation
+mode, the Plan Orchestrator delegates one bounded TODO slice, derives the current
+obligation partition, preserves evidenced-complete work, and reconciles Worker
+evidence before any checkbox change. Worker results close only their assigned
+slice; no Worker result authorizes a checkbox change.
 
-Each new implementation Task receives a self-contained packet. Each
-implementation invocation or continuation assigns one bounded active slice with
-attainable acceptance criteria, owned scope, focused validation, and stop
-conditions. Unresolved or deferred work is context only, not active acceptance
-criteria or a blocker. Relevant completed state appears under
-`Satisfied dependencies / preserved state`, marked out of scope and not to be
-repeated. A Worker `COMPLETED` report closes only the active slice; only the
-Orchestrator may reconcile the full TODO and advance its checkbox.
-
-Plan and Task scope authorize the bounded work but never satisfy an `ask`
-permission. Before delegation, classify each required operation as allowed,
-ask-gated, or denied. Do not delegate a known denied operation. For an ask-gated
-or destructive operation, the packet names the exact contained target, expected
-runtime gate, and evidence needed to distinguish not-started, terminal, and
-uncertain execution.
-
-The Orchestrator uses evidence-first return handling. It closes an
-evidenced-complete slice regardless of an incorrect status, retries an incomplete
-slice when no genuine blocker exists, and stops on a genuine blocker that
-prevents every remaining safe slice action. A false `COMPLETED` is handled like
-an unsupported `BLOCKED`, but evidence controls the transition.
-
-Permission-state and replay-safety gates run before no-progress handling. A
-policy denial or rejected approval for a command known not to have started stops
-the current `/start-plan` invocation immediately and never consumes the
-unsupported no-progress allowance. Pending approval retains one waiting child
-without polling, continuation, or another Task. Approval alone does not prove
-execution. A known terminal result is reconciled against fresh evidence; unknown
-or interrupted execution stops without replay.
+Each new implementation Task receives a self-contained packet. The Plan
+Orchestrator derives the full canonical TODO obligation set and partitions it into
+three disjoint and collectively exhaustive sets: active slice, evidenced complete,
+and unresolved or deferred. It selects one bounded active slice; unresolved or
+deferred work is context only, while satisfied dependencies are preserved and not
+repeated. A Worker `COMPLETED` report closes only the active slice, and the
+Orchestrator reconciles source, diff, and validation evidence before a TODO-level
+integration decision.
 
 Strict progress means fresh evidence moves at least one unresolved active-slice
-criterion to evidenced complete. The Orchestrator preserves those completed
-criteria, forms a strictly smaller residual active slice, and resets the
-consecutive no-progress allowance. With no criterion classification change, it
-allows one same-session correction for the residual slice. A second consecutive
-unsupported no-progress terminal return is an execution-channel failure, not a
-plan blocker; the TODO stays unchecked. The finite obligation set bounds progress
-resets.
+criterion to evidenced complete. The Orchestrator preserves that evidence and
+forms a strictly smaller residual active slice. With no criterion classification
+change, it may resume the same implementation child for one complete,
+delta-focused correction; a second consecutive unsupported no-progress return is
+an execution-channel failure and leaves the checkbox unchecked. Permission-state
+and replay-safety gates run before no-progress handling. While approval is
+pending, retain one waiting child; approval alone does not prove execution; and
+unknown or interrupted execution stops without replay. Before every continuation,
+the Orchestrator stops rather than repeating an action whose prior result or
+replay safety cannot be established from fresh evidence. If an interrupted runtime
+cannot resume the prior Task child, it re-derives the obligation partition and
+creates one fresh self-contained Task for only the unresolved slice without
+inferring completion.
 
-Every resumed correction prompt is independently actionable and delta-focused.
-It enumerates each evidence gap, the blocked slice criterion, observed versus
-required result, exact correction scope, validation to rerun, unchanged
-constraints, and stop condition. It omits stale logs and completed actions while
-retaining relevant preserved state. A TODO-status sentence or a phrase such as
-`these findings` is never a substitute for the findings themselves. Before
-checking the TODO, the Orchestrator re-derives the full obligation partition and
-collects TODO-level integration validation without beginning a separately listed
-Verification step. The Worker cannot edit plans or `.erb/plan-state.json`,
-delegate, stage, or commit.
+Verification is non-editing. Its packet may authorize repository-local bounded
+setup needed for the objective, one diagnostic pass, waiting for a known live
+lock or process to a finite deadline, exact owned disposable cleanup, and at most
+three parent-authorized starts. It never becomes implementation or decides retry,
+correction, effect, uncertain-result, or checkbox transitions. Plan and Task
+scope never satisfy an `ask` permission.
 
-Use validation-only mode for one exact command needed by command-backed
-TODO-level integration validation or, after every TODO is checked, the first
-unchecked dedicated Verification step when the Orchestrator cannot execute or
-directly observe the evidence. Directly observable read, search, LSP, and allowed
-Git evidence stays with the Orchestrator and creates no Worker Task.
+This guide describes the protocol; the Plan Orchestrator prompt alone owns its
+transition policy. That prompt classifies each operation as `repeatable_local`,
+`consequential`, or `prohibited`, reconciles liveness and observed effects, and
+selects the next transition. Known lock or process contention waits within the
+packet deadline. A deterministic verification failure requires a fresh bounded
+`implementation` assignment under the same obligation followed by fresh
+verification. An uncertain repeatable-local execution first requires liveness and
+effect reconciliation. Unknown consequential execution, denied or rejected
+permission, unexpected effects, material scope change, prohibited operations, or
+an exhausted budget stop with the checkbox unchecked.
 
-Before validation-only dispatch, inspect the recipe and relevant transitive
-scripts and establish from fresh repository evidence that the exact command is
-replay-safe and safe under duplicate or concurrent execution. A command name is
-not safety evidence, and plan text is never interpolated into a shell command.
-Permit only bounded regenerable local artifacts, including ephemeral test
-databases, that are safe to overwrite, repeat, and produce concurrently.
-Maintained-file, plan, state, persistent-database, media, remote, external,
-install, update, publication, deployment, irreversible-cleanup, or unknown
-effects block dispatch and require a safer human-authorized plan amendment.
-
-The validation-only packet names its mode, current validation purpose or first
-unchecked Verification entry, one exact command, permission gate, replay and
-duplicate/concurrent safety evidence, bounded expected effects, numbered
-completion evidence, prohibited effects, and stop conditions. It forbids edits,
-fixes, installs, updates, cleanup, retries, corrective implementation, plan or
-state access, staging, commits, and later work.
-
-A validation-only Worker return is evidence, never checkbox authority. Denial,
-rejection, pending approval, terminal failure, unknown execution or result,
-replay uncertainty, missing evidence, or unexpected effects leaves the current
-checkbox unchecked and stops later work. Validation-only work never enters the
-implementation correction or no-progress loop. Terminal success advances
-exactly the current checkbox only after the Orchestrator reconciles its complete
-obligation, sanitized terminal evidence, expected effects, and fresh plan and
-worktree state.
-
-The workflow stores no durable attempt record. It never replays uncertain
-validation in the same invocation. A later `/start-plan` may reconsider the
-command only after freshly establishing its replay and duplicate/concurrent
-safety.
-
-Before every continuation, the Orchestrator stops for reconciliation rather than
-repeating an action whose prior result or replay safety cannot be established
-from fresh evidence.
-
-If an interrupted runtime cannot resume the prior Task child, the Orchestrator
-re-derives the obligation partition and creates one fresh self-contained Task for
-the current unresolved slice. It does not infer completion from the lost session
-or replay an action whose prior result or replay safety lacks fresh evidence.
+The Worker reports status, mode, effect class, approval and execution state,
+attempt budget, liveness and effect evidence, cleanup state, replay safety,
+requirement mapping, validation, and residual risk. The Plan Orchestrator alone
+reconciles this evidence and advances a checkbox. Worker results are evidence,
+never checkbox authority. Documentation and `/start-plan` are descriptive
+projections, not competing transition state machines.
 
 ## Security And Validation
 
@@ -313,6 +264,21 @@ Treat state paths and plan content as untrusted. Reject absolute paths, traversa
 symlinks, alternate repositories, non-regular files, invalid UTF-8, and content
 larger than 1 MiB. Use edit tools instead of shell redirection for plan and state
 writes.
+
+In a human-owned repository, allowed checked-in Just recipes, package scripts,
+build scripts, tests, hooks, and binaries execute as trusted arbitrary local code
+with the host authority of the OpenCode process. Static permission rules classify
+direct command forms; they do not sandbox transitive runner effects or provide
+task-scoped filesystem or network containment. External-repository runners are
+not trusted by this posture and remain separately gated. Genuinely untrusted
+execution requires an outer container, VM, or OS control not added here.
+
+Native checked-in agent and command definitions plus the Plan Orchestrator remain
+authoritative. No plugin or secondary runtime may own, inject, or replace agents
+or commands; mutate plans or state; classify permissions, effects, or retries; or
+autonomously continue work. Reconsider only observational status or UX assistance
+after full-restart measurements show residual friction; observation never grants
+workflow authority.
 
 Optional ERB review is independent read-only advice, not approval, readiness,
 persistence, or execution authority. Report selected plan, current or completed

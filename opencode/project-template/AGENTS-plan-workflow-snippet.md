@@ -46,39 +46,50 @@ or retained contract history is required.
 
 The Plan Orchestrator is the exclusive durable-plan and state writer. The
 Engineering Review Board remains separate, optional, and read-only advisory. The
-Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit. In
-implementation mode, each new Worker Task receives a self-contained packet with
-numbered acceptance criteria;
-the Plan Orchestrator derives the full TODO obligation set, partitions it into
-active-slice, evidenced-complete, and unresolved work, and assigns one bounded
-active slice at a time. Worker status is evidence: `COMPLETED` closes only the
-slice, and `BLOCKED` requires a genuine blocker that prevents every safe slice
-action. Plan and Task scope never satisfy an `ask` permission. Known denial or
-rejected approval stops without a correction; pending approval retains one
-waiting child; approval alone does not prove execution; and unknown execution
-stops without replay. Only after those permission-state and replay-safety gates
-may the Orchestrator resume the same Task child for one evidence-first correction
-when no criterion changes classification. Strict criterion-level progress
-creates a smaller residual slice and resets that consecutive no-progress
-allowance; a second unsupported no-progress return becomes an execution-channel
-failure and leaves the TODO unchecked. Every correction is delta-focused and
-independently actionable, preserves relevant completed state without repeating
-it, stops when prior result or replay safety is uncertain, and includes exact
-gaps, required results, scope, validation, constraints, and stop conditions. The
-Orchestrator checks the TODO only after every canonical obligation and TODO-level
-integration validation are evidenced.
+Worker cannot edit plans or `.erb/plan-state.json`, stage, or commit. Every Worker
+assignment fixes one mode: `implementation` or non-editing `verification`.
+Implementation receives a self-contained bounded slice with numbered criteria;
+the Orchestrator derives the TODO obligation partition, preserves completed
+evidence, and reconciles Worker results before any checkbox change. Verification
+may use packet-authorized repository-local setup, one diagnostic pass, finite
+known lock or process waiting, exact owned disposable cleanup, and no more than
+three parent-authorized starts. It never changes itself into implementation or
+decides retries.
 
-Every Worker assignment has exactly one mode: implementation or validation-only.
-Use validation-only mode only for one exact command needed by command-backed TODO
-integration validation or the first unchecked dedicated Verification when the
-Orchestrator cannot execute or directly observe the evidence. Directly observable
-evidence creates no Worker Task. Before dispatch, inspect the recipe and relevant
-transitive scripts and establish replay and duplicate/concurrent safety. Permit
-only bounded regenerable local effects that are safe to overwrite, repeat, and
-produce concurrently; maintained-state mutation, install, update, publication,
-deployment, irreversible cleanup, or unknown effects block. Validation-only work
-cannot edit, fix, retry, or enter the implementation correction loop, and its
-return is evidence rather than checkbox authority.
+In implementation mode, each new Worker Task receives a self-contained packet
+with one bounded active slice at a time. Strict criterion-level progress creates
+a smaller residual slice; a second unsupported no-progress return is an
+execution-channel failure. The Orchestrator stops when prior result or replay
+safety is uncertain. Plan and Task scope never satisfy an `ask` permission.
+A pending approval retains one waiting child.
+
+The Plan Orchestrator prompt alone classifies planned effects and owns retry,
+correction, uncertain-result, and checkbox transitions. Its descriptive
+projection here is not a second state machine: deterministic verification failure
+returns `NEEDS_CORRECTION` for a fresh bounded implementation unit followed by
+fresh verification. Unknown consequential execution, denied or rejected
+permission, unexpected effects, material scope change, prohibited operations, or
+an exhausted budget stop with the checkbox unchecked. Worker results are evidence,
+not checkbox authority.
+
+In a human-owned repository, allowed checked-in project runners execute as
+trusted arbitrary local code with the host authority of the OpenCode process.
+Static permissions classify direct forms and do not sandbox transitive runner
+effects or task-scoped filesystem or network access. Unknown direct command forms
+and consequential directly invoked operations remain ask/deny-gated.
+External-repository runners remain untrusted and require separate gating; use an
+outer container, VM, or OS control for genuinely untrusted execution. Native
+checked-in definitions and the
+Plan Orchestrator remain authoritative: no plugin or secondary runtime may own or
+replace agents or commands, mutate plans or state, classify permissions, effects,
+or retries, or autonomously continue work. Reconsider only observational status
+or UX assistance after full-restart measurements show residual friction; it never
+grants workflow authority.
+
+After the required full restart, the Lead and Worker trusted-local profiles allow
+routine scoped in-repository edits and their canonical local quality, build, and
+test command families without runtime approval. Plan and state paths retain their
+existing boundaries.
 
 After the Plan Orchestrator creates and validates a plan, an explicit current
 human commit request may authorize the Engineering Lead to stage and commit only

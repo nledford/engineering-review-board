@@ -81,7 +81,7 @@ lifecycle limits.
 | [Engineering Lead](../opencode/agents/engineering-lead.md) | Request intake, process selection, direct or bounded unplanned delivery, integration, validation, and independent-review handoff. | Invoke the ERB as a Task child, claim a Board decision without its output, or write or execute a durable plan or plan state. |
 | [Engineering Review Board](../opencode/agents/engineering-review-board.md) | Optional independent read-only advice, specialist selection, evidence synthesis, and severity assessment. Invoke it as a separate primary agent. | Edit the repository, implement a fix, change plans or state, or control plan creation, updates, execution, or persistence. |
 | [Plan Orchestrator](../opencode/agents/plan-orchestrator.md) | Top-level read-only consultation, safe closed lean-plan creation, explicit active-plan updates, selected-plan state, planned execution, self-contained Worker handoffs, acceptance reconciliation, integration, validation, and native planned-work TODOs. | Act as a Task child, update a plan without exact current human authority, update a completed plan, mutate plan prose during execution, delegate to anything other than the Worker, or claim ERB advisory evidence controls planned work. |
-| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded implementation unit assigned by the Lead or Plan Orchestrator, or one Plan-Orchestrator validation-only command unit for otherwise inaccessible planned evidence. It reports every assigned criterion and remains the only execution subagent. | In validation-only mode, edit or fix anything; in either mode, edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
+| [Implementation Worker](../opencode/agents/implementation-worker.md) | One bounded `implementation` or non-editing `verification` unit assigned by the Lead or Plan Orchestrator. It reports every assigned criterion and remains the only execution subagent. The Plan Orchestrator alone classifies planned-work effects and owns retry, correction, uncertain-result, and checkbox decisions. | In verification, edit or fix anything; in either mode, edit durable plans; read or mutate `.erb/plan-state.json`; delegate; stage; commit; push; deploy; broaden scope; or perform destructive migrations. |
 | [Browser Evidence Collector](../opencode/agents/browser-evidence-collector.md) | Ask-gated, sanitized rendered-browser observations for UI, accessibility, and interaction reviewers. | Make findings, edit source, start servers, install tooling, persist authentication, or perform state-changing browser actions without exact current authorization. |
 | Review and research specialists | Bounded, decision-relevant analysis for the Lead or ERB using exact runtime-visible IDs. | Implement changes, simulate the ERB, approve plans, or treat advisory output as final authority. |
 
@@ -361,10 +361,24 @@ particular:
   rather than findings;
 - the Worker's staging, commit, push, destructive Git, privilege, plan, and
   state denies remain effective against later overrides; ordinary `rm` commands
-  are ask-gated, Plan and Task scope do not satisfy that runtime gate, and
+  are ask-gated; Plan and Task scope never satisfy an `ask` permission; and
   approval cannot override those restrictions; and
 - bare Worker `git status`, `git diff`, `git log`, and `git show` are allowed,
   while argument-bearing forms require approval.
+
+In a human-owned repository, allowed checked-in Just recipes, package scripts,
+build scripts, tests, hooks, and binaries are trusted arbitrary local user-process
+code with the host authority of the OpenCode process. Static permission rules
+classify direct command forms; they do not contain transitive runner effects or
+provide task-scoped filesystem, network, or host sandboxing. Unknown direct
+command forms and consequential directly invoked operations remain ask/deny-gated.
+External-repository runners are not trusted by this posture and remain separately
+gated. Genuinely untrusted execution needs an outer container, VM, or OS control.
+
+After the required full restart, the Lead and Worker trusted-local profiles allow
+routine scoped in-repository edits and their canonical local quality, build, and
+test command families without runtime approval. Plan and state paths retain their
+existing boundaries.
 
 Every agent's skill permission map is fail-closed: `*` is denied before an exact
 role-specific allowlist. Broad ignored third-party skills therefore do not enter
@@ -403,43 +417,34 @@ paths in eval prompts or traces.
 Static prompt validation cannot prove multi-turn model behavior. After changing
 the planned Worker handoff contract, fully restart OpenCode and run a bounded,
 opt-in observation in a disposable synthetic repository. Record the model and
-configuration plus sanitized fields for the canonical obligation partition,
-active slice, returned status, fresh evidence, Task-session reuse when available,
-and resulting TODO state. Do not retain source text, machine-local paths, or raw
-tool output.
+configuration plus sanitized obligation partition, active slice, mode, returned
+status, effect class, approval and execution state, attempt budget, liveness and
+effect evidence, Task-session reuse when available, and resulting TODO state. Do
+not retain source text, machine-local paths, or raw tool output.
 
-Use separate synthetic cases for an intermediate valid `COMPLETED`, a false
-`COMPLETED`, a genuine blocker, unsupported `BLOCKED` with a complete slice,
-unsupported `BLOCKED` with an incomplete slice, strict criterion-level progress
-between returns, a second invalid no-progress return, a canonical-plan
-inconsistency, and an unavailable prior Task session. Add approval-gated deletion
-cases for policy denial, pending approval, rejected approval before execution,
-approved success, known terminal failure, and interrupted or unknown execution.
-Assert zero continuation after denial or rejection, one waiting child while
-pending, exactly one deletion after approved success, and no replay after an
-unknown result. A policy denial or rejected approval never enters the unsupported
-no-progress allowance. For the unavailable-session case, observe a fresh
-self-contained Task, re-derived obligations, preserved evidence, unchanged TODO
-state, and a stop rather than replay when prior action safety is uncertain.
+Observe implementation progress, a false completion, a known blocker, and a
+fresh bounded correction packet. Observe verification with bounded local setup,
+a diagnostic pass, known lock/process waiting, authorized disposable cleanup, and
+the at-most-three-start budget. Confirm that deterministic verification failure
+produces `NEEDS_CORRECTION`, a fresh bounded implementation unit, and fresh
+verification; unknown consequential execution, denial or rejection, unexpected
+effects, a material scope change, prohibited operations, or an exhausted budget
+stop unchecked. Report unobserved branches as unverified. This observation is
+non-deterministic evidence, not a CI gate or proof of future model compliance;
+deterministic mutation tests remain the source validation control.
 
-For every case, observe that completed actions are not repeated, incomplete retry
-obligations do not silently narrow, and the TODO stays unchecked until the
-exhaustive obligation map and TODO-level integration validation pass. Report
-unobserved branches as unverified. This observation is non-deterministic
-evidence, not a CI gate or proof of future model compliance; deterministic
-mutation tests remain the source validation control.
-
-Add disposable validation-only cases after any change to planned validation
-routing. Observe one exact command for approved success, denial or rejection
-before start, pending approval, terminal failure, unknown execution followed by
-a fresh `/start-plan`, unsafe replay or duplicate/concurrent classification, and
-directly observable evidence that must create no Worker Task. Before dispatch,
-require fresh inspection of the recipe and relevant transitive scripts plus
-replay and duplicate/concurrent safety. Approved success advances exactly the
-current checkbox only after Orchestrator reconciliation; every other case leaves
-it unchecked and performs no correction, retry, or later work. Record only
-sanitized command identity, safety classification, expected and observed effect
-classes, approval/execution/replay fields, Task count, and checkbox outcome.
+Also observe the retained implementation mechanics: the three disjoint and
+collectively exhaustive sets: active slice, evidenced complete, and unresolved or
+deferred work. Criterion-level completion is strict progress; it permits one
+unchanged-residual correction, while the Orchestrator treats the second
+consecutive unsupported no-progress return as an execution-channel failure. If an
+interrupted runtime cannot resume the prior implementation Task child, then for an
+unavailable prior Task session observe a fresh self-contained Task with re-derived
+obligations and preserved evidence. Plan and Task scope never satisfy an `ask`
+permission. A policy denial or rejected approval never enters the unsupported
+no-progress allowance. Pending approval retains one waiting child; approved
+success and an unknown result are reconciled before any later transition.
+Directly observable evidence creates no Worker Task.
 
 ## Handoffs
 
@@ -488,43 +493,21 @@ remains authoritative for durable-plan details:
    advisory review. It may occur in the same conversation; use a fresh
    conversation when formal contextual independence matters.
 11. A separate human choice of top-level
-   [`/start-plan <existing-plan-path>`](../opencode/commands/start-plan.md), or a
-   valid no-argument state pointer,
-    executes existing planned work. The Plan Orchestrator then executes bounded
-    Worker units and records only observed plan checkbox and state evidence. Every
-    assignment has exactly one mode: an implementation slice or a validation-only
-    command for evidence the Orchestrator cannot execute or directly observe.
-    Directly observable evidence creates no Worker Task. The Orchestrator
-    re-derives each current TODO's full obligation set and partitions it into
-    three disjoint and collectively exhaustive sets: active slice, evidenced
-    complete, and unresolved or deferred. Each new implementation Task is
-    self-contained; every invocation or continuation assigns one bounded active
-    slice with attainable criteria and focused validation. `COMPLETED` closes
-    only that slice, while `BLOCKED` requires a genuine blocker that prevents
-    every remaining safe slice action. The Orchestrator reconciles evidence
-    before status. Criterion-level completion is strict progress: the
-    Orchestrator preserves it, derives a strictly smaller residual slice, and
-    resets the consecutive no-progress allowance. With no classification change,
-    it resumes the same Task child for one correction and treats a second
-    consecutive unsupported no-progress return as an execution-channel failure.
-    It stops rather than replaying an action whose result or replay safety lacks
-    fresh evidence. The TODO advances only after every canonical obligation and
-    TODO-level integration validation are evidenced; a status-only reference to
-    findings is not an actionable packet.
-    If an interrupted runtime cannot resume the prior implementation Task child,
-    the Orchestrator re-derives the obligation partition and starts one fresh
-    self-contained Task for the unresolved slice without inferring completion or
-    replaying an action whose safety lacks fresh evidence.
-
-    A validation-only unit contains one exact command and requires fresh recipe
-    and transitive-script inspection plus replay and duplicate/concurrent safety
-    before dispatch. It permits only bounded regenerable local artifacts that are
-    safe to overwrite, repeat, and produce concurrently; maintained-state
-    mutation, install, update, publication, deployment, irreversible cleanup, and
-    unknown effects block. Validation-only work never edits, fixes, retries, or
-    enters the implementation correction loop. Its result is evidence, not
-    checkbox authority, and a later invocation may reconsider uncertain work
-    only after freshly re-establishing both safety classifications.
+    [`/start-plan <existing-plan-path>`](../opencode/commands/start-plan.md), or a
+    valid no-argument state pointer, executes existing planned work. The Plan
+    Orchestrator assigns exactly one Worker mode: `implementation` or non-editing
+    `verification`. It re-derives the active, evidenced-complete, and unresolved
+    work, preserves completed evidence, and keeps each implementation unit
+    self-contained and bounded. Verification may use authorized bounded local
+    setup, one diagnostic pass, finite known lock/process waiting, exact owned
+    disposable cleanup, and no more than three starts. The Plan Orchestrator
+    prompt alone classifies planned effects and selects retry, correction,
+    uncertain-result, and checkbox transitions. Deterministic verification
+    failure returns `NEEDS_CORRECTION` for a fresh bounded implementation unit
+    followed by fresh verification. Unknown consequential execution, denial or
+    rejection, unexpected effects, material scope change, prohibited operations,
+    or an exhausted budget leaves the checkbox unchecked. Worker results are
+    evidence, not checkbox authority.
 
 Active plan content is immutable by default and during execution except for
 evidenced checkbox advancement. A material discovery requires a new human
@@ -577,6 +560,12 @@ Before changing role or command guidance:
 - Keep implementation and durable-plan persistence separate. The Worker owns one
   bounded implementation unit; the top-level Plan Orchestrator owns plan and
   `.erb/plan-state.json` mutations.
+- Native checked-in agent and command definitions plus the Plan Orchestrator
+  remain authoritative. No plugin or secondary runtime may own, inject, or
+  replace agents or commands; mutate plans or state; classify permissions,
+  effects, or retries; or autonomously continue work. Reconsider only
+  observational status or UX assistance after full-restart measurements show
+  residual friction; observation never grants workflow authority.
 - Treat a Worker return as evidence rather than automatic completion. Reconcile
   every assigned criterion, continue the same Task child for safe in-scope
   corrections, and advance a plan checkbox only after fresh source, diff, and

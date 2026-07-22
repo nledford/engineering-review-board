@@ -70,14 +70,29 @@ correctness requires it; planning-time permission disclosure never grants
 runtime approval.
 
 During `/start-plan`, every Worker assignment has exactly one mode:
-implementation or validation-only. Validation-only mode runs one exact command
-only for command-backed TODO integration validation or the first unchecked
-dedicated Verification that the Orchestrator cannot execute or directly observe.
-Fresh recipe evidence must establish replay and duplicate/concurrent safety
-before dispatch; all maintained-state mutation, install, update, publication,
-deployment, irreversible cleanup, or unknown effects block. The Worker cannot
-edit or fix in this mode, and its return is evidence rather than checkbox
-authority.
+`implementation` or non-editing `verification`. Implementation keeps one
+bounded slice, its obligation partition, evidence reconciliation, and finite
+in-scope correction. Verification may use packet-authorized local setup, one
+diagnostic pass, finite lock or process waiting, and exact owned disposable
+cleanup within a parent-supplied budget of at most three starts. The Plan
+Orchestrator alone classifies planned effects and decides retry, correction,
+uncertain-result, and checkbox transitions; Worker results are evidence rather
+than checkbox authority and never a competing transition decision.
+
+In a human-owned repository, allowed checked-in Just recipes, package scripts,
+build scripts, tests, hooks, and binaries execute as trusted arbitrary local
+code with the host authority of the OpenCode process. Unknown direct command
+forms and consequential directly invoked operations remain ask/deny-gated.
+Static permission rules classify direct command forms; they do not sandbox
+transitive runner effects or provide task-scoped filesystem or network
+containment.
+External-repository runners are not trusted by this posture; genuinely untrusted
+execution needs an outer container, VM, or OS control.
+
+After the required full restart, the Lead and Worker trusted-local profiles allow
+routine scoped in-repository edits and their canonical local quality, build, and
+test command families without runtime approval. Plan and state paths retain their
+existing boundaries.
 
 A current conversational split-or-replace request may create at least two
 successors and retire one unambiguous source after every successor is re-read;
@@ -95,6 +110,12 @@ credentials or a replacement for a user's `opencode.jsonc`. The Plan Orchestrato
 may construct a commit only for an explicit current human request; the Worker
 remains forbidden to stage or commit. Agent-definition permission changes take
 effect only after a full OpenCode restart, never in the running session.
+Native checked-in agent and command definitions plus the Plan Orchestrator remain
+authoritative. No plugin or secondary runtime may own, inject, or replace agents
+or commands; mutate plans or state; classify permissions, effects, or retries; or
+autonomously continue work. Reconsider plugins only for observational status or
+UX assistance after full-restart measurements show residual friction; observation
+never grants workflow authority.
 Approval for `git add --` is an additional human check, not proof that a path is
 safe: the Plan Orchestrator and the Lead's canonical-plan staging exception must
 derive, separately enumerate, and literally quote each repository-relative path

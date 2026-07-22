@@ -11,7 +11,9 @@ from tools.opencode_contracts import (
     COMMAND_PROMPT_CONTRACTS,
     ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS,
     HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS,
+    HUMAN_CONTROLLED_LIFECYCLE_FORBIDDEN_TOKENS,
     MCP_SELECTION_PROMPT_CONTRACTS,
+    PLANNED_WORK_PROMPT_CONTRACTS,
     PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
     PRIMARY_AGENT_TURN_PROMPT_CONTRACTS,
     TECHNICAL_DEBT_AUDIT_PROMPT_CONTRACTS,
@@ -567,274 +569,56 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 with self.subTest(command=name, phrase=phrase):
                     self.assertIn(phrase, normalized)
 
-    def test_checked_in_planned_worker_delegation_closes_partial_work(self) -> None:
-        """Require self-contained Worker context and evidence-driven correction."""
+    def test_checked_in_planned_work_uses_shared_modes_and_sole_policy_owner(self) -> None:
+        """Pin shared modes, bounded verification, and sole transition ownership."""
         project_root = Path(__file__).parents[1]
-        orchestrator = " ".join(
-            (project_root / "opencode/agents/plan-orchestrator.md")
-            .read_text(encoding="utf-8")
-            .split()
-        )
-        worker = " ".join(
-            (project_root / "opencode/agents/implementation-worker.md")
-            .read_text(encoding="utf-8")
-            .split()
-        )
-        lead = " ".join(
-            (project_root / "opencode/agents/engineering-lead.md")
-            .read_text(encoding="utf-8")
-            .split()
-        )
-        start_plan = " ".join(
-            (project_root / "opencode/commands/start-plan.md")
-            .read_text(encoding="utf-8")
-            .split()
-        )
+        prompts = {
+            "engineering-lead.md": " ".join((project_root / "opencode/agents/engineering-lead.md").read_text(encoding="utf-8").split()),
+            "implementation-worker.md": " ".join((project_root / "opencode/agents/implementation-worker.md").read_text(encoding="utf-8").split()),
+            "plan-orchestrator.md": " ".join((project_root / "opencode/agents/plan-orchestrator.md").read_text(encoding="utf-8").split()),
+            "start-plan.md": " ".join((project_root / "opencode/commands/start-plan.md").read_text(encoding="utf-8").split()),
+        }
+        for name, requirements in PLANNED_WORK_PROMPT_CONTRACTS.items():
+            for requirement in requirements:
+                with self.subTest(name=name, requirement=requirement):
+                    self.assertIn(requirement, prompts[name])
+            with self.subTest(name=name):
+                self.assertNotIn("validation-only", prompts[name])
+        self.assertEqual(1, prompts["plan-orchestrator.md"].count("sole normative planned-work effect and transition policy"))
+        self.assertNotIn("Effect Classification And Transitions", prompts["start-plan.md"])
+        self.assertIn("approval is `pending`", prompts["implementation-worker.md"])
+        self.assertIn("approval is `pending`", prompts["plan-orchestrator.md"])
+        self.assertIn("at most one no-progress correction", prompts["plan-orchestrator.md"])
+        self.assertIn("current packet cannot authorize", prompts["implementation-worker.md"])
 
-        orchestrator_requirements = (
-            "Every Worker assignment has exactly one mode: `implementation` or `validation-only`.",
-            "Treat every new Task child as context-isolated; its prompt must be self-contained",
-            "canonical plan path, current TODO number and exact text",
-            "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
-            "derive the full canonical TODO obligation set",
-            "three disjoint and collectively exhaustive sets: active slice, evidenced complete, and unresolved or deferred",
-            "Select one bounded active slice",
-            "No active criterion may also be deferred or prohibited.",
-            "numbered acceptance criteria",
-            "Satisfied dependencies / preserved state",
-            "Plan and Task scope authorize the bounded work; they never satisfy an `ask` permission.",
-            "Classify every required operation as allowed, ask-gated, or denied before delegation.",
-            "One at a time means one active Worker and one current implementation TODO, not one attempt.",
-            "A Worker return is evidence, not a terminal event.",
-            "Map every acceptance criterion to fresh source, diff, and validation evidence.",
-            "A Worker `COMPLETED` report closes only the active slice",
-            "TODO-level integration validation",
-            "Use `validation-only` mode only for command-backed evidence that your effective permissions cannot execute or directly observe.",
-            "Before validation-only dispatch, establish from fresh repository evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
-            "Directly observable Verification evidence stays with the Orchestrator and creates no Worker Task.",
-            "ephemeral test databases",
-            "A validation-only Worker return is evidence, never checkbox authority.",
-            "Do not use the implementation correction or no-progress loop for validation-only work.",
-            "Reconcile fresh evidence before interpreting either Worker status.",
-            "close only that transient slice regardless of an incorrect label",
-            "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
-            "Re-partition strict progress into preserved completed criteria and a strictly smaller residual active slice.",
-            "Reset the consecutive no-progress allowance only after strict progress.",
-            "If no criterion changes classification, allow one same-`task_id` correction",
-            "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
-            "Apply the permission-state and replay-safety gates before the unsupported no-progress allowance.",
-            "A policy denial or rejected approval for a command known not to have started is a genuine blocker",
-            "While runtime approval is pending, retain the same waiting child",
-            "Approval alone is not evidence that the operation ran.",
-            "Worker's exact `approval_state`, `execution_state`, and `replay_safe` fields",
-            "resume the same Worker child session by passing its `task_id`",
-            "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
-            "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
-            "If the runtime cannot resume that child after an interruption",
-            "Keep a continuation delta-focused",
-            "For every resumed correction, send a complete correction packet",
-            "numbered evidence gaps",
-            "the acceptance criterion each gap blocks",
-            "the observed evidence and required result",
-            "the exact correction requested",
-            "validation to rerun",
-            "A status-only preamble or a reference such as `these findings`",
-        )
-        worker_requirements = (
-            "Every assignment must name exactly one mode: `implementation` or `validation-only`.",
-            "`validation-only` is available only for a Plan Orchestrator assignment",
-            "In implementation mode, make the smallest durable change that satisfies every assigned acceptance criterion.",
-            "Do not return partial progress while safe, in-scope work remains executable.",
-            "In implementation mode, they define the active slice, not the parent plan TODO.",
-            "Deferred or unassigned parent work is context only",
-            "Preserve satisfied dependencies and do not repeat completed actions.",
-            "Plan and Task scope do not satisfy an `ask` permission.",
-            "While approval is pending, do not return a terminal status or issue another request.",
-            "A policy denial or rejected approval before execution starts is `BLOCKED`",
-            "approval state, whether execution started, whether a terminal outcome is known, and replay-safety evidence",
-            "`execution_state` (`not_started`, `terminal_success`, `terminal_failure`, or `unknown`)",
-            "Return exactly one status: `COMPLETED` or `BLOCKED`.",
-            "`COMPLETED` reports only that the active slice is complete",
-            "prevents every remaining safe action in the active slice",
-            "requirement-to-evidence table",
-            "A resumed correction assignment must enumerate at least one concrete evidence gap",
-            "Do not infer missing findings from a status-only preamble",
-            "In validation-only mode, do not edit, fix, install, update, clean up, regenerate snapshots or lockfiles, stage, commit, or perform corrective implementation.",
-            "Before requesting approval, require fresh packet evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
-            "ephemeral test databases",
-            "Terminal success does not authorize a plan checkbox change.",
-        )
-        command_requirements = (
-            "Use the Plan Orchestrator's self-contained delegation and corrective-continuation contract.",
-            "A Worker return does not end the current TODO.",
-            "derive and reconcile the full canonical TODO obligation set",
-            "one bounded active slice",
-            "Reconcile fresh slice evidence before interpreting `COMPLETED` or `BLOCKED`.",
-            "Strict progress moves at least one previously unresolved active-slice criterion to evidenced complete.",
-            "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
-            "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
-            "Plan and Task scope never satisfy an `ask` permission.",
-            "Do not continue or create another Task while runtime approval is pending.",
-            "A policy denial or rejected approval for a command known not to have started stops the current `/start-plan` invocation immediately.",
-            "Approval alone does not prove execution.",
-            "A valid slice completion does not check the TODO; all canonical obligations and TODO-level integration validation must pass first.",
-            "Delegate command-backed evidence that the Orchestrator cannot execute or directly observe as one `validation-only` Worker assignment.",
-            "Directly observable Verification evidence creates no Worker Task.",
-            "Before validation-only dispatch, establish that the exact command is replay-safe and safe under duplicate or concurrent execution.",
-            "including ephemeral test databases",
-            "Each resumed correction prompt must enumerate the evidence gaps, blocked criteria, required corrections, and validation to rerun.",
-        )
-        lead_requirements = (
-            "Every Engineering Lead assignment to `implementation-worker` must state `mode: implementation`.",
-            "Never assign `validation-only`; that mode belongs exclusively to Plan Orchestrator `/start-plan` validation.",
-            "When `subagent_type` is `implementation-worker`, add a `## Mode` section containing exactly `implementation`",
-            "When resuming the same Worker for a correction, send a complete actionable packet",
-            "enumerate each evidence gap, the acceptance criterion it blocks",
-            "Never send only a status preamble or references such as `these findings`",
-        )
-
-        for phrase in orchestrator_requirements:
-            with self.subTest(agent="plan-orchestrator", phrase=phrase):
-                self.assertIn(phrase, orchestrator)
-        for phrase in worker_requirements:
-            with self.subTest(agent="implementation-worker", phrase=phrase):
-                self.assertIn(phrase, worker)
-        for phrase in command_requirements:
-            with self.subTest(command="start-plan", phrase=phrase):
-                self.assertIn(phrase, start_plan)
-        for phrase in lead_requirements:
-            with self.subTest(agent="engineering-lead", phrase=phrase):
-                self.assertIn(phrase, lead)
-
-    def test_validate_rejects_planned_worker_slice_contract_drift(self) -> None:
-        """Require production validation for sliced evidence-first handoffs."""
-        mutations = (
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "three disjoint and collectively exhaustive sets: active slice, evidenced complete, and unresolved or deferred",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Reset the consecutive no-progress allowance only after strict progress.",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "close only that transient slice regardless of an incorrect label",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Keep a continuation delta-focused",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Every Worker assignment has exactly one mode: `implementation` or `validation-only`.",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Before validation-only dispatch, establish from fresh repository evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Directly observable Verification evidence stays with the Orchestrator and creates no Worker Task.",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "A validation-only Worker return is evidence, never checkbox authority.",
-            ),
-            (
-                "opencode/agents/plan-orchestrator.md",
-                "Apply the permission-state and replay-safety gates before the unsupported no-progress allowance.",
-            ),
-            (
-                "opencode/agents/implementation-worker.md",
-                "Deferred or unassigned parent work is context only",
-            ),
-            (
-                "opencode/agents/implementation-worker.md",
-                "Plan and Task scope do not satisfy an `ask` permission.",
-            ),
-            (
-                "opencode/agents/implementation-worker.md",
-                "prevents every remaining safe action in the active slice",
-            ),
-            (
-                "opencode/agents/implementation-worker.md",
-                "Every assignment must name exactly one mode: `implementation` or `validation-only`.",
-            ),
-            (
-                "opencode/agents/implementation-worker.md",
-                "In validation-only mode, do not edit, fix, install, update, clean up, regenerate snapshots or lockfiles, stage, commit, or perform corrective implementation.",
-            ),
-            (
-                "opencode/agents/engineering-lead.md",
-                "Every Engineering Lead assignment to `implementation-worker` must state `mode: implementation`.",
-            ),
-            (
-                "opencode/commands/start-plan.md",
-                "A valid slice completion does not check the TODO; all canonical obligations and TODO-level integration validation must pass first.",
-            ),
-            (
-                "opencode/commands/start-plan.md",
-                "Delegate command-backed evidence that the Orchestrator cannot execute or directly observe as one `validation-only` Worker assignment.",
-            ),
-            (
-                "opencode/commands/start-plan.md",
-                "Do not continue or create another Task while runtime approval is pending.",
-            ),
-            (
-                "docs/engineering-agent-governance.md",
-                "an unavailable prior Task session",
-            ),
-            (
-                "docs/engineering-agent-governance.md",
-                "A policy denial or rejected approval never enters the unsupported no-progress allowance.",
-            ),
-        )
-
-        for index, (relative_path, token) in enumerate(mutations):
-            with self.subTest(path=relative_path, token=token):
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    root = Path(temp_dir) / str(index)
-                    repo = create_canonical_active_workflow_repo(root)
-                    baseline = OpenCodeInstallService(repo, root / "config").validate()
-                    self.assertTrue(baseline.ok, baseline.errors)
-
-                    definition = repo / relative_path
-                    original = definition.read_text(encoding="utf-8")
-                    self.assertIn(token, " ".join(original.split()))
-                    pattern = r"\s+".join(re.escape(part) for part in token.split())
-                    mutation, replacements = re.subn(
-                        pattern,
-                        "slice contract removed",
-                        original,
-                        count=1,
-                    )
-                    self.assertEqual(1, replacements)
-                    definition.write_text(
-                        mutation,
-                        encoding="utf-8",
-                    )
-
-                    result = OpenCodeInstallService(repo, root / "config").validate()
-                    self.assertTrue(
-                        any(
-                            "contract is incomplete" in error
-                            for error in result.errors
-                        ),
-                        result.errors,
-                    )
+    def test_validate_rejects_planned_work_contract_drift_and_retired_mode(self) -> None:
+        """Fail closed on a missing semantic or retired active-prompt behavior."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = create_canonical_active_workflow_repo(root)
+            self.assertTrue(OpenCodeInstallService(repo, root / "config").validate().ok)
+            for name, requirements in PLANNED_WORK_PROMPT_CONTRACTS.items():
+                path = repo / ("opencode/commands" if name == "start-plan.md" else "opencode/agents") / name
+                original = path.read_text(encoding="utf-8")
+                for token in requirements:
+                    with self.subTest(name=name, token=token):
+                        pattern = r"\s+".join(re.escape(part) for part in token.split())
+                        mutated, count = re.subn(pattern, "planned-work contract removed", original, count=1)
+                        self.assertEqual(1, count, token)
+                        path.write_text(mutated, encoding="utf-8")
+                        result = OpenCodeInstallService(repo, root / "config").validate()
+                        self.assertTrue(
+                            any(f"{name}' planned-work prompt contract is incomplete" in error for error in result.errors),
+                            result.errors,
+                        )
+                        path.write_text(original, encoding="utf-8")
+                path.write_text(original + "\\nvalidation-only\\n", encoding="utf-8")
+                result = OpenCodeInstallService(repo, root / "config").validate()
+                self.assertTrue(
+                    any(f"{name}' planned-work prompt contract is incomplete" in error for error in result.errors),
+                    result.errors,
+                )
+                path.write_text(original, encoding="utf-8")
 
     def test_checked_in_update_plan_requires_exact_plan_only_authority(self) -> None:
         """Pin active-plan amendment, checkbox reconciliation, and resume separation."""
@@ -940,6 +724,14 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             root = Path(temp_dir)
             repo = create_canonical_active_workflow_repo(root)
 
+            self.assertEqual(
+                (repo / "docs/implementation-plans/README.md").read_bytes(),
+                (
+                    repo
+                    / "opencode/project-template/docs/implementation-plans/README.md"
+                ).read_bytes(),
+            )
+
             def remove_token(text: str, token: str) -> str:
                 pattern = re.escape(token).replace(r"\ ", r"\s+")
                 changed, count = re.subn(pattern, "contract removed", text)
@@ -949,10 +741,11 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             for relative_path, tokens in HUMAN_CONTROLLED_LIFECYCLE_DOC_TOKENS.items():
                 original = (repo / relative_path).read_text(encoding="utf-8")
                 contract = PromptContract(required=tokens)
-                self.assertTrue(
-                    prompt_satisfies_contract(original, contract),
-                    relative_path,
-                )
+                missing = [
+                    token for token in tokens if token not in " ".join(original.split())
+                ]
+                with self.subTest(document=relative_path, missing=missing):
+                    self.assertEqual([], missing)
                 for token in tokens:
                     with self.subTest(document=relative_path, token=token):
                         self.assertFalse(
@@ -976,6 +769,23 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
                 result.errors,
             )
 
+            for forbidden_token in HUMAN_CONTROLLED_LIFECYCLE_FORBIDDEN_TOKENS:
+                with self.subTest(document=relative_path, forbidden=forbidden_token):
+                    mutated = original + f"\n{forbidden_token}\n"
+                    self.assertFalse(
+                        prompt_satisfies_contract(
+                            mutated.lower(),
+                            PromptContract(forbidden=(forbidden_token,)),
+                        )
+                    )
+                    document.write_text(mutated, encoding="utf-8")
+                    result = OpenCodeInstallService(repo, root / "config").validate()
+                    self.assertIn(
+                        f"human-controlled lifecycle document '{relative_path}' contains a forbidden lifecycle token",
+                        result.errors,
+                    )
+                    document.write_text(original, encoding="utf-8")
+
             forbidden = "automatically creates a plan through `/start-plan`"
             document.write_text(
                 original + f"\nComplexity {forbidden}.\n",
@@ -989,7 +799,7 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             )
             result = OpenCodeInstallService(repo, root / "config").validate()
             self.assertIn(
-                f"human-controlled lifecycle document '{relative_path}' contains forbidden automatic `/start-plan` creation",
+                f"human-controlled lifecycle document '{relative_path}' contains a forbidden lifecycle token",
                 result.errors,
             )
 
@@ -1107,96 +917,10 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             } | {
                 name: semantics
                 for name, (_, semantics) in TECHNICAL_DEBT_AUDIT_PROMPT_CONTRACTS.items()
-            } | {
-                "engineering-lead.md": (
-                    "Use only `implementation-worker` for bounded implementation Tasks.",
-                    "Every Engineering Lead assignment to `implementation-worker` must state `mode: implementation`.",
-                    "Never assign `validation-only`; that mode belongs exclusively to Plan Orchestrator `/start-plan` validation.",
-                    "When `subagent_type` is `implementation-worker`, add a `## Mode` section containing exactly `implementation`",
-                    "When resuming the same Worker for a correction, send a complete actionable packet",
-                    "enumerate each evidence gap, the acceptance criterion it blocks",
-                    "Never send only a status preamble or references such as `these findings`",
-                ),
-                "plan-orchestrator.md": (
-                    "The lifecycle distinguishes read-only consultation, explicit plan-only creation, explicit active-plan updates, and execution.",
-                    "It must not execute newly created or updated plans automatically.",
-                    "`.erb/plan-state.json`",
-                    "Active means at least one unchecked TODO or Verification checkbox remains.",
-                    "The current step is the first unchecked checkbox in document order.",
-                    "This plan has already been implemented.",
-                    "An explicit valid path replaces missing, invalid, or stale state.",
-                    "Never block because another plan is selected or may be running.",
-                    "Before every mutable phase, freshly reload the selected plan, checkbox state, and worktree evidence; never rely on stale evidence.",
-                    "or equally explicit current top-level human plan-creation or plan-replacement request",
-                    "`/update-plan <exact-plan-path>` is explicit plan-only authority",
-                    "Completed plans remain immutable.",
-                    "must complete every planned TODO before beginning any dedicated Verification step",
-                    "must not add, remove, rewrite, reorder, or renumber plan content",
-                    "Treat every new Task child as context-isolated; its prompt must be self-contained",
-                    "canonical plan path, current TODO number and exact text",
-                    "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
-                    "derive the full canonical TODO obligation set",
-                    "three disjoint and collectively exhaustive sets: active slice, evidenced complete, and unresolved or deferred",
-                    "Select one bounded active slice",
-                    "No active criterion may also be deferred or prohibited.",
-                    "numbered acceptance criteria",
-                    "Satisfied dependencies / preserved state",
-                    "Plan and Task scope authorize the bounded work; they never satisfy an `ask` permission.",
-                    "Classify every required operation as allowed, ask-gated, or denied before delegation.",
-                    "One at a time means one active Worker and one current implementation TODO, not one attempt.",
-                    "A Worker return is evidence, not a terminal event.",
-                    "Map every acceptance criterion to fresh source, diff, and validation evidence.",
-                    "A Worker `COMPLETED` report closes only the active slice",
-                    "TODO-level integration validation",
-                    "Reconcile fresh evidence before interpreting either Worker status.",
-                    "close only that transient slice regardless of an incorrect label",
-                    "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
-                    "Re-partition strict progress into preserved completed criteria and a strictly smaller residual active slice.",
-                    "Reset the consecutive no-progress allowance only after strict progress.",
-                    "If no criterion changes classification, allow one same-`task_id` correction",
-                    "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
-                    "Apply the permission-state and replay-safety gates before the unsupported no-progress allowance.",
-                    "A policy denial or rejected approval for a command known not to have started is a genuine blocker",
-                    "While runtime approval is pending, retain the same waiting child",
-                    "Approval alone is not evidence that the operation ran.",
-                    "Worker's exact `approval_state`, `execution_state`, and `replay_safe` fields",
-                    "resume the same Worker child session by passing its `task_id`",
-                    "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
-                    "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
-                    "If the runtime cannot resume that child after an interruption",
-                    "Keep a continuation delta-focused",
-                    "For every resumed correction, send a complete correction packet",
-                    "numbered evidence gaps",
-                    "the acceptance criterion each gap blocks",
-                    "the observed evidence and required result",
-                    "the exact correction requested",
-                    "validation to rerun",
-                    "A status-only preamble or a reference such as `these findings`",
-                ),
-                "implementation-worker.md": (
-                    "Every assignment must name exactly one mode: `implementation` or `validation-only`.",
-                    "In implementation mode, make the smallest durable change that satisfies every assigned acceptance criterion.",
-                    "Do not return partial progress while safe, in-scope work remains executable.",
-                    "In implementation mode, they define the active slice, not the parent plan TODO.",
-                    "In validation-only mode, do not edit, fix, install, update, clean up, regenerate snapshots or lockfiles, stage, commit, or perform corrective implementation.",
-                    "ephemeral test databases",
-                    "Terminal success does not authorize a plan checkbox change.",
-                    "Deferred or unassigned parent work is context only",
-                    "Preserve satisfied dependencies and do not repeat completed actions.",
-                    "Plan and Task scope do not satisfy an `ask` permission.",
-                    "While approval is pending, do not return a terminal status or issue another request.",
-                    "A policy denial or rejected approval before execution starts is `BLOCKED`",
-                    "approval state, whether execution started, whether a terminal outcome is known, and replay-safety evidence",
-                    "`execution_state` (`not_started`, `terminal_success`, `terminal_failure`, or `unknown`)",
-                    "Return exactly one status: `COMPLETED` or `BLOCKED`.",
-                    "`COMPLETED` reports only that the active slice is complete",
-                    "prevents every remaining safe action in the active slice",
-                    "requirement-to-evidence table",
-                    "A resumed correction assignment must enumerate at least one concrete evidence gap",
-                    "Do not infer missing findings from a status-only preamble",
-                ),
-            }
+            } | PLANNED_WORK_PROMPT_CONTRACTS
             for name, tokens in agent_tokens.items():
+                if name == "start-plan.md":
+                    continue
                 agent = repo / "opencode/agents" / name
                 original = agent.read_text(encoding="utf-8")
                 contract = PromptContract(required=tokens)

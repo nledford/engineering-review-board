@@ -4,9 +4,11 @@ import unittest
 from pathlib import Path
 
 from tools.opencode_contracts import (
+    CANONICAL_AGENT_TOPOLOGY,
     ENGINEERING_LEAD_GIT_BASH_RULES,
     ENGINEERING_LEAD_PLAN_STAGING_PROMPT_REQUIREMENTS,
     PLAN_ORCHESTRATOR_BASH_RULES,
+    canonical_agent_permissions,
 )
 from tools.opencode_frontmatter import parse_frontmatter
 from tools.opencode_install import (
@@ -17,6 +19,7 @@ from tools.opencode_install import (
 
 from tests.opencode_test_support import (
     SUPPORT_FILES,
+    create_canonical_active_workflow_repo,
     create_opencode_repo,
     create_plan_orchestrator_repo,
     plan_orchestrator_source,
@@ -647,6 +650,140 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
         for command, expected in cases.items():
             with self.subTest(command=command):
                 self.assertEqual(expected, resolve_opencode_action(bash, command))
+
+    def test_checked_in_trusted_local_matrix_resolves_allow_ask_and_deny(self) -> None:
+        project_root = Path(__file__).parents[1]
+        commands = {
+            "rg permissions": "allow",
+            "rg -uuu --hidden permissions": "allow",
+            "just validate": "allow",
+            "cargo check": "allow",
+            "cargo test --lib": "allow",
+            "cargo build": "allow",
+            "cargo check --target wasm32-unknown-unknown": "allow",
+            "cargo build --target=wasm32-unknown-unknown": "allow",
+            "cargo clippy": "allow",
+            "cargo metadata": "allow",
+            "npm test": "allow",
+            "pnpm run lint": "allow",
+            "yarn run typecheck": "allow",
+            "bun run build": "allow",
+            "unknown-command": "ask",
+            "python3 script.py": "ask",
+            "npm install package": "ask",
+            "rm generated-file": "ask",
+            "kill 1": "ask",
+            "dd if=input of=output": "ask",
+            "docker rm container": "ask",
+            "sudo whoami": "deny",
+            "mkfs disk": "deny",
+            "cargo check --manifest-path alternate.toml": "deny",
+            "cargo check --target-dir alternate-target": "deny",
+            "cargo check --fix": "deny",
+            "npm test -- --update-snapshots": "deny",
+            "rg permission > output": "deny",
+            "rg permission && other": "deny",
+            "rg permission $(other)": "deny",
+            "just test > output": "deny",
+            "just test && other": "deny",
+        }
+        for agent_name in ("engineering-lead.md", "implementation-worker.md"):
+            parsed, errors = parse_frontmatter(
+                "agents",
+                agent_name,
+                (project_root / "opencode/agents" / agent_name).read_text(encoding="utf-8"),
+            )
+            self.assertEqual([], errors)
+            assert parsed is not None
+            bash = parsed.permissions["bash"]
+            self.assertIsInstance(bash, tuple)
+            assert isinstance(bash, tuple)
+            for command, expected in commands.items():
+                with self.subTest(agent=agent_name, command=command):
+                    self.assertEqual(expected, resolve_opencode_action(bash, command))
+
+    def test_checked_in_edit_ownership_and_plan_navigation_boundaries(self) -> None:
+        project_root = Path(__file__).parents[1]
+        edit_cases = {
+            "engineering-lead.md": {
+                "src/example.py": "allow",
+                "docs/implementation-plans/plans/example.md": "deny",
+                ".erb/plans/example.md": "deny",
+                ".erb/plan-state.json": "deny",
+            },
+            "implementation-worker.md": {
+                "src/example.py": "allow",
+                "docs/implementation-plans/plans/example.md": "deny",
+                ".erb/plans/example.md": "deny",
+                ".erb/plan-state.json": "deny",
+            },
+            "plan-orchestrator.md": {
+                "src/example.py": "deny",
+                "docs/implementation-plans/plans/example.md": "deny",
+                ".erb/plans/example.md": "allow",
+                ".erb/plan-state.json": "allow",
+            },
+        }
+        for agent_name, cases in edit_cases.items():
+            parsed, errors = parse_frontmatter(
+                "agents",
+                agent_name,
+                (project_root / "opencode/agents" / agent_name).read_text(encoding="utf-8"),
+            )
+            self.assertEqual([], errors)
+            assert parsed is not None
+            edit = parsed.permissions["edit"]
+            self.assertIsInstance(edit, tuple)
+            assert isinstance(edit, tuple)
+            for path, expected in cases.items():
+                with self.subTest(agent=agent_name, path=path):
+                    self.assertEqual(
+                        expected,
+                        resolve_opencode_action(edit, path, baseline="deny"),
+                    )
+
+    def test_checked_in_permission_profiles_match_canonical_definitions(self) -> None:
+        project_root = Path(__file__).parents[1]
+        for policy in CANONICAL_AGENT_TOPOLOGY.agents:
+            name = f"{policy.agent_id}.md"
+            parsed, errors = parse_frontmatter(
+                "agents",
+                name,
+                (project_root / "opencode/agents" / name).read_text(encoding="utf-8"),
+            )
+            self.assertEqual([], errors)
+            assert parsed is not None
+            with self.subTest(agent=policy.agent_id):
+                self.assertEqual(canonical_agent_permissions(policy), parsed.permissions)
+
+    def test_validate_reports_focused_trusted_local_matrix_drift(self) -> None:
+        mutations = {
+            "downgraded trusted runner": (
+                '    "just *": allow\n',
+                '    "just *": ask\n',
+            ),
+            "weakened final composition guard": (
+                '    "just *&*": deny\n',
+                '    "just *&*": allow\n',
+            ),
+        }
+        for label, (old, new) in mutations.items():
+            with self.subTest(case=label), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                repo = create_canonical_active_workflow_repo(root)
+                lead = repo / "opencode/agents/engineering-lead.md"
+                lead.write_text(
+                    lead.read_text(encoding="utf-8").replace(old, new, 1),
+                    encoding="utf-8",
+                )
+
+                result = OpenCodeInstallService(repo, root / "config").validate()
+
+                self.assertFalse(result.ok)
+                self.assertIn(
+                    "agents: 'engineering-lead.md' must preserve the trusted-local Bash permission matrix",
+                    result.errors,
+                )
 
     def test_checked_in_lead_plan_staging_prompt_is_narrow(self) -> None:
         project_root = Path(__file__).parents[1]

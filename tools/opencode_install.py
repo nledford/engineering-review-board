@@ -48,8 +48,10 @@ try:
         TECHNICAL_DEBT_AUDIT_PROMPT_CONTRACTS,
         PROJECT_NEUTRAL_EXACT_JUST_RECIPES,
         ADVERSARIAL_REVIEWER_STAGE_PROMPT_CONTRACTS,
+        ACTIVE_PLANNED_WORK_FORBIDDEN_TOKENS,
         CODE_DOCUMENTATION_PROMPT_CONTRACTS,
         MCP_SELECTION_PROMPT_CONTRACTS,
+        PLANNED_WORK_PROMPT_CONTRACTS,
         PRIMARY_AGENT_TURN_PROMPT_CONTRACTS,
         BOARD_PLAN_REVIEW_PROMPT_CONTRACT,
         ACTIVE_WORKFLOW_FIXED_FILES,
@@ -71,6 +73,7 @@ try:
         ENGINEERING_LEAD_POST_PLAN_BASH_RULES,
         ENGINEERING_LEAD_GIT_BASH_RULES,
         ENGINEERING_LEAD_GIT_EFFECTIVE_ACTIONS,
+        TRUSTED_LOCAL_BASH_ALLOW_RULES,
         MCP_TOOL_ACTIONS_BY_AGENT,
         MCP_ENABLED_AGENT_IDS,
         NAVIGATION_TOOLS,
@@ -127,8 +130,10 @@ except ImportError:  # Direct script execution.
         TECHNICAL_DEBT_AUDIT_PROMPT_CONTRACTS,
         PROJECT_NEUTRAL_EXACT_JUST_RECIPES,
         ADVERSARIAL_REVIEWER_STAGE_PROMPT_CONTRACTS,
+        ACTIVE_PLANNED_WORK_FORBIDDEN_TOKENS,
         CODE_DOCUMENTATION_PROMPT_CONTRACTS,
         MCP_SELECTION_PROMPT_CONTRACTS,
+        PLANNED_WORK_PROMPT_CONTRACTS,
         PRIMARY_AGENT_TURN_PROMPT_CONTRACTS,
         BOARD_PLAN_REVIEW_PROMPT_CONTRACT,
         ACTIVE_WORKFLOW_FIXED_FILES,
@@ -150,6 +155,7 @@ except ImportError:  # Direct script execution.
         ENGINEERING_LEAD_POST_PLAN_BASH_RULES,
         ENGINEERING_LEAD_GIT_BASH_RULES,
         ENGINEERING_LEAD_GIT_EFFECTIVE_ACTIONS,
+        TRUSTED_LOCAL_BASH_ALLOW_RULES,
         MCP_TOOL_ACTIONS_BY_AGENT,
         MCP_ENABLED_AGENT_IDS,
         NAVIGATION_TOOLS,
@@ -721,6 +727,55 @@ class OpenCodeInstallService:
             return [
                 "agents: 'implementation-worker.md' must preserve the complete Worker deny surface"
             ]
+        if policy.agent_id in {"engineering-lead", "implementation-worker"}:
+            expected_actions = (
+                tuple((command, "allow") for command in (
+                    "rg permissions",
+                    "just validate",
+                    "cargo check",
+                    "cargo test --lib",
+                    "cargo build",
+                    "cargo check --target wasm32-unknown-unknown",
+                    "cargo build --target=wasm32-unknown-unknown",
+                    "cargo clippy",
+                    "cargo metadata",
+                    "npm test",
+                    "pnpm run lint",
+                    "yarn run typecheck",
+                    "bun run build",
+                ))
+                + tuple((command, "ask") for command in (
+                "unknown-command",
+                "python3 script.py",
+                "npm install package",
+                "cargo clean",
+                "rm generated-file",
+                "kill 1",
+                "dd if=input of=output",
+                "docker rm container",
+                "just --justfile alternate.just test",
+                ))
+                + tuple((command, "deny") for command in (
+                "sudo whoami",
+                "mkfs disk",
+                "cargo check --manifest-path alternate.toml",
+                "cargo check --target-dir alternate-target",
+                "cargo check --fix",
+                "npm test -- --update-snapshots",
+                "rg permission > output",
+                "rg permission && other",
+                "rg permission $(other)",
+                "just test > output",
+                "just test && other",
+                ))
+            )
+            if any(
+                resolve_opencode_permission_action(bash, command, baseline="ask") != action
+                for command, action in expected_actions
+            ):
+                return [
+                    f"agents: '{policy.agent_id}.md' must preserve the trusted-local Bash permission matrix"
+                ]
         return []
 
     def _validate_retired_lifecycle_tokens(
@@ -782,7 +837,7 @@ class OpenCodeInstallService:
                 PromptContract(forbidden=HUMAN_CONTROLLED_LIFECYCLE_FORBIDDEN_TOKENS),
             ):
                 errors.append(
-                    f"human-controlled lifecycle document '{relative_path}' contains forbidden automatic `/start-plan` creation"
+                    f"human-controlled lifecycle document '{relative_path}' contains a forbidden lifecycle token"
                 )
         return errors
 
@@ -1198,8 +1253,11 @@ class OpenCodeInstallService:
             (rule, action) in ENGINEERING_LEAD_GIT_BASH_RULES
             or (rule, action) in ENGINEERING_LEAD_POST_PLAN_BASH_RULES
         )
+        trusted_local_exception = agent_id in {"engineering-lead", "implementation-worker"} and (
+            (rule, action) in TRUSTED_LOCAL_BASH_ALLOW_RULES
+        )
         if has_wildcard:
-            return None if lead_exception else "bash permission must not allow wildcard rules"
+            return None if lead_exception or trusted_local_exception else "bash permission must not allow wildcard rules"
         safe_role_rule = (
             rule in SAFE_EXACT_GIT_BASH_ALLOWS
             or (agent_id == "plan-orchestrator" and rule == "git commit")
@@ -1207,6 +1265,7 @@ class OpenCodeInstallService:
                 agent_id == "engineering-lead"
                 and (rule, action) in ENGINEERING_LEAD_GIT_BASH_RULES
             )
+            or trusted_local_exception
         )
         return None if safe_role_rule else "bash permission has an unsafe allow rule"
 
@@ -1362,10 +1421,10 @@ class OpenCodeInstallService:
             expected_edit = NON_PLAN_WRITER_EDIT_RULES
         elif agent_id == "plan-orchestrator":
             expected_edit = (
-                ("*", "ask"),
+                ("*", "deny"),
                 (LEGACY_PLAN_PATH_EDIT_RULE, "deny"),
-                (PLAN_PATH_EDIT_RULE, "ask"),
-                (STATE_PATH_EDIT_RULE, "ask"),
+                (PLAN_PATH_EDIT_RULE, "allow"),
+                (STATE_PATH_EDIT_RULE, "allow"),
             )
         else:
             expected_edit = "deny"
@@ -1528,6 +1587,7 @@ class OpenCodeInstallService:
         definitions: DefinitionSnapshot,
     ) -> list[str]:
         errors = self._validate_core_agent_prompt_contracts(definitions)
+        errors.extend(self._validate_planned_work_prompt_contracts(definitions))
         section_groups = (
             (CANONICAL_PROMPT_SECTION_CONTRACTS, "prompt contract"),
             (TECHNICAL_DEBT_AUDIT_PROMPT_CONTRACTS, "prompt contract"),
@@ -1551,19 +1611,41 @@ class OpenCodeInstallService:
         errors.extend(self._validate_command_prompt_contracts(definitions))
         return errors
 
+    def _validate_planned_work_prompt_contracts(
+        self,
+        definitions: DefinitionSnapshot,
+    ) -> list[str]:
+        """Keep planned-work transitions centralized in the Plan Orchestrator."""
+        required_agents = {
+            "engineering-lead.md",
+            "implementation-worker.md",
+            "plan-orchestrator.md",
+        }
+        if not required_agents.issubset(definitions.inventory.agents) or "start-plan.md" not in definitions.inventory.commands:
+            return []
+        errors: list[str] = []
+        for name, required in PLANNED_WORK_PROMPT_CONTRACTS.items():
+            kind = "commands" if name == "start-plan.md" else "agents"
+            prompt = self._definition_text(definitions, kind, name)
+            if prompt is None or not prompt_satisfies_contract(
+                prompt,
+                PromptContract(
+                    required=required,
+                    forbidden=ACTIVE_PLANNED_WORK_FORBIDDEN_TOKENS,
+                ),
+            ):
+                errors.append(f"{kind}: '{name}' planned-work prompt contract is incomplete")
+        return errors
+
     def _validate_core_agent_prompt_contracts(
         self,
         definitions: DefinitionSnapshot,
     ) -> list[str]:
         contracts = {
             "engineering-lead.md": (
-                "Use only `implementation-worker` for bounded implementation Tasks.",
-                "Every Engineering Lead assignment to `implementation-worker` must state `mode: implementation`.",
-                "Never assign `validation-only`; that mode belongs exclusively to Plan Orchestrator `/start-plan` validation.",
-                "When `subagent_type` is `implementation-worker`, add a `## Mode` section containing exactly `implementation`",
-                "When resuming the same Worker for a correction, send a complete actionable packet",
+                "Use only `implementation-worker` for bounded unplanned implementation or non-editing verification Tasks.",
+                "When resuming the same Worker for an implementation correction, send a complete actionable packet",
                 "enumerate each evidence gap, the acceptance criterion it blocks",
-                "Never send only a status preamble or references such as `these findings`",
             ),
             "plan-orchestrator.md": (
                 "top-level primary agent, never a Task child",
@@ -1572,31 +1654,9 @@ class OpenCodeInstallService:
             ),
             "implementation-worker.md": (
                 "Engineering Lead or Plan Orchestrator",
-                "`.erb/plan-state.json`",
                 "edit durable plan paths",
                 "read or edit `.erb/plan-state.json`",
-                "Every assignment must name exactly one mode: `implementation` or `validation-only`.",
-                "`validation-only` is available only for a Plan Orchestrator assignment",
-                "Before requesting approval, require fresh packet evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
-                "In validation-only mode, do not edit, fix, install, update, clean up, regenerate snapshots or lockfiles, stage, commit, or perform corrective implementation.",
-                "ephemeral test databases",
-                "Terminal success does not authorize a plan checkbox change.",
-                "In implementation mode, make the smallest durable change that satisfies every assigned acceptance criterion.",
-                "Do not return partial progress while safe, in-scope work remains executable.",
-                "In implementation mode, they define the active slice, not the parent plan TODO.",
-                "Deferred or unassigned parent work is context only",
-                "Preserve satisfied dependencies and do not repeat completed actions.",
-                "Plan and Task scope do not satisfy an `ask` permission.",
-                "While approval is pending, do not return a terminal status or issue another request.",
-                "A policy denial or rejected approval before execution starts is `BLOCKED`",
-                "approval state, whether execution started, whether a terminal outcome is known, and replay-safety evidence",
-                "`execution_state` (`not_started`, `terminal_success`, `terminal_failure`, or `unknown`)",
-                "Return exactly one status: `COMPLETED` or `BLOCKED`.",
-                "`COMPLETED` reports only that the active slice is complete",
-                "prevents every remaining safe action in the active slice",
-                "requirement-to-evidence table",
-                "A resumed correction assignment must enumerate at least one concrete evidence gap",
-                "Do not infer missing findings from a status-only preamble",
+                "Plan and Task scope bound work but never satisfy an `ask` permission.",
             ),
         }
         selected = {"plan-orchestrator.md"} & set(definitions.inventory.agents)
@@ -1900,12 +1960,9 @@ class OpenCodeInstallService:
             "Keep the window on plan TODOs, in their original order and with their original numbers, until every TODO is checked.",
             "Only then replace it with the dedicated Verification steps in their original order.",
             "On a transition, order entries as most-recent completed, then current, then pending.",
-            "A blocked or failed step stays visible with its evidence and never advances a checkbox or window speculatively.",
-            "Check a TODO only after observed implementation or individual-validation evidence authorizes it.",
-            "you must complete every planned TODO before beginning any dedicated Verification step.",
-            "Check a Verification step only after its own observed evidence.",
+            "Execute the first unchecked checkbox and complete every planned TODO before a dedicated Verification step.",
+            "Check a TODO or Verification step only after its own complete observed evidence; blocked, failed, uncertain, or partial work never advances a checkbox.",
             "After every TODO and Verification step is evidenced complete, write the completed-only list once, then replace it with `todos: []`.",
-            "Do not clear TODOs on failure, uncertainty, or partial reconciliation.",
             "Your self-check is not independent review, ERB evidence, approval, readiness, or sign-off.",
             "ERB output is optional independent advisory evidence, not a prerequisite or lifecycle authority.",
             "or equally explicit current top-level human plan-creation or plan-replacement request",
@@ -1937,53 +1994,6 @@ class OpenCodeInstallService:
             "old-to-new ordering plus the reason for each move",
             "Never update a plan within the `/start-plan` turn",
             "must never stage or commit and must never be instructed or delegated to create a commit.",
-            "Treat every new Task child as context-isolated; its prompt must be self-contained",
-            "canonical plan path, current TODO number and exact text",
-            "relevant Objectives, Guardrails, Deliverables, and Definition of Done",
-            "derive the full canonical TODO obligation set",
-            "three disjoint and collectively exhaustive sets: active slice, evidenced complete, and unresolved or deferred",
-            "Select one bounded active slice",
-            "No active criterion may also be deferred or prohibited.",
-            "numbered acceptance criteria",
-            "Satisfied dependencies / preserved state",
-            "Plan and Task scope authorize the bounded work; they never satisfy an `ask` permission.",
-            "Classify every required operation as allowed, ask-gated, or denied before delegation.",
-            "Every Worker assignment has exactly one mode: `implementation` or `validation-only`.",
-            "Use `validation-only` mode only for command-backed evidence that your effective permissions cannot execute or directly observe.",
-            "Before validation-only dispatch, establish from fresh repository evidence that the exact command is replay-safe and safe under duplicate or concurrent execution.",
-            "Directly observable Verification evidence stays with the Orchestrator and creates no Worker Task.",
-            "ephemeral test databases",
-            "A validation-only Worker return is evidence, never checkbox authority.",
-            "Do not use the implementation correction or no-progress loop for validation-only work.",
-            "One at a time means one active Worker and one current implementation TODO, not one attempt.",
-            "A Worker return is evidence, not a terminal event.",
-            "Map every acceptance criterion to fresh source, diff, and validation evidence.",
-            "A Worker `COMPLETED` report closes only the active slice",
-            "TODO-level integration validation",
-            "Reconcile fresh evidence before interpreting either Worker status.",
-            "close only that transient slice regardless of an incorrect label",
-            "Strict progress means fresh evidence moves at least one previously unresolved active-slice criterion to evidenced complete.",
-            "Re-partition strict progress into preserved completed criteria and a strictly smaller residual active slice.",
-            "Reset the consecutive no-progress allowance only after strict progress.",
-            "If no criterion changes classification, allow one same-`task_id` correction",
-            "A second consecutive unsupported no-progress terminal return for the same residual slice is an execution-channel failure",
-            "Never repeat an action whose prior result or replay safety cannot be established from fresh evidence.",
-            "Apply the permission-state and replay-safety gates before the unsupported no-progress allowance.",
-            "A policy denial or rejected approval for a command known not to have started is a genuine blocker",
-            "While runtime approval is pending, retain the same waiting child",
-            "Approval alone is not evidence that the operation ran.",
-            "Worker's exact `approval_state`, `execution_state`, and `replay_safe` fields",
-            "resume the same Worker child session by passing its `task_id`",
-            "Do not start a fresh Worker Task for an in-scope correction when that child session can be resumed.",
-            "If the runtime cannot resume that child after an interruption",
-            "Keep a continuation delta-focused",
-            "For every resumed correction, send a complete correction packet",
-            "numbered evidence gaps",
-            "the acceptance criterion each gap blocks",
-            "the observed evidence and required result",
-            "the exact correction requested",
-            "validation to rerun",
-            "A status-only preamble or a reference such as `these findings`",
             *PLAN_ORCHESTRATOR_COMMIT_PROMPT_REQUIREMENTS,
         )
         normalized = " ".join(prompt.split())
