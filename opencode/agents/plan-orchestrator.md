@@ -204,9 +204,15 @@ resume:
   unbounded retry, polling, or correction loop.
 
 Before persisting a created or updated plan or beginning or resuming execution,
-validate the whole plan against this contract. If an existing plan fails it,
-leave the current checkbox unchecked and use the material-plan-change stop rule.
-Do not use Worker slicing to make a compound checklist entry acceptable.
+validate the whole plan against this contract. During `/start-plan`, if an
+existing plan fails it, leave the current checkbox unchecked and use the
+material-plan-change stop rule. During `/update-plan`, checklist-entry
+violations in the existing active plan are repair inputs, not triggers for the
+execution-only `/start-plan` material-plan-change stop rule. Derive and validate
+the complete candidate plan before mutation, including checkbox reconciliation
+and any re-sequencing. If the candidate fails the canonical format or
+checklist-entry contract, stop with the original plan unchanged. Do not use
+Worker slicing to make a compound checklist entry acceptable.
 
 Use this exact lean template. Do not add frontmatter or any other heading,
 section, lifecycle field, history, provenance, review record, approval field,
@@ -289,11 +295,15 @@ completed plan and route additional work to a new human-authorized
 `/create-plan` request.
 
 Re-read the exact plan and fresh repository evidence immediately before
-mutation. Apply the smallest exact-content edit patch, retain the same path and
-canonical format, then re-read and validate the whole result. If the patch no
-longer matches fresh content, stop rather than overwrite unexpected changes. Do
-not write or change state, delegate, implement, validate implementation work,
-stage, commit, execute TODOs, or update native planned-work TODOs in this route.
+mutation. Treat checklist-entry violations in the existing active plan as
+repair inputs. Derive the complete candidate, retain the same path and canonical
+format, reconcile every checkbox, apply any required re-sequencing, and validate
+the candidate before mutation. If it fails validation, stop with the original
+plan unchanged. Otherwise apply the smallest exact-content edit patch, then
+re-read and validate the persisted result. If the patch no longer matches fresh
+content, stop rather than overwrite unexpected changes. Do not write or change
+state, delegate, implement, validate implementation work, stage, commit, execute
+TODOs, or update native planned-work TODOs in this route.
 
 New TODO and Verification entries must be unchecked. Never change an unchecked
 checkbox to checked during an update. Retain a checked item only when its

@@ -762,6 +762,11 @@ class OpenCodeInstallServiceTests(unittest.TestCase):
             "Revalidate every TODO and Verification entry against the Plan Orchestrator's checklist-entry contract.",
             "Dependency correctness outranks preserving existing order.",
             "old-to-new ordering and the reason for each move",
+            "checklist-entry violations in the existing active plan are repair inputs",
+            "execution-only `/start-plan` material-plan-change stop rule",
+            "validate the complete candidate plan before mutation",
+            "including checkbox reconciliation and any re-sequencing",
+            "stop with the original plan unchanged",
             "Do not write or change `.erb/plan-state.json`.",
             "Do not delegate, implement, validate implementation work, stage, commit, or execute TODOs.",
             "A later explicit `/start-plan <existing-plan-path>` request is required to execute or resume the updated plan.",
@@ -1458,11 +1463,20 @@ class CanonicalPromptSectionTests(unittest.TestCase):
                 "known ask-gated or destructive operation and its exact contained target",
                 "planning disclosure is not approval",
                 "finite completion or stop condition",
+                "checklist-entry violations in the existing active plan are repair inputs",
+                "validate the complete candidate plan before mutation",
+                "including checkbox reconciliation and any re-sequencing",
+                "stop with the original plan unchanged",
             ),
             "orchestrator": (
                 "## Checklist Entry Contract",
                 "Do not use Worker slicing to make a compound checklist entry acceptable.",
                 "validate the whole plan against this contract",
+                "checklist-entry violations in the existing active plan are repair inputs",
+                "execution-only `/start-plan` material-plan-change stop rule",
+                "During `/start-plan`, if an existing plan fails it",
+                "validate the complete candidate plan before mutation",
+                "including checkbox reconciliation and any re-sequencing",
             ),
             "create": (
                 "Apply the Plan Orchestrator's checklist-entry contract before writing.",
@@ -1470,6 +1484,10 @@ class CanonicalPromptSectionTests(unittest.TestCase):
             "update": (
                 "Dependency correctness outranks preserving existing order.",
                 "old-to-new ordering and the reason for each move",
+                "checklist-entry violations in the existing active plan are repair inputs",
+                "validate the complete candidate plan before mutation",
+                "including checkbox reconciliation and any re-sequencing",
+                "stop with the original plan unchanged",
             ),
             "board": (
                 "one atomic purpose",
@@ -1489,9 +1507,47 @@ class CanonicalPromptSectionTests(unittest.TestCase):
             repo, definition = create_plan_orchestrator_repo(root)
             prompt = definition.read_text(encoding="utf-8")
             required = "Do not use Worker slicing to make a compound checklist entry acceptable."
-            self.assertIn(required, prompt)
+            self.assertIn(required, " ".join(prompt.split()))
+            pattern = r"\s+".join(re.escape(part) for part in required.split())
+            mutation, replacements = re.subn(
+                pattern,
+                "removed checklist-entry gate",
+                prompt,
+                count=1,
+            )
+            self.assertEqual(1, replacements)
             definition.write_text(
-                prompt.replace(required, "removed checklist-entry gate", 1),
+                mutation,
+                encoding="utf-8",
+            )
+
+            result = OpenCodeInstallService(repo, root / "config").validate()
+
+            self.assertFalse(result.ok)
+            self.assertTrue(
+                any("prompt contract is incomplete" in error for error in result.errors),
+                result.errors,
+            )
+
+    def test_validate_rejects_plan_orchestrator_update_repair_phase_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo, definition = create_plan_orchestrator_repo(root)
+            prompt = definition.read_text(encoding="utf-8")
+            required = (
+                "checklist-entry violations in the existing active plan are repair inputs"
+            )
+            self.assertIn(required, " ".join(prompt.split()))
+            pattern = r"\s+".join(re.escape(part) for part in required.split())
+            mutation, replacements = re.subn(
+                pattern,
+                "pre-existing violations require another update",
+                prompt,
+                count=1,
+            )
+            self.assertEqual(1, replacements)
+            definition.write_text(
+                mutation,
                 encoding="utf-8",
             )
 

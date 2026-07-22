@@ -135,11 +135,17 @@ updated plan. Accept only a plan with at least one unchecked TODO or Verificatio
 checkbox. A completed plan remains immutable; additional work requires a new
 human-authorized `/create-plan` request.
 
-Re-read and validate the exact plan plus fresh repository evidence immediately
-before mutation. Apply the smallest exact-content edit patch that satisfies the
-human's instructions, keep the same path and canonical format, then re-read and
-validate the whole result against the checklist-entry contract. If the patch no
-longer matches fresh content, stop instead of overwriting unexpected changes.
+Re-read the exact plan and fresh repository evidence immediately before
+mutation, and validate the existing canonical format. During `/update-plan`,
+checklist-entry violations in the existing active plan are repair inputs, not
+triggers for the execution-only `/start-plan` material-plan-change stop rule.
+Derive and validate the complete candidate plan before mutation, including
+checkbox reconciliation and any re-sequencing. If the candidate fails the
+canonical format or checklist-entry contract, stop with the original plan
+unchanged. Otherwise apply the smallest exact-content edit patch that satisfies
+the human's instructions, keep the same path, then re-read and validate the
+persisted result. If the patch no longer matches fresh content, stop instead of
+overwriting unexpected changes.
 
 Reconcile checklist evidence conservatively:
 

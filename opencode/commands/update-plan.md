@@ -35,14 +35,19 @@ new human-authorized `/create-plan` request. Review or consultation advice alone
 is not update authority.
 
 Re-read the exact plan and fresh repository evidence immediately before
-mutation. Validate the existing canonical template. Apply the smallest
-exact-content edit patch that satisfies the human's instructions. Keep the same
-canonical path and exact ordered headings and fixed Context labels. Do not add
-frontmatter, lifecycle metadata, history, provenance, revision, approval,
-review, status, dependency, or concurrency fields. Re-read and validate the
-entire resulting plan after the edit. If the exact-content patch no longer
-matches fresh content, stop instead of overwriting concurrent or unexpected
-changes.
+mutation. Validate the existing canonical template. During `/update-plan`,
+checklist-entry violations in the existing active plan are repair inputs, not
+triggers for the execution-only `/start-plan` material-plan-change stop rule.
+Derive and validate the complete candidate plan before mutation, including
+checkbox reconciliation and any re-sequencing. Keep the same canonical path and
+exact ordered headings and fixed Context labels. Do not add frontmatter,
+lifecycle metadata, history, provenance, revision, approval, review, status,
+dependency, or concurrency fields. If the candidate fails the canonical format
+or checklist-entry contract, stop with the original plan unchanged. Apply the
+smallest exact-content edit patch that satisfies the human's instructions only
+after the candidate passes validation, then re-read and validate the entire
+persisted plan. If the exact-content patch no longer matches fresh content, stop
+instead of overwriting concurrent or unexpected changes.
 
 Revalidate every TODO and Verification entry against the Plan Orchestrator's
 checklist-entry contract. When ordering violates that contract, re-sequence the
